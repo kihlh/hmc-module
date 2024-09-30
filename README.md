@@ -66,7 +66,7 @@
 
 #### 2.添加 include 环境
 
-![image-20240915074954827](F:\source\module\hmc-win32\source\hmc-module-static\assets\msvc_include_config.png)
+![image-20240915074954827](/assets/msvc_include_config.png)
 
 ### 案例
 
