@@ -27,7 +27,13 @@
 
 #include "hmc_string_util.h"
 
-const size_t BIT_2GB = 8589934592ull
+#if defined(__x86_64__) || defined(_M_X64)
+const size_t BIT_2GB = 8589934592ull;
+#elif defined(__i386__) || defined(_M_IX86)
+const size_t BIT_2GB = 8589934592ui32;
+#endif
+
+
 
 #define NAME_STR(func) #func
 
@@ -92,7 +98,6 @@ const size_t BIT_2GB = 8589934592ull
 		EXPORT_NAPI_REMOTE_FN(_PromiseSession_get_sleep_time),                \
 		EXPORT_NAPI_REMOTE_FN(_PromiseSession_allTasks)
 
-	;
 typedef enum
 {
 	// ES6 types (corresponds to typeof)
@@ -147,7 +152,7 @@ namespace hmc_napi_get_value
 	 * @param nodeValue
 	 * @return double
 	 */
-	extern double number_double(napi_env env, napi_value nodeValue, int defaultValue = 0.0);
+	extern double number_double(napi_env env, napi_value nodeValue, double defaultValue = 0.0);
 	/**
 	 * @brief bigint转long
 	 *

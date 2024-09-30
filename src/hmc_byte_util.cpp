@@ -238,13 +238,13 @@ std::wstring hmc_byte_util::bytesToWstring(const std::vector<uint8_t> &bytes)
 	if (bytes.empty())
 		return result;
 
-	int len = bytes.size();
+	size_t len = bytes.size();
 
 	// 能被2整除 utf16
 	if (len % 2 == 0)
 	{
 
-		for (int i = 0; i < len - 1; i += 2)
+		for (size_t i = 0; i < len - 1; i += 2)
 		{
 			if (bytes[i] == 0xff && bytes[i + 1] == 0xff)
 			{
@@ -260,25 +260,25 @@ std::wstring hmc_byte_util::bytesToWstring(const std::vector<uint8_t> &bytes)
 			result.push_back(static_cast<char16_t>(bytesToInt16(temp)));
 		}
 	}
-	else
+	//else
 		// 能被4整除 utf32
-		if (len % 4 == 0)
-		{
+		//if (len % 4 == 0)
+		//{
 
-			for (int i = 0; i < len - 1; i += 4)
-			{
-				// if (bytes[i] == 0xff && bytes[i + 1] == 0xff) {
-				// 	break;
-				// }
-				// if (bytes[i] == 0 && bytes[i + 1] == 0) {
-				// 	break;
-				// }
+		//	for (int i = 0; i < len - 1; i += 4)
+		//	{
+		//		// if (bytes[i] == 0xff && bytes[i + 1] == 0xff) {
+		//		// 	break;
+		//		// }
+		//		// if (bytes[i] == 0 && bytes[i + 1] == 0) {
+		//		// 	break;
+		//		// }
 
-				// auto temp = { bytes.at(i) ,bytes.at(i + 1) };
+		//		// auto temp = { bytes.at(i) ,bytes.at(i + 1) };
 
-				// result.push_back(static_cast<char32_t>(bytesToInt32(temp)) );
-			}
-		}
+		//		// result.push_back(static_cast<char32_t>(bytesToInt32(temp)) );
+		//	}
+		//}
 
 	return result;
 }

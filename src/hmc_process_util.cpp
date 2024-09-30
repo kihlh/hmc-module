@@ -1236,7 +1236,7 @@ std::vector<std::wstring> hmc_process_util::commandLineToList(std::wstring comma
     int argument_count = 0;
     std::unique_ptr<wchar_t *[], LocalFreeDeleter> argv(::CommandLineToArgvW(commandLine.c_str() + '\0', &argument_count));
 
-    for (size_t i = 0; i < argument_count; i++)
+    for (size_t i = 0; i < static_cast<size_t>(argument_count); i++)
     {
         auto &&argument = argv[i];
         result.push_back(argument);
@@ -1686,30 +1686,34 @@ namespace hmc_process_util
             PVOID pebAddress = GetPebAddress(ProcessHandle);
             PVOID rtlUserProcParamsAddress;
             UNICODE_STRING commandLine;
+            std::wstring res = L"";
 
-            if (!ReadProcessMemory(ProcessHandle, (PCHAR)pebAddress + 0x10,
+            if (!::ReadProcessMemory(ProcessHandle, (PCHAR)pebAddress + 0x10,
                                    &rtlUserProcParamsAddress, sizeof(PVOID), NULL))
             {
-                *status = GetLastError();
-                return L"";
+                *status = ::GetLastError();
+                return res;
             }
 
-            if (!ReadProcessMemory(ProcessHandle, (PCHAR)rtlUserProcParamsAddress + 0x40,
+            if (!::ReadProcessMemory(ProcessHandle, (PCHAR)rtlUserProcParamsAddress + 0x40,
                                    &commandLine, sizeof(commandLine), NULL))
             {
-                *status = GetLastError();
-                return NULL;
+                *status = ::GetLastError();
+                return res;
             }
 
             wchar_t *commandLineContents = new wchar_t[commandLine.Length];
 
-            if (!ReadProcessMemory(ProcessHandle, commandLine.Buffer,
+            if (!::ReadProcessMemory(ProcessHandle, commandLine.Buffer,
                                    commandLineContents, commandLine.Length, NULL))
             {
-                *status = GetLastError();
-                return NULL;
+                *status = ::GetLastError();
+                return res;
             }
-            return commandLineContents;
+            
+            res.append(commandLineContents);
+
+            return res;
         }
     }
 
@@ -2004,7 +2008,7 @@ std::vector<hmc_process_util::ch_ProcessEnumItem> hmc_process_util::getAllProces
 
         auto data_list = hmc_process_util::enumProcessIDList();
 
-        for (auto i = 0; i < data_list.size(); i++)
+        for (size_t i = 0; i < data_list.size(); i++)
         {
             auto pid = data_list[i];
             ch_ProcessEnumItem obj = {0, std::wstring(), std::wstring()};

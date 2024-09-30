@@ -75,8 +75,8 @@ namespace hmc_clip_util
             int EndFragment;
             std::string SourceURL;
         };
-        GetClipboardHtml(HWND hWnd);
-        GetClipboardHtml();
+        GetClipboardHtml(HWND hWnd = NULL);
+        //GetClipboardHtml();
         // 判断内容是否有效
         bool isHtml();
         // 获取内容
@@ -105,6 +105,7 @@ namespace hmc_clip_util
         DWORD id;
         std::vector<std::uint8_t> format;
         std::uint8_t formatCount;
+        chClipInfo() : hwnd(nullptr), id(0), formatCount(0) {}
     };
 
     chClipInfo GetClipboardInfo();

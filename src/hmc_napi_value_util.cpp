@@ -314,7 +314,8 @@ bool hmc_napi_type::diff(napi_env env, napi_value nodeValue, const napi_valuetyp
  */
 bool hmc_napi_type::argsSize(napi_env env, size_t argLength, int minLength, int maxLength)
 {
-    if (argLength >= minLength && argLength <= maxLength)
+    auto argLength_temp = static_cast<int>(argLength);
+    if (argLength_temp >= minLength && argLength_temp <= maxLength)
     {
         return true;
     }
@@ -323,7 +324,7 @@ bool hmc_napi_type::argsSize(napi_env env, size_t argLength, int minLength, int 
         napi_throw_error(env, "EINVAL",
                          std::string()
                              .append("The current number of parameters passed is lower than required. The input is [")
-                             .append(std::to_string(argLength))
+                             .append(std::to_string(argLength_temp))
                              .append("], and the ideal number of parameters should be [")
                              .append(std::to_string(minLength))
                              .append("].\n")
@@ -344,7 +345,7 @@ bool hmc_napi_type::argsSize(napi_env env, size_t argLength, int minLength, int 
  */
 bool hmc_napi_type::argsSize(napi_env env, size_t argLength, int minLength)
 {
-    if (argLength >= minLength)
+    if (argLength >= static_cast<size_t>(minLength))
     {
         return true;
     }
@@ -697,7 +698,7 @@ int64_t hmc_napi_get_value::number_int64(napi_env env, napi_value nodeValue, int
  * @param nodeValue
  * @return double
  */
-double hmc_napi_get_value::number_double(napi_env env, napi_value nodeValue, int defaultValue)
+double hmc_napi_get_value::number_double(napi_env env, napi_value nodeValue, double defaultValue)
 {
     double result = defaultValue;
 
@@ -710,10 +711,8 @@ double hmc_napi_get_value::number_double(napi_env env, napi_value nodeValue, int
     {
         return result;
     }
-    else
-    {
-        //_hmc_debug
-    }
+
+    return result;
 }
 
 /**
@@ -971,7 +970,7 @@ std::vector<std::string> hmc_napi_get_value::array_string_utf8(napi_env env, nap
 
     for (size_t i = 0; i < size; i++)
     {
-        status = napi_get_element(env, nodeValue, i, &value);
+        status = napi_get_element(env, nodeValue, static_cast<uint32_t>(i), &value);
         if (status != napi_ok)
         {
             // _hmc_debug
@@ -997,7 +996,7 @@ std::vector<std::wstring> hmc_napi_get_value::array_string_utf16(napi_env env, n
 
     for (size_t i = 0; i < size; i++)
     {
-        status = napi_get_element(env, nodeValue, i, &value);
+        status = napi_get_element(env, nodeValue, static_cast<uint32_t>(i), &value);
         if (status != napi_ok)
         {
             // _hmc_debug
@@ -1030,7 +1029,7 @@ std::vector<int> hmc_napi_get_value::array_int(napi_env env, napi_value nodeValu
 
     for (size_t i = 0; i < size; i++)
     {
-        status = napi_get_element(env, nodeValue, i, &value);
+        status = napi_get_element(env, nodeValue, static_cast<uint32_t>(i), &value);
         if (status != napi_ok)
         {
             // _hmc_debug
@@ -1063,7 +1062,7 @@ std::vector<int64_t> hmc_napi_get_value::array_int64(napi_env env, napi_value no
 
     for (size_t i = 0; i < size; i++)
     {
-        status = napi_get_element(env, nodeValue, i, &value);
+        status = napi_get_element(env, nodeValue, static_cast<uint32_t>(i), &value);
         if (status != napi_ok)
         {
             // _hmc_debug
@@ -1096,7 +1095,7 @@ std::vector<double> hmc_napi_get_value::array_double(napi_env env, napi_value no
 
     for (size_t i = 0; i < size; i++)
     {
-        status = napi_get_element(env, nodeValue, i, &value);
+        status = napi_get_element(env, nodeValue, static_cast<uint32_t>(i), &value);
         if (status != napi_ok)
         {
             // _hmc_debug
@@ -1288,7 +1287,7 @@ const wchar_t *hmc_napi_get_value::buffer_utf16_clpStrW(napi_env env, napi_value
         wchar_t data = wideString[i];
         utf16Ptr[i] = data;
     }
-    const int end = wideString.size();
+    const size_t end = wideString.size();
 
     utf16Ptr[end] = *L"\0";
 
@@ -1333,7 +1332,7 @@ const char *hmc_napi_get_value::buffer_utf8_clpStrU8(napi_env env, napi_value no
         char data = utf8String[i];
         utf8Ptr[i] = data;
     }
-    const int end = utf8String.size();
+    const size_t end = utf8String.size();
 
     utf8Ptr[end] = *"\0";
 
@@ -1359,7 +1358,7 @@ const char *hmc_napi_get_value::buffer_ansi_clpStrA(napi_env env, napi_value nod
         char data = ansiString[i];
         ansiPtr[i] = data;
     }
-    const int end = ansiString.size();
+    const size_t end = ansiString.size();
 
     ansiPtr[end] = *"\0";
 
@@ -1371,7 +1370,7 @@ POINT hmc_napi_get_value::point(napi_env env, napi_value objectValue)
     POINT result = POINT{};
     result.x = 0;
     result.y = 0;
-    napi_status status;
+    //napi_status status;
     napi_value x_value;
     napi_value y_value;
 
@@ -1723,7 +1722,7 @@ napi_value hmc_napi_create_value::Number(napi_env env, HWND number)
 
     napi_status status;
     napi_value result;
-    DWORD hwnd = static_cast<DWORD>((DWORD)number);
+    DWORD hwnd = static_cast<DWORD>((long long)number);
     status = napi_create_int64(env, hwnd, &result);
 
     if (status != napi_ok)
@@ -1958,7 +1957,7 @@ napi_value hmc_napi_create_value::Undefined(napi_env env)
  */
 napi_value hmc_napi_create_value::New(napi_env env, std::any anyValue)
 {
-    napi_status status;
+    //napi_status status;
     napi_value ResultForAny = NULL;
     if (anyValue.has_value())
     {
@@ -2963,7 +2962,7 @@ std::vector<std::any> hmc_PromiseSession::getAll(size_t PromiseID, size_t max_si
 
         while (true)
         {
-            int64_t index = get_next_index(PromiseID);
+            size_t index = static_cast<size_t>(get_next_index(PromiseID));
 
             if (index == -1)
             {
@@ -3126,8 +3125,9 @@ napi_value hmc_PromiseSession::getAll(napi_env env, size_t PromiseID, size_t siz
     }
     napi_create_array(env, &result);
 
-    for (size_t i = 0; i < temp_list.size(); i++)
+    for (size_t i_temp = 0; i_temp < temp_list.size(); i_temp++)
     {
+        uint32_t i = static_cast<uint32_t>(i_temp);
         std::any temp = temp_list[i];
 
         if (!temp.has_value())
@@ -3214,7 +3214,7 @@ std::vector<int> hmc_PromiseSession::allTasks()
     {
         if (temp_List.count(i) > 0)
         {
-            result.push_back(i);
+            result.push_back(static_cast<int>(i));
         }
     }
     return result;
@@ -3232,7 +3232,7 @@ std::vector<int> hmc_PromiseSession::ongoingTasks()
             // result.push_back(i);
             if (hmc_PromiseSession::____$hmcPromise_PromiseTaskEndStatusList.count(i) < 1)
             {
-                result.push_back(i);
+                result.push_back(static_cast<int>(i));
             }
         }
     }
@@ -3251,7 +3251,7 @@ std::vector<int> hmc_PromiseSession::completeTasks()
             // result.push_back(i);
             if (hmc_PromiseSession::____$hmcPromise_PromiseTaskEndStatusList.count(i) > 0)
             {
-                result.push_back(i);
+                result.push_back(static_cast<int>(i));
             }
         }
     }
@@ -3267,7 +3267,7 @@ napi_value _PromiseSession_getAll(napi_env env, napi_callback_info info)
     {
         return NULL;
     }
-    return hmc_PromiseSession::getAll(env, input.getInt64(0), input.exists(1) ? input.getInt64(1) : 999);
+    return hmc_PromiseSession::getAll(env, static_cast<size_t>(input.getInt64(0)), static_cast<size_t>(input.exists(1)) ? static_cast<size_t>(input.getInt64(1)) : 999);
 }
 
 napi_value _PromiseSession_stop(napi_env env, napi_callback_info info)
@@ -3279,7 +3279,7 @@ napi_value _PromiseSession_stop(napi_env env, napi_callback_info info)
     {
         return NULL;
     }
-    hmc_PromiseSession::end(input.getInt64(0));
+    hmc_PromiseSession::end(static_cast<size_t>(input.getInt64(0)));
     return hmc_napi_create_value::Undefined(env);
 }
 
@@ -3292,7 +3292,8 @@ napi_value _PromiseSession_isClosed(napi_env env, napi_callback_info info)
     {
         return NULL;
     }
-    bool isClosed = (input.getInt64(0) > hmc_PromiseSession::max_id()) ? false : hmc_PromiseSession::isClosed(input.getInt64(0));
+    auto int_64_temp = static_cast<size_t>(input.getInt64(0));
+    bool isClosed = (int_64_temp > hmc_PromiseSession::max_id()) ? false : hmc_PromiseSession::isClosed(int_64_temp);
     return hmc_napi_create_value::Boolean(env, isClosed);
 }
 
@@ -3310,7 +3311,7 @@ napi_value _PromiseSession_data_size(napi_env env, napi_callback_info info)
     {
         return NULL;
     }
-    return hmc_napi_create_value::Number(env, (int64_t)hmc_PromiseSession::data_size(input.getInt64(0)));
+    return hmc_napi_create_value::Number(env, (int64_t)hmc_PromiseSession::data_size(static_cast<size_t>(input.getInt64(0))));
 }
 
 napi_value _PromiseSession_await(napi_env env, napi_callback_info info)
@@ -3357,7 +3358,7 @@ napi_value _PromiseSession_set_sleep_time(napi_env env, napi_callback_info info)
 
     if (sleep_time > 0 && sleep_time < 1000000)
     {
-        hmc_PromiseSession::___$Sleep_time = sleep_time;
+        hmc_PromiseSession::___$Sleep_time = static_cast<long>(sleep_time);
     }
 
     return hmc_napi_create_value::Number(env, (int64_t)hmc_PromiseSession::___$Sleep_time);
@@ -3593,7 +3594,7 @@ HWND js_value::getHwnd(HWND defaultValue)
 
     if (this->isNumber())
     {
-        return (HWND)std::any_cast<long>(this->data);
+        return (HWND)static_cast<unsigned long long>(std::any_cast<long>(this->data));
     }
     return defaultValue;
 }
@@ -3623,7 +3624,7 @@ std::vector<std::wstring> js_value::getArrayWstring(std::vector<std::wstring> de
 
 bool js_value::has_value()
 {
-    return this->has_value();
+    return this->data.has_value();
 }
 
 bool js_value::isBuffer()
@@ -3787,7 +3788,7 @@ hmc_napi_create_value::jsArray::jsArray(napi_env env)
     }
 
     node_env = env;
-    napi_value ResultforArray;
+    //napi_value ResultforArray;
     status = napi_create_array(env, &array_value);
     is_ready_ok = status == napi_ok;
 }
@@ -3796,8 +3797,8 @@ napi_value hmc_napi_create_value::jsArray::toValue()
 {
     if (is_ready_ok)
     {
-        size_t count = napi_value_list.size();
-        for (size_t i = 0; i < count; i++)
+        uint32_t count = static_cast<uint32_t>(napi_value_list.size());
+        for (uint32_t i = 0; i < count; i++)
         {
             auto &value = napi_value_list.at(i);
 
@@ -4145,7 +4146,7 @@ napi_value PromiseFunctionUtil::startWork(napi_env env, napi_callback_info info,
 
 napi_value PromiseFunctionUtil::startSync(napi_env env, napi_callback_info info, std::function<std::any(std::vector<std::any> *arguments_list)> PromiseWorkFunc, std::function<napi_value(napi_env env, std::any *result_any_data)> FormatResultValue, std::optional<formatArgsCallBackType> formatArgsCallBack)
 {
-    napi_value result, work_name, promise;
+    napi_value result;
     napi_get_null(env, &result);
 
     std::any resultSend = std::any();
@@ -4267,22 +4268,24 @@ napi_value HMC_PromiseEval::StartAsyncTask(napi_env env, napi_callback_info info
         return NULL;
     }
 
-    workData->TASK_TYPE = input.getInt64(0, 0);
+    if (workData != NULL) {
+        workData->TASK_TYPE = static_cast<size_t>(input.getInt64(0, 0));
+    }
 
     input.removeIndex(0);
 
-    if (HMC_PromiseStore::PromiseFormatEventListenerFunList.find(workData->TASK_TYPE) != HMC_PromiseStore::PromiseFormatEventListenerFunList.end())
-    {
-
-        workData->ArgsStore = new std::vector<std::any>();
-        bool is_next = HMC_PromiseStore::PromiseFormatEventListenerFunList.at(workData->TASK_TYPE)(env, info, input, workData->ArgsStore);
-
-        if (!is_next)
+        if (workData != NULL&&HMC_PromiseStore::PromiseFormatEventListenerFunList.find(workData->TASK_TYPE) != HMC_PromiseStore::PromiseFormatEventListenerFunList.end())
         {
-            napi_throw_type_error(env, NULL, hmc_string_util::string_to_lpstr("The passed argument was rejected by the formatting function"));
-            return NULL;
+
+            workData->ArgsStore = new std::vector<std::any>();
+            bool is_next = HMC_PromiseStore::PromiseFormatEventListenerFunList.at(workData->TASK_TYPE)(env, info, input, workData->ArgsStore);
+
+            if (!is_next)
+            {
+                napi_throw_type_error(env, NULL, hmc_string_util::string_to_lpstr("The passed argument was rejected by the formatting function"));
+                return NULL;
+            }
         }
-    }
 
     if (HMC_PromiseStore::PromiseWorkEventListenerFunList.find(workData->TASK_TYPE) == HMC_PromiseStore::PromiseWorkEventListenerFunList.end())
     {
@@ -4314,7 +4317,11 @@ void HMC_PromiseEval::ResolveWork(napi_env env, napi_status status, void *data)
 
     if (workData == NULL || !workData->ResultStore->has_value())
     {
-        napi_resolve_deferred(env, workData->deferred, result);
+        
+        if (workData != NULL) {
+            napi_resolve_deferred(env, workData->deferred, result);
+        }
+
         return;
     }
 
@@ -4347,7 +4354,7 @@ napi_value HMC_PromiseEval::ExecuteSync(napi_env env, napi_callback_info info)
         return NULL;
     }
 
-    size_t TASK_TYPE = input.getInt64(0, 0);
+    size_t TASK_TYPE = static_cast<size_t>(input.getInt64(0, 0));
     input.removeIndex(0);
 
     auto ArgsStore = std::vector<std::any>();

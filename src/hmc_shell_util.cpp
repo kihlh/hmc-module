@@ -956,6 +956,14 @@ bool hmc_shell_util::powerControl(DWORD dwReason, bool aims)
     OSVERSIONINFO osvi = {0};
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
     dwReason |= (aims != FALSE) ? EWX_FORCE : EWX_FORCEIFHUNG;
+    //::InitiateSystemShutdownEx(
+    //    nullptr,             // 指定计算机名，nullptr表示本地计算机
+    //    L"Shutting down...", // 关机消息
+    //    0,                   // 延迟时间（秒）
+    //    TRUE,                // 强制关闭应用程序
+    //    TRUE,                // 关闭电源
+    //    SHTDN_REASON_MAJOR_OTHER // 关机原因代码
+    //);
     return ::ExitWindowsEx(dwReason, 0);
 }
 

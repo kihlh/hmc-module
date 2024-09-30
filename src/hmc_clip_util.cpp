@@ -304,7 +304,7 @@ bool hmc_clip_util::SetClipboardPathList(const std::vector<std::wstring> &PathLi
 
         PathList2Str.push_back(L'\0');
 
-        int nSize = sizeof(DROPFILES) + PathList2Str.size() * 2;
+        size_t nSize = sizeof(DROPFILES) + PathList2Str.size() * 2;
         handle = ::GlobalAlloc(GMEM_MOVEABLE, nSize);
 
         if (!handle)
@@ -392,7 +392,7 @@ bool hmc_clip_util::SetClipboardPathList(const std::vector<std::string> &PathLis
 
         PathList2Str.push_back('\0');
 
-        int nSize = sizeof(DROPFILES) + PathList2Str.size() * sizeof(char);
+        size_t nSize = sizeof(DROPFILES) + PathList2Str.size() * sizeof(char);
         handle = ::GlobalAlloc(GMEM_MOVEABLE, nSize);
 
         if (!handle)
@@ -606,7 +606,7 @@ std::wstring hmc_clip_util::GetClipboardFormatNameW(std::uint8_t format)
     if (cchCount > 1)
     {
 
-        for (size_t i = 0; i < cchCount; i++)
+        for (size_t i = 0; i < static_cast<size_t>(cchCount); i++)
         {
             result.push_back(lpszFormatName[i]);
         }
@@ -625,7 +625,7 @@ std::string hmc_clip_util::GetClipboardFormatNameA(std::uint8_t format)
     if (cchCount > 1)
     {
 
-        for (size_t i = 0; i < cchCount; i++)
+        for (size_t i = 0; i < static_cast<size_t>(cchCount); i++)
         {
             result.push_back(lpszFormatName[i]);
         }
@@ -648,11 +648,6 @@ hmc_clip_util::GetClipboardHtml::chClipHtmlItem hmc_clip_util::GetClipboardHtml:
         SourceURL};
 
     return result;
-}
-
-hmc_clip_util::GetClipboardHtml::GetClipboardHtml()
-{
-    GetClipboardHtml(NULL);
 }
 
 bool hmc_clip_util::GetClipboardHtml::isHtml()
@@ -718,7 +713,7 @@ bool hmc_clip_util::GetClipboardHtml::ParsingHtml()
             }
         }
 
-        Version = std::atof(item.c_str());
+        Version = static_cast<float>(std::stof(item.c_str()));
     }
 
     // SourceURL:https://....
@@ -736,12 +731,12 @@ bool hmc_clip_util::GetClipboardHtml::ParsingHtml()
         }
     }
 
-    StartHTML = html_indexof("StartHTML:");
-    EndHTML = html_indexof("EndHTML:");
-    StartFragment = html_indexof("StartFragment:");
-    EndFragment = html_indexof("EndFragment:");
+    StartHTML = static_cast<int>(html_indexof("StartHTML:"));
+    EndHTML = static_cast<int>(html_indexof("EndHTML:"));
+    StartFragment = static_cast<int>(html_indexof("StartFragment:"));
+    EndFragment = static_cast<int>(html_indexof("EndFragment:"));
 
-    if (StartHTML == 0 || StartFragment == 0 || EndHTML > SourceData.length() || EndFragment > SourceData.length())
+    if (StartHTML == 0 || StartFragment == 0 || EndHTML > static_cast<int>(SourceData.length()) || EndFragment > static_cast<int>(SourceData.length()))
     {
         return false;
     }

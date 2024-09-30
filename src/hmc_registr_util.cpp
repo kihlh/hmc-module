@@ -777,7 +777,7 @@ size_t hmc_registr_util::getRegistrKeys(HKEY hKey, std::vector<std::wstring> &Qu
 	// 枚举键值。
 	if (cValues)
 	{
-		achValue.resize(cchValue + MAX_PATH);
+		achValue.resize(static_cast<size_t>(cchValue) + MAX_PATH);
 
 		for (index = 0, retCode = ERROR_SUCCESS; index < cValues; index++)
 		{
