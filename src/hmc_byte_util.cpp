@@ -1,6 +1,6 @@
-﻿#include "./hmc_byte_util.h"
+﻿#include "hmc_byte_util.h"
 
-std::vector<std::uint8_t> int16ToBytes(const std::uint16_t data)
+std::vector<std::uint8_t> hmc_byte_util::int16ToBytes(const std::uint16_t data)
 {
 	std::vector<std::uint8_t> bytes = std::vector<std::uint8_t>();
 	bytes.reserve(2);
@@ -9,7 +9,7 @@ std::vector<std::uint8_t> int16ToBytes(const std::uint16_t data)
 	return bytes;
 }
 
-std::vector<std::uint8_t> int32ToBytes(const std::uint32_t data)
+std::vector<std::uint8_t> hmc_byte_util::int32ToBytes(const std::uint32_t data)
 {
 	std::vector<std::uint8_t> bytes = std::vector<std::uint8_t>();
 	bytes.reserve(4);
@@ -20,7 +20,7 @@ std::vector<std::uint8_t> int32ToBytes(const std::uint32_t data)
 	return bytes;
 }
 
-std::vector<std::uint8_t> int64ToBytes(const std::uint64_t data)
+std::vector<std::uint8_t> hmc_byte_util::int64ToBytes(const std::uint64_t data)
 {
 	std::vector<std::uint8_t> bytes = std::vector<std::uint8_t>();
 	bytes.reserve(8);
@@ -32,7 +32,7 @@ std::vector<std::uint8_t> int64ToBytes(const std::uint64_t data)
 	return bytes;
 }
 
-std::vector<std::uint8_t> stringToBytes(std::string bytes_string)
+std::vector<std::uint8_t> hmc_byte_util::stringToBytes(std::string bytes_string)
 {
 	std::vector<std::uint8_t> buff = {};
 	if (bytes_string.empty())
@@ -49,14 +49,14 @@ std::vector<std::uint8_t> stringToBytes(std::string bytes_string)
 	return buff;
 }
 
-std::vector<std::uint8_t> stringToBytes(const char &bytes_string)
+std::vector<std::uint8_t> hmc_byte_util::stringToBytes(const char &bytes_string)
 {
 	std::vector<std::uint8_t> buff = {};
 	buff.push_back(bytes_string);
 	return buff;
 }
 
-std::vector<std::uint8_t> wstringToBytes(const std::wstring &bytes_string)
+std::vector<std::uint8_t> hmc_byte_util::wstringToBytes(const std::wstring &bytes_string)
 {
 	std::vector<std::uint8_t> buff = {};
 	size_t len = bytes_string.size();
@@ -99,7 +99,7 @@ std::vector<std::uint8_t> wstringToBytes(const std::wstring &bytes_string)
 	return buff;
 }
 
-std::vector<std::uint8_t> wstringToBytes(const wchar_t &bytes_string)
+std::vector<std::uint8_t> hmc_byte_util::wstringToBytes(const wchar_t &bytes_string)
 {
 	std::vector<std::uint8_t> buff = {};
 
@@ -131,7 +131,7 @@ std::vector<std::uint8_t> wstringToBytes(const wchar_t &bytes_string)
 #if _HAS_CXX20
 // 值转为二进制 非常好用 而且转出来的文本winapi能识别 但是最低要求是c++20
 template <typename T>
-extern std::vector<std::uint8_t> ToBytes(const T &val)
+extern std::vector<std::uint8_t> hmc_byte_util::ToBytes(const T &val)
 {
 	struct is_wstring_type : std::disjunction<std::is_same<T, std::wstring>, std::is_same<T, wchar_t *>, std::is_same<T, const wchar_t *>>
 	{
@@ -162,7 +162,7 @@ extern std::vector<std::uint8_t> ToBytes(const T &val)
 }
 #endif //_HAS_CXX20
 
-std::uint16_t bytesToInt16(const std::vector<std::uint8_t> &bytes)
+std::uint16_t hmc_byte_util::bytesToInt16(const std::vector<std::uint8_t> &bytes)
 {
 	std::uint16_t result = 0;
 
@@ -176,7 +176,7 @@ std::uint16_t bytesToInt16(const std::vector<std::uint8_t> &bytes)
 	return result;
 }
 
-std::uint32_t bytesToInt32(const std::vector<std::uint8_t> &bytes)
+std::uint32_t hmc_byte_util::bytesToInt32(const std::vector<std::uint8_t> &bytes)
 {
 	std::uint32_t result = 0;
 
@@ -204,7 +204,7 @@ std::uint32_t bytesToInt32(const std::vector<std::uint8_t> &bytes)
 	return 0;
 }
 
-std::uint64_t bytesToInt64(const std::vector<std::uint8_t> &bytes)
+std::uint64_t hmc_byte_util::bytesToInt64(const std::vector<std::uint8_t> &bytes)
 {
 	std::uint64_t result = 0;
 
@@ -222,7 +222,7 @@ std::uint64_t bytesToInt64(const std::vector<std::uint8_t> &bytes)
 	return result;
 }
 
-std::string bytesToString(const std::vector<uint8_t> &bytes)
+std::string hmc_byte_util::bytesToString(const std::vector<uint8_t> &bytes)
 {
 	size_t len = bytes.size();
 	const char *charPtr = reinterpret_cast<const char *>(bytes.data());
@@ -231,7 +231,7 @@ std::string bytesToString(const std::vector<uint8_t> &bytes)
 	return result;
 }
 
-std::wstring bytesToWstring(const std::vector<uint8_t> &bytes)
+std::wstring hmc_byte_util::bytesToWstring(const std::vector<uint8_t> &bytes)
 {
 	std::wstring result = L"";
 

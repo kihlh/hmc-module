@@ -1,5 +1,116 @@
-﻿#include "./hmc_sock_util.h"
-#include "./hmc_util.h"
+﻿
+// WINSOCKAPI 会和winsock2.h 冲突 难以避免 索性提前禁用 WINSOCKAPI
+// !  windows.h 会默认把<winsock.h> 放进来 如果在之前引用了需要把这句放进前面 但是 winsock.h 会和 winsock2.h 冲突导致无法使用ipv6
+#define _WINSOCKAPI_
+
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2ipdef.h>
+#include <ws2tcpip.h>
+#include <ip2string.h>
+#include <iphlpapi.h>
+#include <Psapi.h>
+
+#pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "iphlpapi.lib")
+#pragma comment(lib, "Ntdll.lib")
+
+#include <hmc_sock_util.h>
+#include <hmc_util.h>
+
+
+//不公开
+namespace hmc_sock_util {
+
+    /**
+     * @brief ip 列表 转换函数 [内联]
+     *
+     * @param ua
+     * @return chNetAdapterAddrList
+     */
+    extern chNetAdapterAddrList CpUaToAddrItem(PIP_ADAPTER_UNICAST_ADDRESS ua);
+
+    // 格式化ip
+    extern std::wstring formatIP(IN6_ADDR dwLocalAddr);
+    extern std::optional<std::wstring> GetSystemProxyServer();
+}
+
+
+
+std::string hmc_sock_util::formatMacAddress(const std::uint8_t* address, int length , char joinChar)
+{
+    std::string macAddress;
+    try
+    {
+        for (int i = 0; i < length; ++i)
+        {
+            if (i > 0)
+            {
+                macAddress.push_back(joinChar);
+            }
+
+            char buffer[3];
+            ::snprintf(buffer, sizeof(buffer), "%02X", address[i]);
+            macAddress += buffer;
+        }
+    }
+    catch (...)
+    {
+    }
+    return macAddress;
+}
+
+std::vector<std::string>  hmc_sock_util::getMacAddresses(char joinChar) {
+    std::vector<std::string> result;
+    try
+    {
+        DWORD dwSize = 0;
+        DWORD dwRetVal = 0;
+        PIP_ADAPTER_INFO pAdapter = NULL;
+
+        dwRetVal = ::GetAdaptersInfo(NULL, &dwSize);
+        if (dwRetVal != ERROR_BUFFER_OVERFLOW)
+        {
+            return result;
+        }
+
+       
+
+        auto pAdapterInfo = VcRef<IP_ADAPTER_INFO>(dwSize);
+       
+        if (pAdapterInfo == NULL)
+        {
+            return result;
+        }
+
+        dwRetVal = ::GetAdaptersInfo(pAdapterInfo, &dwSize);
+        if (dwRetVal != ERROR_SUCCESS)
+        {
+            return result;
+        }
+
+        pAdapter = pAdapterInfo;
+        while (pAdapter)
+        {
+
+            std::string macAddress = formatMacAddress(pAdapter->Address, pAdapter->AddressLength,joinChar);
+            result.push_back(macAddress);
+
+            pAdapter = pAdapter->Next;
+        }
+        
+    }
+    catch (...)
+    {
+    }
+    return result;
+}
+
+std::vector<std::string>  hmc_sock_util::getMacAddresses(){
+    return getMacAddresses(':');
+}
 
 std::wstring hmc_sock_util::formatIP(DWORD dwLocalAddr)
 {
@@ -29,7 +140,7 @@ std::wstring hmc_sock_util::formatIP(IN6_ADDR dwLocalAddr)
 
     result.resize(INET6_ADDRSTRLEN);
 
-    ::RtlIpv6AddressToStringW(reinterpret_cast<IN6_ADDR *>(&dwLocalAddr), &result[0]);
+    ::RtlIpv6AddressToStringW(reinterpret_cast<IN6_ADDR*>(&dwLocalAddr), &result[0]);
 
     hmc_util::removeAllCharPtr(result, L'\0');
 
@@ -42,7 +153,7 @@ std::wstring hmc_sock_util::formatIP(UCHAR ucLocalAddr[16])
 
     result.resize(INET6_ADDRSTRLEN);
 
-    ::RtlIpv6AddressToStringW(reinterpret_cast<IN6_ADDR *>(&ucLocalAddr), &result[0]);
+    ::RtlIpv6AddressToStringW(reinterpret_cast<IN6_ADDR*>(&ucLocalAddr), &result[0]);
 
     hmc_util::removeAllCharPtr(result, L'\0');
 
@@ -321,7 +432,7 @@ hmc_sock_util::ConnectNetList hmc_sock_util::enumConnectNet(bool tcp, bool udp, 
 
         for (size_t i = 0; i < count; i++)
         {
-            auto &netConnect = NetConnectTCP4List.at(i);
+            auto& netConnect = NetConnectTCP4List.at(i);
             result.push_back(netConnect);
         }
     }
@@ -333,7 +444,7 @@ hmc_sock_util::ConnectNetList hmc_sock_util::enumConnectNet(bool tcp, bool udp, 
 
         for (size_t i = 0; i < count; i++)
         {
-            auto &netConnect = NetConnectTCP6List.at(i);
+            auto& netConnect = NetConnectTCP6List.at(i);
             result.push_back(netConnect);
         }
     }
@@ -345,7 +456,7 @@ hmc_sock_util::ConnectNetList hmc_sock_util::enumConnectNet(bool tcp, bool udp, 
 
         for (size_t i = 0; i < count; i++)
         {
-            auto &netConnect = NetConnectUDP4List.at(i);
+            auto& netConnect = NetConnectUDP4List.at(i);
             result.push_back(netConnect);
         }
     }
@@ -357,7 +468,7 @@ hmc_sock_util::ConnectNetList hmc_sock_util::enumConnectNet(bool tcp, bool udp, 
 
         for (size_t i = 0; i < count; i++)
         {
-            auto &netConnect = NetConnectUDP6List.at(i);
+            auto& netConnect = NetConnectUDP6List.at(i);
             result.push_back(netConnect);
         }
     }
@@ -380,7 +491,7 @@ hmc_sock_util::ConnectNetList hmc_sock_util::enumConnectNet(bool tcp, bool udp, 
     size_t count = result.size();
     for (size_t i = 0; i < count; i++)
     {
-        auto &it = result.at(i);
+        auto& it = result.at(i);
         DWORD pid = 0;
 
         if (it.index() == 0)
@@ -546,7 +657,7 @@ std::vector<DWORD> hmc_sock_util::getPortProcessUDP6(DWORD port)
         }
     }
 
-    for (auto &&it : result_temp)
+    for (auto&& it : result_temp)
         result.push_back(it);
     return result;
 }
@@ -582,7 +693,7 @@ std::vector<DWORD> hmc_sock_util::getPortProcessTCP6(DWORD port)
         }
     }
 
-    for (auto &&it : result_temp)
+    for (auto&& it : result_temp)
     {
         result.push_back(it);
     }
@@ -668,7 +779,9 @@ std::vector<hmc_sock_util::chNetAdapterAddrItem> hmc_sock_util::getAdapterIPList
             return result;
         }
 
-        DWORD rv, size;
+        DWORD rv = 0;
+        DWORD size = 0;
+
         PIP_ADAPTER_ADDRESSES aa;
         PIP_ADAPTER_UNICAST_ADDRESS ua;
 
@@ -706,24 +819,21 @@ std::vector<hmc_sock_util::chNetAdapterAddrItem> hmc_sock_util::getAdapterIPList
         }
 
         ::WSACleanup();
-    }
-    catch (...)
-    {
-    }
+    }HMC_CATCH_ALL;
 
     return result;
 }
 
 hmc_sock_util::chNetParams hmc_sock_util::getNetParams()
 {
-    hmc_sock_util::chNetParams result = {"", "", {}, "", "", false, false, false};
+    hmc_sock_util::chNetParams result = { "", "", {}, "", "", false, false, false };
 
     // api太古老了 虽然没测试出错误 但是还是不相信他安全
     try
     {
         ULONG ulOutBufLen = sizeof(FIXED_INFO);
         DWORD dwRetVal;
-        IP_ADDR_STRING *pIPAddr;
+        IP_ADDR_STRING* pIPAddr;
 
         auto pFixedInfoRef = VcRef<FIXED_INFO>();
 
@@ -744,7 +854,7 @@ hmc_sock_util::chNetParams hmc_sock_util::getNetParams()
             chNetDnsServers it = {
                 pFixedInfoRef->DnsServerList.IpAddress.String,
                 pFixedInfoRef->DnsServerList.IpMask.String,
-                pFixedInfoRef->DnsServerList.Context};
+                pFixedInfoRef->DnsServerList.Context };
 
             result.dnsServers.emplace_back(std::move(it));
 
@@ -756,7 +866,7 @@ hmc_sock_util::chNetParams hmc_sock_util::getNetParams()
                 it = {
                     pFixedInfoRef->DnsServerList.IpAddress.String,
                     pFixedInfoRef->DnsServerList.IpMask.String,
-                    pFixedInfoRef->DnsServerList.Context};
+                    pFixedInfoRef->DnsServerList.Context };
 
                 result.dnsServers.emplace_back(std::move(it));
 
@@ -795,152 +905,171 @@ hmc_sock_util::chNetParams hmc_sock_util::getNetParams()
     return result;
 }
 
-std::optional<std::wstring> hmc_sock_util::getSystemProxyServer()
+std::optional<std::wstring> hmc_sock_util::GetSystemProxyServer()
 {
     std::optional<std::wstring> result;
-
-    HKEY hKey;
-    auto ret = ::RegOpenKeyExW(HKEY_CURRENT_USER, LR"(Software\Microsoft\Windows\CurrentVersion\Internet Settings)", 0, KEY_ALL_ACCESS, &hKey);
-    if (hKey == NULL || ret != ERROR_SUCCESS)
+    try
     {
-        return result;
-    }
 
-    FreeRegKeyAuto(hKey);
-
-    DWORD values_count, max_value_name_len, max_value_len;
-    ret = ::RegQueryInfoKeyW(hKey, NULL, NULL, NULL, NULL, NULL, NULL, &values_count, &max_value_name_len, &max_value_len, NULL, NULL);
-    if (ret != ERROR_SUCCESS)
-    {
-        return result;
-    }
-
-    std::vector<std::tuple<std::shared_ptr<wchar_t>, DWORD, std::shared_ptr<BYTE>>> values;
-
-    for (DWORD i = 0; i < values_count; i++)
-    {
-        std::shared_ptr<wchar_t> value_name(new wchar_t[max_value_name_len + 1],
-                                            std::default_delete<wchar_t[]>());
-
-        DWORD value_name_len = max_value_name_len + 1;
-        DWORD value_type, value_len;
-
-        ::RegEnumValueW(hKey, i, value_name.get(), &value_name_len, NULL, &value_type, NULL, &value_len);
-
-        std::shared_ptr<BYTE> value(new BYTE[value_len],
-                                    std::default_delete<BYTE[]>());
-
-        value_name_len = max_value_name_len + 1;
-        ::RegEnumValueW(hKey, i, value_name.get(), &value_name_len, NULL, &value_type, value.get(), &value_len);
-        values.push_back(std::make_tuple(value_name, value_type, value));
-    }
-
-    DWORD ProxyEnable = 0;
-    for (auto x : values)
-    {
-        if (::wcscmp(std::get<0>(x).get(), L"ProxyEnable") == 0)
+        HKEY hKey;
+        auto ret = ::RegOpenKeyExW(HKEY_CURRENT_USER, LR"(Software\Microsoft\Windows\CurrentVersion\Internet Settings)", 0, KEY_ALL_ACCESS, &hKey);
+        if (hKey == NULL || ret != ERROR_SUCCESS)
         {
-            ProxyEnable = *(DWORD *)(std::get<2>(x).get());
+            return result;
         }
-    }
 
-    if (ProxyEnable)
-    {
+        HMC_FreeRegKeyAuto(hKey);
+
+        DWORD values_count, max_value_name_len, max_value_len;
+        ret = ::RegQueryInfoKeyW(hKey, NULL, NULL, NULL, NULL, NULL, NULL, &values_count, &max_value_name_len, &max_value_len, NULL, NULL);
+        if (ret != ERROR_SUCCESS)
+        {
+            return result;
+
+        }
+
+        std::vector<std::tuple<std::shared_ptr<wchar_t>, DWORD, std::shared_ptr<BYTE>>> values;
+
+        for (DWORD i = 0; i < values_count; i++)
+        {
+            std::shared_ptr<wchar_t> value_name(new wchar_t[(size_t)((int64_t)max_value_name_len + 1)],
+                std::default_delete<wchar_t[]>());
+
+            DWORD value_name_len = max_value_name_len + 1;
+            DWORD value_type = 0;
+            DWORD value_len = 0;
+
+            ::RegEnumValueW(hKey, i, value_name.get(), &value_name_len, NULL, &value_type, NULL, &value_len);
+
+            std::shared_ptr<BYTE> value(new BYTE[value_len],
+                std::default_delete<BYTE[]>());
+
+            value_name_len = max_value_name_len + 1;
+            ::RegEnumValueW(hKey, i, value_name.get(), &value_name_len, NULL, &value_type, value.get(), &value_len);
+            values.push_back(std::make_tuple(value_name, value_type, value));
+        }
+
+        DWORD ProxyEnable = 0;
         for (auto x : values)
         {
-            if (::wcscmp(std::get<0>(x).get(), L"ProxyServer") == 0)
+            if (::wcscmp(std::get<0>(x).get(), L"ProxyEnable") == 0)
             {
-                result = (wchar_t *)(std::get<2>(x).get());
-                return result;
+                ProxyEnable = *(DWORD*)(std::get<2>(x).get());
             }
         }
-    }
 
+        if (ProxyEnable)
+        {
+            for (auto x : values)
+            {
+                if (::wcscmp(std::get<0>(x).get(), L"ProxyServer") == 0)
+                {
+                    result = (wchar_t*)(std::get<2>(x).get());
+                    return result;
+                }
+            }
+        }
+
+    }
+    HMC_CATCH_ALL;
     return result;
 }
 
-std::optional<std::wstring> hmc_sock_util::getSystemProxyPac()
-{
-    std::optional<std::wstring> result;
-    HKEY hKey;
-    LPCWSTR pacKeyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings";
-    LPCWSTR pacValueName = L"AutoConfigURL";
+bool hmc_sock_util::getSystemProxyServer(std::wstring& ProxyServerUrl) {
+    std::optional<std::wstring> result = GetSystemProxyServer();
+    if (result.has_value()) {
+        ProxyServerUrl.append(result.value());
+        return true;
+    }
+    return false;
+}
 
-    if (::RegOpenKeyExW(HKEY_CURRENT_USER, pacKeyPath, 0, KEY_READ, &hKey) == ERROR_SUCCESS)
-    {
-        WCHAR pacURL[256] = {0};
-        DWORD dataSize = sizeof(pacURL);
-
-        FreeRegKeyAuto(hKey);
-
-        if (::RegQueryValueExW(hKey, pacValueName, NULL, NULL, (LPBYTE)pacURL, &dataSize) == ERROR_SUCCESS)
+bool hmc_sock_util::getSystemProxyPac(std::wstring& ProxyServerUrl) {
+        
+        ProxyServerUrl.clear();
+        HKEY hKey;
+        LPCWSTR pacKeyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings";
+        LPCWSTR pacValueName = L"AutoConfigURL";
+    
+        if (::RegOpenKeyExW(HKEY_CURRENT_USER, pacKeyPath, 0, KEY_READ, &hKey) == ERROR_SUCCESS)
         {
-            if (pacURL[0] != '\0')
+            WCHAR pacURL[256] = { 0 };
+            DWORD dataSize = sizeof(pacURL);
+    
+            HMC_FreeRegKeyAuto(hKey);
+    
+            if (::RegQueryValueExW(hKey, pacValueName, NULL, NULL, (LPBYTE)pacURL, &dataSize) == ERROR_SUCCESS)
             {
-                result = std::wstring(pacURL);
+                if (pacURL[0] != '\0')
+                {
+                    ProxyServerUrl.append(std::wstring(pacURL));
+                    return true;
+                }
             }
         }
-    }
-
-    return result;
+    
+        return false;
 }
 
 std::vector<std::wstring> hmc_sock_util::getDomainAddress(std::wstring domainName)
 {
     std::vector<std::wstring> result;
 
-    WSADATA wsaData;
-    if (::WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    try
     {
-        return result;
-    }
-
-    struct addrinfoW hints;
-    struct addrinfoW *addrInfoResult;
-
-    ::ZeroMemory(&hints, sizeof(hints));
-    hints.ai_family = AF_UNSPEC; // 使用 IPv4 或 IPv6
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-
-    if (::GetAddrInfoW(domainName.c_str(), NULL, &hints, &addrInfoResult) != 0)
-    {
-        ::WSACleanup();
-        return result;
-    }
-
-    struct addrinfoW *ptr = nullptr;
-
-    std::vector<wchar_t> ipBuffer = {};
-    ipBuffer.reserve(NI_MAXHOST);
-    ipBuffer.resize(NI_MAXHOST);
-
-    for (ptr = addrInfoResult; ptr != nullptr; ptr = ptr->ai_next)
-    {
-        if (::GetNameInfoW(ptr->ai_addr, static_cast<socklen_t>(ptr->ai_addrlen), ipBuffer.data(), NI_MAXHOST, nullptr, 0, NI_NUMERICHOST) != 0)
+        WSADATA wsaData;
+        if (::WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
         {
-            continue;
+            return result;
         }
 
-        std::wstring temp_buff = L"";
+        struct addrinfoW hints;
+        struct addrinfoW* addrInfoResult;
 
-        size_t count = ipBuffer.size();
+        ::ZeroMemory(&hints, sizeof(hints));
+        hints.ai_family = AF_UNSPEC; // 使用 IPv4 或 IPv6
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = IPPROTO_TCP;
 
-        for (size_t i = 0; i < count; i++)
+        if (::GetAddrInfoW(domainName.c_str(), NULL, &hints, &addrInfoResult) != 0)
         {
-            auto it = &ipBuffer.at(i);
-            if (it != reinterpret_cast<wchar_t *>(L'\0'))
+            ::WSACleanup();
+            return result;
+        }
+
+        struct addrinfoW* ptr = nullptr;
+
+        std::vector<wchar_t> ipBuffer = {};
+        ipBuffer.reserve(NI_MAXHOST);
+        ipBuffer.resize(NI_MAXHOST);
+
+        for (ptr = addrInfoResult; ptr != nullptr; ptr = ptr->ai_next)
+        {
+            if (::GetNameInfoW(ptr->ai_addr, static_cast<socklen_t>(ptr->ai_addrlen), ipBuffer.data(), NI_MAXHOST, nullptr, 0, NI_NUMERICHOST) != 0)
             {
-                temp_buff.push_back(ipBuffer.at(i));
-                *it = L'\0';
+                continue;
             }
+
+            std::wstring temp_buff = L"";
+
+            size_t count = ipBuffer.size();
+
+            for (size_t i = 0; i < count; i++)
+            {
+                auto it = &ipBuffer.at(i);
+                if (it != reinterpret_cast<wchar_t*>(L'\0'))
+                {
+                    temp_buff.push_back(ipBuffer.at(i));
+                    *it = L'\0';
+                }
+            }
+            result.push_back(temp_buff);
         }
-        result.push_back(temp_buff);
-    }
 
-    ::FreeAddrInfoW(addrInfoResult);
-    ::WSACleanup();
+        ::FreeAddrInfoW(addrInfoResult);
+        ::WSACleanup();
 
+    } HMC_CATCH_ALL;
     return result;
 }
 
@@ -983,7 +1112,7 @@ std::string hmc_sock_util::chNetDnsServers::to_json()
 
     hmc_util::replace(result, "{IpAddress}", hmc_util::escapeJsonString(IpAddress));
     hmc_util::replace(result, "{IpMask}", hmc_util::escapeJsonString(IpMask));
-    hmc_util::replace(result, "{context}", std::to_string(context));
+    hmc_util::replace(result, "{context}", std::to_string(Context));
 
     return std::string(result.begin(), result.end());
 }
@@ -1096,112 +1225,4 @@ std::wstring hmc_sock_util::chNetAdapterAddrItem::to_json()
     hmc_util::replace(result, L"{addr_item}", json_array);
 
     return std::wstring(result.begin(), result.end());
-}
-
-std::variant<std::wstring, std::string> hmc_sock_util::to_json(hmc_sock_util::SockJsonType input)
-{
-    if (std::holds_alternative<chConnectNet>(input))
-    {
-        return std::get<chConnectNet>(input).to_json();
-    }
-
-    if (std::holds_alternative<chConnectNetTCP>(input))
-    {
-        return std::get<chConnectNetTCP>(input).to_json();
-    }
-
-    if (std::holds_alternative<chNetAdapterAddrList>(input))
-    {
-        return std::get<chNetAdapterAddrList>(input).to_json();
-    }
-
-    if (std::holds_alternative<chNetParams>(input))
-    {
-        return std::get<chNetParams>(input).to_json();
-    }
-
-    if (std::holds_alternative<std::vector<chNetAdapterAddrItem>>(input))
-    {
-        std::wstring output;
-        output.reserve(1024);
-        const auto ptr_Temp = &std::get<std::vector<chNetAdapterAddrItem>>(input);
-
-        output.push_back('[');
-
-        size_t count = ptr_Temp->size();
-        for (size_t i = 0; i < count; i++)
-        {
-            auto it = &ptr_Temp[i];
-            output.append(it->begin(), it->end());
-            if (i + 1 < count)
-            {
-                output.push_back(',');
-            }
-        }
-
-        output.push_back(']');
-        return output;
-    }
-
-    if (std::holds_alternative<std::vector<DWORD>>(input))
-    {
-        std::string output;
-        output.reserve(1024);
-        const auto ptr_Temp = &std::get<std::vector<DWORD>>(input);
-
-        output.push_back('[');
-
-        size_t count = ptr_Temp->size();
-        for (size_t i = 0; i < count; i++)
-        {
-            auto it = ptr_Temp->at(i);
-            output.append(std::to_string(it));
-            if (i + 1 < count)
-            {
-                output.push_back(',');
-            }
-        }
-
-        output.push_back(']');
-        return output;
-    }
-
-    if (std::holds_alternative<ConnectNetList>(input))
-    {
-        std::wstring output;
-        output.reserve(1024);
-        const auto ptr_Temp = &std::get<ConnectNetList>(input);
-
-        output.push_back('[');
-
-        size_t count = ptr_Temp->size();
-        for (size_t i = 0; i < count; i++)
-        {
-            auto Connect = ptr_Temp->at(i);
-
-            if (Connect.index() == 0)
-            {
-                auto item = std::get<0>(Connect);
-                auto temp_json = item.to_json();
-                output.append(temp_json.begin(), temp_json.end());
-            }
-
-            if (Connect.index() == 1)
-            {
-                auto item = std::get<1>(Connect);
-                auto temp_json = item.to_json();
-                output.append(temp_json.begin(), temp_json.end());
-            }
-
-            if (i + 1 < count)
-            {
-                output.push_back(',');
-            }
-        }
-
-        output.push_back(']');
-        return output;
-    }
-
-    return "{}";
 }

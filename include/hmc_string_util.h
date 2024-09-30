@@ -17,84 +17,34 @@
 
 #include <string>
 #include <vector>
-#include <windows.h>
-#include <crtdbg.h> // For _ASSERTE()
-#include <iomanip>
 #include <map>
-#include <any>
-#include <sstream>
 #include <tuple>
-#include <limits>	 // For numeric_limits
-#include <stdexcept> // For overflow_error
-#include <winternl.h>
-#include <optional>
+#include <regex>
 
-// using namespace std;
+#if _HAS_CXX17
+#include <any>
+#include <optional>
+#endif // _HAS_CXX17
+
+// UNICODE_STRING 重定向到 HMC_UNICODE_STRING  如果没有则重定义 有的话就引用
+#ifndef UNICODE_STRING
+
+#ifndef HMC_UNICODE_STRING
+typedef struct _HMC_UNICODE_STRING
+{
+	unsigned short Length;
+	unsigned short MaximumLength;
+	wchar_t *Buffer;
+} HMC_UNICODE_STRING;
+#endif
+
+#else
+typedef UNICODE_STRING HMC_UNICODE_STRING;
+
+#endif
 
 namespace hmc_string_util
 {
-
-	namespace hmc_define_util
-	{
-		// 自动释放dll
-#define hmc_shared_close_Library(hModule) std::shared_ptr<void>##hModule##_shared_close_Library_(nullptr, [&](void *) {if (hModule != NULL) {::FreeLibrary(hModule);} });
-// 自动释放文本
-#define hmc_shared_close_lpsz(lpwsz) std::shared_ptr<void>##lpwsz##_shared_close_lpsz_(nullptr, [&](void *) {if (lpwsz != NULL) {::GlobalFree(lpwsz);lpwsz = 0; } });
-// 释放进程句柄
-#define hmc_shared_close_handle(handle) std::shared_ptr<void>##lpwsz##_shared_free_handle(nullptr, [&](void *) {if (handle != NULL) { try{::CloseHandle(handle);}catch(...){}} });
-
-// 开辟内存 (请注意需要调用 FreeVS 或者 hmc_FreeVSAuto 释放)
-// -> LPSTR pszMem = AllocVS(LPSTR, leng + 1);
-#define hmc_AllocVS(Type, leng) \
-	(Type)::VirtualAlloc((LPVOID)NULL, (DWORD)(leng), MEM_COMMIT, PAGE_READWRITE);
-
-// 释放空间
-// -> LPSTR pszMem = hmc_AllocVS(LPSTR, leng + 1);
-// -> FreeVS(pszMem);
-#define hmc_FreeVS(Virtua) \
-	if (Virtua != NULL)    \
-		::VirtualFree(Virtua, 0, MEM_RELEASE);
-
-// 释放空间
-// -> LPSTR pszMem = hmc_AllocVS(LPSTR, leng + 1);
-// -> FreeVSAuto(pszMem);
-#define hmc_FreeVSAuto(Virtua) \
-	std::shared_ptr<void>##Virtua##_shared_close_FreeVSAuto_(nullptr, [&](void *) {if (Virtua != NULL) {::VirtualFree(Virtua, 0, MEM_RELEASE);} });
-
-// 开辟内存
-#define hmc_AllocHeap(variable) ::HeapAlloc(::GetProcessHeap(), 0, (variable))
-// 释放内存
-#define hmc_FreeHeap(variable) ::HeapFree(::GetProcessHeap(), 0, (variable))
-
-// 让代码在异步线程中执行
-#define hmc_Thread (code) std::thread([]() -> void { code }).detach();
-
-#define hmc_Catch                                                                                  \
-	catch (char *e) { std::cout << "ERROR:"                                                        \
-								<< "<" << __FUNCSIG__ << " @ " << __LINE__ << "> " << e << "\n"; } \
-	catch (const std::exception &ex)                                                               \
-	{                                                                                              \
-		std::cout << "exception:"                                                                  \
-				  << "<" << __FUNCSIG__ << " @ " << __LINE__ << "> " << ex.what() << "\n";         \
-	}                                                                                              \
-	catch (...) { std::cout << "ERROR:"                                                            \
-							<< "<" << __FUNCSIG__ << " @ " << __LINE__ << "> "                     \
-							<< "unknown"                                                           \
-							<< "\n"; };
-
-#define ___hmc_string_util_eq(types) (input.type() == typeid(types) ? true : false)
-#define ___hmc_string_util_eqt(types) (input.type() == types ? true : false)
-#define ___hmc_string_util_diff_any_value_eval_map_to_fn_map(any_value, fn_name, map_type, key_type, value_type) \
-	if (any_value.type() == typeid(map_type<key_type, value_type>))                                              \
-	{                                                                                                            \
-		return fn_name(std::any_cast<map_type<key_type, value_type>>(any_value));                                \
-	}                                                                                                            \
-	if (any_value.type() == typeid(map_type<value_type, key_type>))                                              \
-	{                                                                                                            \
-		return fn_name(std::any_cast<map_type<value_type, key_type>>(any_value));                                \
-	}
-
-	}
 
 	enum IGNORE_NULL_CHAR_TYPE
 	{
@@ -415,54 +365,54 @@ namespace hmc_string_util
 	 *
 	 * @param input
 	 * @param psize
-	 * @return LPWSTR
+	 * @return wchar_t*
 	 */
-	extern LPWSTR string_to_lpstr(std::wstring input);
+	extern wchar_t *string_to_lpstr(std::wstring input);
 
 	/**
 	 * @brief 文本转为严格的文本指针
 	 *
 	 * @param input
 	 * @param psize
-	 * @return LPWSTR
+	 * @return wchar_t*
 	 */
-	extern LPCSTR string_to_lpstr(std::string input);
+	extern const char *string_to_lpstr(std::string input);
 
 	/**
 	 * @brief 文本转为严格的文本指针 (以\0结尾)
 	 *
 	 * @param input
 	 * @param psize
-	 * @return LPWSTR
+	 * @return wchar_t*
 	 */
-	extern LPWSTR string_to_lpstr(std::wstring input, size_t *psize);
+	extern wchar_t *string_to_lpstr(std::wstring input, size_t *psize);
 
 	/**
 	 * @brief 文本转为严格的 C文本指针 (以\0结尾)
 	 *
 	 * @param input
 	 * @param psize
-	 * @return LPWSTR
+	 * @return wchar_t*
 	 */
-	extern LPCSTR string_to_lpstr(std::string input, size_t *psize);
+	extern const char *string_to_lpstr(std::string input, size_t *psize);
 
 	/**
 	 * @brief 文本数组转为严格的文本指针  (以\0分割 以\0\0结尾)
 	 *
 	 * @param input
 	 * @param psize
-	 * @return LPWSTR
+	 * @return wchar_t*
 	 */
-	extern LPWSTR string_to_lpstr(std::vector<std::wstring> input, size_t *psize);
+	extern wchar_t *string_to_lpstr(std::vector<std::wstring> input, size_t *psize);
 
 	/**
 	 * @brief 文本数组转为严格的 C文本指针 (以\0分割 以\0\0结尾)
 	 *
 	 * @param input
 	 * @param psize
-	 * @return LPWSTR
+	 * @return wchar_t*
 	 */
-	extern LPCSTR string_to_lpstr(std::vector<std::string> input, size_t *psize);
+	extern const char *string_to_lpstr(std::vector<std::string> input, size_t *psize);
 
 	/**
 	 * @brief 从指针获取文本到string容器
@@ -472,7 +422,7 @@ namespace hmc_string_util
 	 * @param earlyTruncation 允许提前遇到 `\0` 时候截断
 	 * @return wstring
 	 */
-	extern std::wstring lpstr_to_string(LPWSTR input, int nBufSize, bool earlyTruncation = false);
+	extern std::wstring lpstr_to_string(wchar_t *input, int nBufSize, bool earlyTruncation = false);
 
 	/**
 	 * @brief 从指针获取文本到string容器
@@ -482,7 +432,7 @@ namespace hmc_string_util
 	 * @param earlyTruncation 允许提前遇到 `\0` 时候截断
 	 * @return string
 	 */
-	extern std::string lpstr_to_string(LPSTR input, int nBufSize, bool earlyTruncation = false);
+	extern std::string lpstr_to_string(char *input, int nBufSize, bool earlyTruncation = false);
 
 	/**
 	 * @brief 从指针获取文本到string容器
@@ -490,7 +440,7 @@ namespace hmc_string_util
 	 * @param input 文本的指针 以`\0`结尾
 	 * @return wstring
 	 */
-	extern std::wstring lpstr_to_string(LPWSTR input);
+	extern std::wstring lpstr_to_string(wchar_t *input);
 
 	/**
 	 * @brief 从指针获取文本到string容器
@@ -498,7 +448,7 @@ namespace hmc_string_util
 	 * @param input 文本的指针 以`\0`结尾
 	 * @return string
 	 */
-	extern std::string lpstr_to_string(LPSTR input);
+	extern std::string lpstr_to_string(char *input);
 
 	/**
 	 * @brief 删除 string 容器内部的开头与结尾 或全部 的 \0
@@ -532,11 +482,12 @@ namespace hmc_string_util
 	 */
 	extern std::wstring removeNullCharactersAll(std::wstring str);
 
-	extern std::wstring unicodeStringToWString(UNICODE_STRING unicodeString);
+	// extern std::wstring unicodeStringToWString(UNICODE_STRING unicodeString);
 
-	// 删除空白字符
+	// 删除空白字符  \t\r\n
 	extern std::string StripSpaces(const std::string &str);
-	// 删除空白字符
+
+	// 删除空白字符  \t\r\n
 	extern std::wstring StripSpaces(const std::wstring &str);
 
 	/**
@@ -625,7 +576,229 @@ namespace hmc_string_util
 	 */
 	extern bool diffNullCharacters(const std::string str1, const std::string str2, IGNORE_NULL_CHAR_TYPE Ignore);
 
+	/**
+	 * @brief 判断文本存在
+	 *
+	 * @param text 文本
+	 * @param substring 字符
+	 * @return true
+	 * @return false
+	 */
+	extern bool includes(const std::wstring &text, const std::wstring &substring);
+
+	/**
+	 * @brief 判断文本存在
+	 *
+	 * @param text 文本
+	 * @param substring 字符
+	 * @return true
+	 * @return false
+	 */
+	extern bool includes(const std::string &text, const std::string &substring);
+
+	/**
+	 * @brief 判断文本存在
+	 *
+	 * @param text 文本
+	 * @param substring 字符
+	 * @return true
+	 * @return false
+	 */
+	extern bool includes(const std::string &text, const char &substring);
+
+	/**
+	 * @brief 判断文本存在
+	 *
+	 * @param text 文本
+	 * @param substring 字符
+	 * @return true
+	 * @return false
+	 */
+	extern bool includes(const std::wstring &text, const wchar_t &substring);
+
+	/**
+	 * @brief Nt文本轉爲寬文本
+	 *
+	 * @param unicodeString
+	 * @return std::wstring
+	 */
+	extern inline std::wstring unicodeStringToWString(HMC_UNICODE_STRING unicodeString);
+
+	/**
+	 * @brief 方法提取字符串的一部分，并将其作为新字符串返回，而不修改原始字符串
+	 * @details 与js的slice方法类似
+	 * @param str 内容体
+	 * @param start 要返回的子字符串中包含的第一个字符的索引
+	 * @param end 要返回的子字符串中排除的第一个字符的索引。
+	 * @return std::string 一个包含提取的字符串片段的新字符串
+	 */
+	extern inline std::string slice(const std::string &str, int start, int end = -1);
+
+	/**
+	 * @brief 方法提取字符串的一部分，并将其作为新字符串返回，而不修改原始字符串
+	 * @details 与js的slice方法类似
+	 * @param str 内容体
+	 * @param start 要返回的子字符串中包含的第一个字符的索引
+	 * @param end 要返回的子字符串中排除的第一个字符的索引。
+	 * @return std::string 一个包含提取的字符串片段的新字符串
+	 */
+	extern inline std::wstring slice(const std::wstring &str, int start, int end = -1);
+	/**
+	 * @brief  对象中执行正则表达式的搜索，寻找匹配项。如果匹配成功，则返回正则表达式在字符串中首次匹配的索引；否则，返回 -1
+	 *
+	 * @param str 内容体
+	 * @param pattern 正则
+	 * @return size_t
+	 */
+	extern long long search(const std::string &str, const std::string &pattern);
+	/**
+	 * @brief
+	 *
+	 * @param str 内容体
+	 * @param pattern 正则
+	 * @return std::vector<std::string>
+	 */
+	extern std::vector<std::string> match(const std::string &str, const std::string &pattern);
+	/**
+	 * @brief 获取指定内容的索引位置
+	 *
+	 * @param str 内容体
+	 * @param substr 搜索值
+	 * @return size_t
+	 */
+	extern long long indexOf(const std::string &str, const std::string &substr);
+	/**
+	 * @brief 获取指定内容 全部的索引位置
+	 *
+	 * @param str 内容体
+	 * @param substr 搜索值
+	 * @return std::vector<size_t>
+	 */
+	extern std::vector<size_t> indexOfs(const std::string &str, const std::string &substr);
+	/**
+	 * @brief 获取指定内容的索引位置
+	 *
+	 * @param str 内容体
+	 * @param substr 搜索值
+	 * @return size_t
+	 */
+	extern long long indexOf(const std::string &str, const char &substr);
+	/**
+	 * @brief 获取指定内容 全部的索引位置
+	 *
+	 * @param str 内容体
+	 * @param substr 搜索值
+	 * @return std::vector<size_t>
+	 */
+	extern std::vector<size_t> indexOfs(const std::string &str, const char &substr);
+	/**
+	 * @brief  对象中执行正则表达式的搜索，寻找匹配项。如果匹配成功，则返回正则表达式在字符串中首次匹配的索引；否则，返回 -1
+	 *
+	 * @param str 内容体
+	 * @param pattern 正则
+	 * @return size_t
+	 */
+	extern long long search(const std::wstring &str, const std::wstring &pattern);
+	/**
+	 * @brief
+	 *
+	 * @param str 内容体
+	 * @param pattern 正则
+	 * @return std::vector<std::string>
+	 */
+	extern std::vector<std::wstring> match(const std::wstring &str, const std::wstring &pattern);
+	/**
+	 * @brief 获取指定内容的索引位置
+	 *
+	 * @param str 内容体
+	 * @param substr 搜索值
+	 * @return size_t
+	 */
+	extern long long indexOf(const std::wstring &str, const std::wstring &substr);
+	/**
+	 * @brief 获取指定内容 全部的索引位置
+	 *
+	 * @param str 内容体
+	 * @param substr 搜索值
+	 * @return std::vector<size_t>
+	 */
+	extern std::vector<size_t> indexOfs(const std::wstring &str, const std::wstring &substr);
+	/**
+	 * @brief 获取指定内容的索引位置
+	 *
+	 * @param str 内容体
+	 * @param substr 搜索值
+	 * @return size_t
+	 */
+	extern long long indexOf(const std::wstring &str, const wchar_t &substr);
+	/**
+	 * @brief 获取指定内容 全部的索引位置
+	 *
+	 * @param str 内容体
+	 * @param substr 搜索值
+	 * @return std::vector<size_t>
+	 */
+	extern std::vector<size_t> indexOfs(const std::wstring &str, const wchar_t &substr);
+
+	/**
+	 * @brief 正则替换
+	 * 
+	 * @param input 文本体
+	 * @param pattern 正则匹配式
+	 * @param replacement 替换值
+	 * @param flags 执行的标志 默认为 std::regex_constants::ECMAScript
+	 * @return std::string 
+	 */
+	extern std::string replaceRegex(const std::string &input, const std::string &pattern, const std::string &replacement, std::regex_constants::syntax_option_type flags);
+	/**
+	 * @brief 正则替换
+	 * 
+	 * @param input 文本体
+	 * @param pattern 正则匹配式
+	 * @param replacement 替换值
+	 * @return std::string 
+	 */
+	extern std::string replaceRegex(const std::string &input, const std::string &pattern, const std::string &replacement);
+	/**
+	 * @brief 正则替换
+	 * 
+	 * @param input 文本体
+	 * @param pattern 正则匹配式
+	 * @param replacement 替换值
+	 * @return std::wstring 
+	 */
+	extern std::wstring replaceRegex(const std::wstring &input, const std::wstring &pattern, const std::wstring &replacement);
+	/**
+	 * @brief 正则替换
+	 * 
+	 * @param input 文本体
+	 * @param pattern 正则匹配式
+	 * @param replacement 替换值
+	 * @param flags 执行的标志 默认为 std::regex_constants::ECMAScript
+	 * @return std::wstring 
+	 */
+	extern std::wstring replaceRegex(const std::wstring &input, const std::wstring &pattern, const std::wstring &replacement, std::regex_constants::syntax_option_type flags);
+    /**
+     * @brief 宽窄文本转码 但是仅限于ascii
+     *
+     * @param input
+     * @return std::wstring
+     */
+    extern inline std::wstring asciiConvers(std::string input);
+
+    /**
+     * @brief 宽窄文本转码 但是仅限于ascii
+     *
+     * @param input
+     * @return std::wstring
+     */
+    extern inline std::string asciiConvers(std::wstring input);
+};
+
 #if _HAS_CXX17
+
+namespace hmc_string_util
+{
 	/**
 	 * @brief 判断这个vec是否可以被 hmc string 工具转换到json
 	 *
@@ -699,7 +872,7 @@ namespace hmc_string_util
 	 */
 	extern std::wstring push_json_value(std::wstring key, std::any value, bool is_append = false, bool esp_type = true);
 
+}
 #endif //_HAS_CXX17
-};
 
 #endif // MODE_INTERNAL_INCLUDE_HMC_STRING_UTIL_HPP

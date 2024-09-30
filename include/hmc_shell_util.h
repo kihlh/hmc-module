@@ -1,29 +1,9 @@
 ﻿#ifndef HMC_IMPORT_HMC_SHELL_V2_H
 #define HMC_IMPORT_HMC_SHELL_V2_H
-
-#include <windows.h>
 #include <string>
 #include <vector>
 #include <map>
-#include <thread>
-
-#include <ShlObj.h>
-
-#include <imm.h>
-#pragma comment(lib, "imm32.lib")
-
-#include <fstream>
-
-#include <olectl.h>
-#include <ShObjIdl.h> //For IShellItemImageFactory
-#include <Shlwapi.h>
-#pragma comment(lib, "Shlwapi")
-#pragma comment(lib, "Gdiplus")
-
-#ifndef _GDIPLUS_H
-
-#include <gdiplus.h>
-#endif // !_GDIPLUS_HPP
+#include <Windows.h>
 
 namespace hmc_shell_util
 {
@@ -62,7 +42,7 @@ namespace hmc_shell_util
      * @return true
      * @return false
      */
-    extern bool copyFile(const std::wstring &filePath, const std::wstring &newFilePath, bool isShowConfirm, bool isShow, bool isShowProgress);
+    extern bool copyFile(const std::wstring& filePath, const std::wstring& newFilePath, bool isShowConfirm, bool isShow, bool isShowProgress);
 
     /**
      * @brief 移动文件/文件夹(调用的资源管理器)
@@ -74,7 +54,7 @@ namespace hmc_shell_util
      * @return true
      * @return false
      */
-    extern bool moveFile(const std::wstring &filePath, const std::wstring &newFilePath, bool isShowConfirm, bool isShow, bool isShowProgress);
+    extern bool moveFile(const std::wstring& filePath, const std::wstring& newFilePath, bool isShowConfirm, bool isShow, bool isShowProgress);
 
     /**
      * @brief 删除文件到回收站
@@ -204,13 +184,6 @@ namespace hmc_shell_util
     extern bool isFocusWindowFullScreen();
 
     /**
-     * @brief 使用win自带的运行 执行程序
-     *
-     * @param Path
-     */
-    extern void winRunApplication(const std::wstring &Path);
-
-    /**
      * @brief 电源控制
      *
      * @param flage
@@ -245,7 +218,7 @@ namespace hmc_shell_util
      * @return true
      * @return false
      */
-    extern bool SetFolderIcon(const std::wstring &folderPath, const std::wstring &iconPath, int iconIndex);
+    extern bool SetFolderIcon(const std::wstring& folderPath, const std::wstring& iconPath, int iconIndex);
 
     /**
      * 播放win警告的声音
@@ -260,42 +233,13 @@ namespace hmc_shell_util
     extern int64_t getSystemIdleTime();
 
     /**
-     * @brief 添加软件自启动
-     *
-     * @param key
-     * @param execPath
-     * @param cmd
-     * @return true
-     * @return false
-     */
-    extern bool setStartup(const std::wstring &key, const std::wstring &execPath, const std::wstring &cmd, bool is_once);
-
-    /**
-     * @brief 移除软件自启动
-     *
-     * @param key
-     * @return true
-     * @return false
-     */
-    extern bool removeStartup(const std::wstring &key, bool is_once);
-
-    /**
-     * @brief 判断软件自启动
-     *
-     * @param key
-     * @return true
-     * @return false
-     */
-    extern bool hasStartup(const std::wstring &key, bool is_once);
-
-    /**
      * @brief 系统时间转为时间戳 [纳秒/毫秒]
      *
      * @param st 时间戳数据体
      * @param is_Millisecond 是否转为毫秒
      * @return long long int
      */
-    extern long long int getTimestamp(const SYSTEMTIME &st, bool is_Millisecond);
+    extern long long int getTimestamp(const SYSTEMTIME& st, bool is_Millisecond);
 
     /**
      * @brief 系统时间转为时间戳 [纳秒/毫秒]
@@ -325,9 +269,9 @@ namespace hmc_shell_util
 
     private:
         static constexpr int _WM_USER = 0x0400;
-        static constexpr int _TB_BUTTONCOUNT = WM_USER + 24;  // WM_USER+24
-        static constexpr int _TB_GETBUTTON = WM_USER + 23;    // WM_USER+23
-        static constexpr int _TB_DELETEBUTTON = WM_USER + 22; // WM_USER+22
+        static constexpr int _TB_BUTTONCOUNT = _WM_USER + 24;  // WM_USER+24
+        static constexpr int _TB_GETBUTTON = _WM_USER + 23;    // WM_USER+23
+        static constexpr int _TB_DELETEBUTTON = _WM_USER + 22; // WM_USER+22
 
         // 判断 x64 系统
         static BOOL IsSystemFor64bit();
@@ -391,7 +335,7 @@ namespace hmc_shell_util
          * @return true
          * @return false
          */
-        bool createDirSymlink(const std::wstring &targetPath, const std::wstring &sourcePath);
+        bool createDirSymlink(const std::wstring& targetPath, const std::wstring& sourcePath);
 
         /**
          * @brief 创建文件软链接
@@ -401,7 +345,7 @@ namespace hmc_shell_util
          * @return true
          * @return false
          */
-        bool createSymlink(const std::wstring &targetPath, const std::wstring &sourcePath);
+        bool createSymlink(const std::wstring& targetPath, const std::wstring& sourcePath);
 
         /**
          * @brief 创建硬链接
@@ -411,7 +355,7 @@ namespace hmc_shell_util
          * @return true
          * @return false
          */
-        bool createHardLink(const std::wstring &targetPath, const std::wstring &sourcePath);
+        bool createHardLink(const std::wstring& targetPath, const std::wstring& sourcePath);
 
         /**
          * @brief 创建目录连接点
@@ -421,14 +365,14 @@ namespace hmc_shell_util
          * @return true
          * @return false
          */
-        bool createSymbolicLink(const std::wstring &targetPath, const std::wstring &sourcePath);
+        bool createSymbolicLink(const std::wstring& targetPath, const std::wstring& sourcePath);
 
         /**
          * @brief 判断此文件是否是链接文件
          *
          * @param Path
          */
-        bool isLink(const std::wstring &Path);
+        bool isLink(const std::wstring& Path);
 
         /**
          * @brief 判断此文件是否是硬链接文件
@@ -437,7 +381,7 @@ namespace hmc_shell_util
          * @return true
          * @return false
          */
-        bool isHardLink(const std::wstring &filePath);
+        bool isHardLink(const std::wstring& filePath);
 
         /**
          * @brief 获取软链接指向的路径
@@ -445,7 +389,7 @@ namespace hmc_shell_util
          * @param symlinkPath
          * @return string
          */
-        std::wstring getSymbolicLinkTarget(const std::wstring &symlinkPath);
+        std::wstring getSymbolicLinkTarget(const std::wstring& symlinkPath);
 
         /**
          * @brief 获取硬链接指向的文件列表
@@ -453,176 +397,277 @@ namespace hmc_shell_util
          * @param hardlinkPath
          * @return string
          */
-        std::vector<std::wstring> getHardLinkList(const std::wstring &filePath);
+        std::vector<std::wstring> getHardLinkList(const std::wstring& filePath);
     };
 
-    class fileBrowser
+
+    class Dialog
     {
+
     public:
+
+        /**
+         * @brief 选取文件夹
+         *
+         * @param folderPaths 写入文件夹路径的文本数组
+         * @param initRootDir 初始化的文件夹位置
+         * @param initSelectName 当前选中的文件的名称
+         * @param title 选取器标题
+         * @param confirmLabel 确认选择按钮的显示文字
+         * @param multSelect 是否允许多选(多个文件)
+         * @param dontAddToRecent   不写入到近期打开文件列表
+         * @return true
+         * @return false
+         */
+        static bool SelectFolder(std::vector<std::wstring>& folderPaths, const std::wstring& initRootDir = L"", const std::wstring& initSelectName = L"", const std::wstring& title = L"", const std::wstring& confirmLabel = L"", bool multSelect = true, bool dontAddToRecent = false);
+        
+        /**
+         * @brief 选取文件夹
+         *
+         * @param folderPath 写入文件夹路径的文本
+         * @param initRootDir 初始化的文件夹位置
+         * @param initSelectName 当前选中的文件的名称
+         * @param title 选取器标题
+         * @param confirmLabel 确认选择按钮的显示文字
+         * @param dontAddToRecent   不写入到近期打开文件列表
+         * @return true
+         * @return false
+         */
+        static bool SelectFolder(std::wstring& folderPath, const std::wstring& initRootDir = L"", const std::wstring& initSelectName = L"", const std::wstring& title = L"", const std::wstring& confirmLabel = L"", bool dontAddToRecent = false);
+        
         /**
          * @brief 选取文件
          *
-         * @param is_mult 是否多选
-         * @param filtr 过滤
+         * @param FilePaths 写入文件路径的数组
+         * @param initRootDir 初始化的文件夹位置
+         * @param initSelectName 当前选中的文件的名称
+         * @param title 选取器标题
+         * @param confirmLabel 确认选择按钮的显示文字
+         * @param filters 文件类型过滤器 filtr 过滤
          * { "图片" , L"*.jpg;*.jpeg" },
          * { "位图", L"*.bmp" },
          * { "全选", L"*.*" },
+         * @param dontAddToRecent   不写入到近期打开文件列表
+         * @param multSelect 是否允许多选(多个文件)
+         * @return true
+         * @return false
+         */
+        static bool SelectFile(std::vector<std::wstring>& FilePaths, const std::wstring& initRootDir = L"", const std::wstring& initSelectName = L"", const std::wstring& title = L"", const std::wstring& confirmLabel = L"", const std::vector<std::pair<std::wstring, std::wstring>>& filters = {}, bool dontAddToRecent = false, bool multSelect = true);
+        
+        /**
+         * @brief 选取文件
+         *
+         * @param FilePath 写入文件路径的文本
+         * @param initRootDir 初始化的文件夹位置
+         * @param initSelectName 当前选中的文件的名称
+         * @param title 选取器标题
+         * @param confirmLabel 确认选择按钮的显示文字
+         * @param filters 文件类型过滤器 filtr 过滤
+         * { "图片" , L"*.jpg;*.jpeg" },
+         * { "位图", L"*.bmp" },
+         * { "全选", L"*.*" },
+         * @param dontAddToRecent   不写入到近期打开文件列表
+         * @return true
+         * @return false
+         */
+        static bool SelectFile(std::wstring& FilePath, const std::wstring& initRootDir = L"", const std::wstring& initSelectName = L"", const std::wstring& title = L"", const std::wstring& confirmLabel = L"", const std::vector<std::pair<std::wstring, std::wstring>>& filters = {}, bool dontAddToRecent = false);
+       
+        /**
+         * @brief 选取文件
+         *
+         * @param filters 文件类型过滤器 filtr 过滤
+         * { "图片" , L"*.jpg;*.jpeg" },
+         * { "位图", L"*.bmp" },
+         * { "全选", L"*.*" },
+         * @param multSelect 是否允许多选(多个文件)
          * @return std::vector<std::wstring>
          */
-        std::vector<std::wstring> selectFile(bool is_mult = false, const std::wstring title = L"", const std::map<std::wstring, std::wstring> &filtr = {});
-        std::vector<std::wstring> selectFolder(const std::wstring &folderPath, bool is_mult = false, const std::wstring title = L"");
-        std::wstring selectFolderV1(const std::wstring &Title);
+        static std::vector<std::wstring> SelectFile(const std::vector<std::pair<std::wstring, std::wstring>>& filters = {}, bool multSelect = true);
 
-        struct Options
-        {
-            /**
-             * @brief (可选)FileFilter 对象
-             *
-             */
-            std::vector<std::tuple<std::wstring, std::wstring>> filters;
-            /**
-             * @brief  (可选)FileFilter 对象
-             * @note 数组应为没有通配符或点的扩展名  "png" 是正确的, 而 ".png" 和 *. png " 就是错误的)。 若要显示所有文件, 请使用 "*" 通配符 (不支持其他通配符)
-             * @note  { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
-             * @note  { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
-             * @note  { name: 'Custom File Type', extensions: ['as'] },
-             * @note  { name: 'All Files', extensions: ['*'] }
-             */
-            std::vector<std::tuple<std::wstring, std::vector<std::wstring>>> filters_extensions;
-            std::wstring title;       // (可选) - 对话框标题。
-            std::wstring defaultPath; // (可选) - 默认情况下使用的绝对目录路径、绝对文件路径或文件名。
-            std::wstring buttonLabel; // (可选) - 「确认」按钮的自定义标签, 当为空时, 将使用默认标签。
-            /**
-             * @brief (可选) - 包含对话框相关属性。 支持以下属性值
-             * @note openFile        - 允许选择文件 （如果 openFile 和 openDirectory 同时存在则为 openDirectory ）
-             * @note openDirectory   - 允许选择文件夹
-             * @note multiSelections - 允许多选。
-             * @note showHiddenFiles - 显示对话框中的隐藏文件。
-             * @note promptToCreate  - 如果输入的文件路径在对话框中不存在, 则提示创建。 这并不是真的在路径上创建一个文件，而是允许返回一些不存在的地址交由应用程序去创建。
-             * @note dontAddToRecent - 要将正在打开的项目添加到最近的文档列表中
-             */
-            std::vector<std::wstring> properties;
-
-            Options();
-        };
-
-    private:
         /**
-         * @brief 选择文件夹 （古老的小框选择器 无法指定路径的那种）
+         * @brief 选取文件夹
          *
-         * @param Title
-         * @param SelectFolderPath
+         * @param multSelect 是否允许多选(多个文件)
+         * @return std::vector<std::wstring>
+         */
+        static std::vector<std::wstring> SelectFolder(bool multSelect = true);
+
+        /**
+         * @brief 选择一个保存到的文件选定框
+         *
+         * @param filePath 文件路径
+         * @param selectExt 扩展名
+         * @param initFolder 初始化的文件夹路径
+         * @param defaultName 当前默认的文件名称
+         * @param title 保存选取框的标题
+         * @param confirmLabel 保存按钮的显示文字
+         * @param extensionList 扩展名选择器
          * @return true
          * @return false
          */
-        bool SelectFolderV1(const std::wstring &Title, const std::wstring &SelectFolderPath);
+        static bool SelectSaveFile(std::wstring& filePath, std::wstring& selectExt, const std::wstring& initFolder = L"", const std::wstring& defaultName = L"", const std::wstring& title = L"", const std::wstring& confirmLabel = L"", const std::vector<std::pair<std::wstring, std::wstring>>& extensionList = {});
 
         /**
-         * @brief 选择文件夹（单选）
+         * @brief 选择一个保存到的文件夹选定框
          *
-         * @param folderPath
+         * @param folderPath 文件夹路径
+         * @param initFolder 初始化的文件夹路径
+         * @param defaultName 当前默认的文件名称
+         * @param title 保存选取框的标题
+         * @param confirmLabel 保存按钮的显示文字
          * @return true
          * @return false
          */
-        bool SelectFolder(const std::wstring &folderPath);
+        static bool SelectSaveFolder(std::wstring& folderPath, const std::wstring& initFolder = L"", const std::wstring& defaultName = L"", const std::wstring& title = L"", const std::wstring& confirmLabel = L"");
 
         /**
-         * @brief 选择文件夹(多选)
+         * @brief 选取文件夹 旧版
          *
-         * @param folderPaths
+         * @param folderPath 文件夹路径获取到
+         * @param title 设置窗口标题
          * @return true
          * @return false
          */
-        bool SelectFolders(std::vector<std::wstring> &folderPaths);
-
-        /**
-         * @brief 选择文件 （多个文件）
-         *
-         * @param filePaths
-         * @return true
-         * @return false
-         */
-        bool SelectFiles(std::vector<std::wstring> &filePaths);
-
-        /**
-         * @brief 选择文件 （单个文件）
-         *
-         * @param FilePath
-         * @return true
-         * @return false
-         */
-        bool SelectFile(const std::wstring &FilePath);
-
-        /**
-         * @brief
-         *
-         * @param FilePath
-         * @param rgSpec
-         * @return true
-         * @return false
-         */
-        bool SelectFile(const std::wstring &FilePath, std::map<std::wstring, std::wstring> filtr);
-
-        /**
-         * @brief 选择文件(多选) 外加过滤器
-         *
-         * @param FilePaths
-         * @param filtr
-         * @return true
-         * @return false
-         */
-        bool SelectFiles(std::vector<std::wstring> &FilePaths, const std::map<std::wstring, std::wstring> &filtr);
+        static bool SelectFolderOld(std::wstring& folderPath, const std::wstring& title = L""); 
     };
 
-    class GetThumbnail
-    {
-    public:
-        /**
-         * @brief 获取文件缩略图到文件中
-         *
-         * @param input 文件
-         * @param nSize 要求尺寸
-         * @return
-         */
-        static std::vector<BYTE> GetBuff(std::wstring input, int nSize = 256);
-        /**
-         * @brief 获取文件缩略图到文件中
-         *
-         * @param input 文件
-         * @param output 输出
-         * @param nSize 要求尺寸
-         * @return
-         */
-        static bool toFile(std::wstring input, std::wstring output, int nSize = 256);
+    /**
+    * @brief 获取文件缩略图到文件中
+    *
+    * @param input 文件
+    * @param nSize 要求尺寸
+    * @return
+    */
+    extern std::vector<std::uint8_t> getThumbnailBuffer(std::wstring input, int nSize = 256);
+    /**
+     * @brief 获取文件缩略图到文件中
+     *
+     * @param input 文件
+     * @param output 输出
+     * @param nSize 要求尺寸
+     * @return
+     */
+    extern bool getThumbnailToFile(std::wstring input, std::wstring output, int nSize = 256);
 
-    private:
-        /**
-         * @brief 转码
-         *
-         * @param format
-         * @param pClsid
-         * @return
-         */
-        static int GetEncoderClsid(const WCHAR *format, CLSID *pClsid);
-        /**
-         * @brief 转码到二进制
-         *
-         * @param image
-         * @param formatMimeType
-         * @param result
-         */
-        static void WriteToImageByte(Gdiplus::Bitmap *image, LPCWSTR formatMimeType, std::vector<BYTE> &result);
-        /**
-         * @brief 取出为指定格式
-         *
-         * @param hbitmap
-         * @param result
-         * @param format
-         * @param formatMimeType
-         */
-        static void GetBitmapPixel(HBITMAP hbitmap, std::vector<BYTE> &result, Gdiplus::PixelFormat format = PixelFormat32bppARGB, LPCWSTR formatMimeType = L"image/png");
-    };
+    class Startup
+	{
+	private:
+        static const wchar_t WIN32_RunOnceW[50];
+        static const wchar_t WIN32_RunW[46];
+
+        static const char WIN32_RunOnceA[50];
+        static const char WIN32_RunA[46];
+	public:
+		/**
+		 * @brief 设置自启动
+		 *
+		 * @param key 项目名称
+		 * @param execPath 启动的可执行文件路径
+		 * @param cmd 带入的命令行
+		 * @return true
+		 * @return false
+		 */
+		static bool set(const std::wstring &key, const std::wstring &execPath, const std::wstring &cmd = L"");
+		/**
+		 * @brief 设置自启动 (仅单次启动)
+		 *
+		 * @param key 项目名称
+		 * @param execPath 启动的可执行文件路径
+		 * @param cmd 带入的命令行
+		 * @return true
+		 * @return false
+		 */
+		static bool setOnce(const std::wstring &key, const std::wstring &execPath, const std::wstring &cmd = L"");
+
+		/**
+		 * @brief 删除自启动项目
+		 *
+		 * @param key 项目名称
+		 * @return true
+		 * @return false
+		 */
+		static bool remove(const std::wstring &key);
+		/**
+		 * @brief 判断自启动存在性
+		 *
+		 * @param key 项目名称
+		 * @return true
+		 * @return false
+		 */
+		static bool has(const std::wstring &key);
+		/**
+		 * @brief 删除自启动项目 (仅单次启动)
+		 *
+		 * @param key 项目名称
+		 * @return true
+		 * @return false
+		 */
+		static bool removeOnce(const std::wstring &key);
+		/**
+		 * @brief 判断自启动存在性 (仅单次启动)
+		 *
+		 * @param key 项目名称
+		 * @return true
+		 * @return false
+		 */
+		static bool hasOnce(const std::wstring &key);
+
+				/**
+		 * @brief 设置自启动
+		 *
+		 * @param key 项目名称
+		 * @param execPath 启动的可执行文件路径
+		 * @param cmd 带入的命令行
+		 * @return true
+		 * @return false
+		 */
+		static bool set(const std::string &key, const std::string &execPath, const std::string &cmd = "");
+		/**
+		 * @brief 设置自启动 (仅单次启动)
+		 *
+		 * @param key 项目名称
+		 * @param execPath 启动的可执行文件路径
+		 * @param cmd 带入的命令行
+		 * @return true
+		 * @return false
+		 */
+		static bool setOnce(const std::string &key, const std::string &execPath, const std::string &cmd = "");
+
+		/**
+		 * @brief 删除自启动项目
+		 *
+		 * @param key 项目名称
+		 * @return true
+		 * @return false
+		 */
+		static bool remove(const std::string &key);
+		/**
+		 * @brief 判断自启动存在性
+		 *
+		 * @param key 项目名称
+		 * @return true
+		 * @return false
+		 */
+		static bool has(const std::string &key);
+		/**
+		 * @brief 删除自启动项目 (仅单次启动)
+		 *
+		 * @param key 项目名称
+		 * @return true
+		 * @return false
+		 */
+		static bool removeOnce(const std::string &key);
+		/**
+		 * @brief 判断自启动存在性 (仅单次启动)
+		 *
+		 * @param key 项目名称
+		 * @return true
+		 * @return false
+		 */
+		static bool hasOnce(const std::string &key);
+	};
 
 }
+
 
 #endif // HMC_IMPORT_HMC_SHELL_V2_H

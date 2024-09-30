@@ -54,13 +54,13 @@ bool hmc_screen_util::captureBmpToFile(std::variant<std::string, std::wstring> o
         }
 
         // 获取屏幕设备上下文
-        HDC hScreenDC = GetDC(NULL);
+        HDC hScreenDC = ::GetDC(NULL);
         // 创建兼容的内存设备上下文
-        HDC hMemoryDC = CreateCompatibleDC(hScreenDC);
+        HDC hMemoryDC = ::CreateCompatibleDC(hScreenDC);
 
         // 创建兼容的位图
-        HBITMAP hBitmap = CreateCompatibleBitmap(hScreenDC, nScopeWidth, nScopeHeight);
-        HGDIOBJ hOldBitmap = SelectObject(hMemoryDC, hBitmap);
+        HBITMAP hBitmap = ::CreateCompatibleBitmap(hScreenDC, nScopeWidth, nScopeHeight);
+        HGDIOBJ hOldBitmap = ::SelectObject(hMemoryDC, hBitmap);
 
         // 将屏幕内容拷贝到内存设备上下文中
         BitBlt(hMemoryDC, 0, 0, nScopeWidth, nScopeHeight, hScreenDC, upperLeftX, upperLeftY, SRCCOPY);
@@ -74,8 +74,8 @@ bool hmc_screen_util::captureBmpToFile(std::variant<std::string, std::wstring> o
         GetObject(hBitmap, sizeof(BITMAP), &bitmap);
 
         DWORD dwBmpSize = ((bitmap.bmWidth * bitmap.bmBitsPixel + 31) / 32) * 4 * bitmap.bmHeight;
-        HANDLE hDIB = GlobalAlloc(GHND, dwBmpSize + sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER));
-        char *lpbitmap = (char *)GlobalLock(hDIB);
+        HANDLE hDIB = ::GlobalAlloc(GHND, dwBmpSize + sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER));
+        char *lpbitmap = (char *)::GlobalLock(hDIB);
 
         // 设置文件头
         fileHeader.bfType = 0x4D42; // 'BM'
@@ -98,9 +98,9 @@ bool hmc_screen_util::captureBmpToFile(std::variant<std::string, std::wstring> o
         infoHeader.biClrImportant = 0;
 
         // 拷贝位图数据
-        memcpy(lpbitmap, &fileHeader, sizeof(BITMAPFILEHEADER));
-        memcpy(lpbitmap + sizeof(BITMAPFILEHEADER), &infoHeader, sizeof(BITMAPINFOHEADER));
-        GetDIBits(hMemoryDC, hBitmap, 0, (UINT)bitmap.bmHeight, lpbitmap + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER), (BITMAPINFO *)&infoHeader, DIB_RGB_COLORS);
+        ::memcpy(lpbitmap, &fileHeader, sizeof(BITMAPFILEHEADER));
+        ::memcpy(lpbitmap + sizeof(BITMAPFILEHEADER), &infoHeader, sizeof(BITMAPINFOHEADER));
+        ::GetDIBits(hMemoryDC, hBitmap, 0, (UINT)bitmap.bmHeight, lpbitmap + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER), (BITMAPINFO *)&infoHeader, DIB_RGB_COLORS);
 
         // 写入文件
         if (std::holds_alternative<std::wstring>(output))
@@ -119,12 +119,12 @@ bool hmc_screen_util::captureBmpToFile(std::variant<std::string, std::wstring> o
         }
 
         // 清理
-        GlobalUnlock(hDIB);
-        GlobalFree(hDIB);
-        SelectObject(hMemoryDC, hOldBitmap);
-        DeleteObject(hBitmap);
-        DeleteDC(hMemoryDC);
-        ReleaseDC(NULL, hScreenDC);
+        ::GlobalUnlock(hDIB);
+        ::GlobalFree(hDIB);
+        ::SelectObject(hMemoryDC, hOldBitmap);
+        ::DeleteObject(hBitmap);
+        ::DeleteDC(hMemoryDC);
+        ::ReleaseDC(NULL, hScreenDC);
     }
     catch (...)
     {
@@ -132,6 +132,14 @@ bool hmc_screen_util::captureBmpToFile(std::variant<std::string, std::wstring> o
         return false;
     }
     return true;
+}
+
+bool hmc_screen_util::captureBmpToFileA(std::string output, int upperLeftX, int upperLeftY, int nScopeWidth, int nScopeHeight){
+    return captureBmpToFile(std::variant<std::string, std::wstring>(output), upperLeftX, upperLeftY, nScopeWidth, nScopeHeight);
+}
+
+bool hmc_screen_util::captureBmpToFileW(std::wstring output, int upperLeftX, int upperLeftY, int nScopeWidth, int nScopeHeight){
+    return captureBmpToFile(std::variant<std::string, std::wstring>(output), upperLeftX, upperLeftY, nScopeWidth, nScopeHeight);
 }
 
 bool hmc_screen_util::captureBmpToBuffer(std::vector<std::uint8_t> &output, int upperLeftX, int upperLeftY, int nScopeWidth, int nScopeHeight)
@@ -152,16 +160,16 @@ bool hmc_screen_util::captureBmpToBuffer(std::vector<std::uint8_t> &output, int 
         }
 
         // 获取屏幕设备上下文
-        HDC hScreenDC = GetDC(NULL);
+        HDC hScreenDC = ::GetDC(NULL);
         // 创建兼容的内存设备上下文
-        HDC hMemoryDC = CreateCompatibleDC(hScreenDC);
+        HDC hMemoryDC = ::CreateCompatibleDC(hScreenDC);
 
         // 创建兼容的位图
-        HBITMAP hBitmap = CreateCompatibleBitmap(hScreenDC, nScopeWidth, nScopeHeight);
-        HGDIOBJ hOldBitmap = SelectObject(hMemoryDC, hBitmap);
+        HBITMAP hBitmap = ::CreateCompatibleBitmap(hScreenDC, nScopeWidth, nScopeHeight);
+        HGDIOBJ hOldBitmap = ::SelectObject(hMemoryDC, hBitmap);
 
         // 将屏幕内容拷贝到内存设备上下文中
-        BitBlt(hMemoryDC, 0, 0, nScopeWidth, nScopeHeight, hScreenDC, upperLeftX, upperLeftY, SRCCOPY);
+        ::BitBlt(hMemoryDC, 0, 0, nScopeWidth, nScopeHeight, hScreenDC, upperLeftX, upperLeftY, SRCCOPY);
 
         // 保存位图到文件
         BITMAPFILEHEADER fileHeader;
@@ -169,11 +177,11 @@ bool hmc_screen_util::captureBmpToBuffer(std::vector<std::uint8_t> &output, int 
         BITMAP bitmap;
 
         // 获取位图信息
-        GetObject(hBitmap, sizeof(BITMAP), &bitmap);
+        ::GetObjectW(hBitmap, sizeof(BITMAP), &bitmap);
 
         DWORD dwBmpSize = ((bitmap.bmWidth * bitmap.bmBitsPixel + 31) / 32) * 4 * bitmap.bmHeight;
-        HANDLE hDIB = GlobalAlloc(GHND, dwBmpSize + sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER));
-        char *lpbitmap = (char *)GlobalLock(hDIB);
+        HANDLE hDIB = ::GlobalAlloc(GHND, dwBmpSize + sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER));
+        char *lpbitmap = (char *)::GlobalLock(hDIB);
 
         // 设置文件头
         fileHeader.bfType = 0x4D42; // 'BM'
@@ -196,9 +204,9 @@ bool hmc_screen_util::captureBmpToBuffer(std::vector<std::uint8_t> &output, int 
         infoHeader.biClrImportant = 0;
 
         // 拷贝位图数据
-        memcpy(lpbitmap, &fileHeader, sizeof(BITMAPFILEHEADER));
-        memcpy(lpbitmap + sizeof(BITMAPFILEHEADER), &infoHeader, sizeof(BITMAPINFOHEADER));
-        GetDIBits(hMemoryDC, hBitmap, 0, (UINT)bitmap.bmHeight, lpbitmap + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER), (BITMAPINFO *)&infoHeader, DIB_RGB_COLORS);
+        ::memcpy(lpbitmap, &fileHeader, sizeof(BITMAPFILEHEADER));
+        ::memcpy(lpbitmap + sizeof(BITMAPFILEHEADER), &infoHeader, sizeof(BITMAPINFOHEADER));
+        ::GetDIBits(hMemoryDC, hBitmap, 0, (UINT)bitmap.bmHeight, lpbitmap + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER), (BITMAPINFO *)&infoHeader, DIB_RGB_COLORS);
 
         size_t bitmap_length = dwBmpSize + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
 
@@ -209,12 +217,12 @@ bool hmc_screen_util::captureBmpToBuffer(std::vector<std::uint8_t> &output, int 
         }
 
         // 清理
-        GlobalUnlock(hDIB);
-        GlobalFree(hDIB);
-        SelectObject(hMemoryDC, hOldBitmap);
-        DeleteObject(hBitmap);
-        DeleteDC(hMemoryDC);
-        ReleaseDC(NULL, hScreenDC);
+        ::GlobalUnlock(hDIB);
+        ::GlobalFree(hDIB);
+        ::SelectObject(hMemoryDC, hOldBitmap);
+        ::DeleteObject(hBitmap);
+        ::DeleteDC(hMemoryDC);
+        ::ReleaseDC(NULL, hScreenDC);
     }
     catch (...)
     {

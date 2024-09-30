@@ -14,68 +14,60 @@
 #ifndef MODE_INTERNAL_INCLUDE_HMC_UTIL_HPP
 #define MODE_INTERNAL_INCLUDE_HMC_UTIL_HPP
 
-#include <windows.h>
-#include <iostream>
 #include <vector>
 #include <string>
 #include <thread>
-
-#ifndef _WINTERNL_
-typedef struct _UNICODE_STRING
-{
-    USHORT Length;
-    USHORT MaximumLength;
-    PWSTR Buffer;
-} UNICODE_STRING;
-#endif // _WINTERNL_
+#include <windows.h>
 
 // 自动释放dll
-#ifndef FreeLibraryAuto
-#define FreeLibraryAuto(hModule) \
+#ifndef HMC_FreeLibraryAuto
+#define HMC_FreeLibraryAuto(hModule) \
     std::shared_ptr<void>##hModule##_shared_close_Library_(nullptr, [&](void *) {\
     try\
     {\
         if (hModule != NULL) {::FreeLibrary(hModule);}\
     }\
     catch(...){} });
-#endif // FreeLibraryAuto
+#endif // HMC_FreeLibraryAuto
 
 // 自动释放Handle
-#ifndef FreeHandleAuto
-#define FreeHandleAuto(hModule) \
+#ifndef HMC_FreeHandleAuto
+#define HMC_FreeHandleAuto(hModule) \
     std::shared_ptr<void>##hModule##_shared_close_Handle_(nullptr, [&](void *) {\
     try\
     {\
         if (hModule != NULL) {::CloseHandle(hModule);}\
     }\
     catch(...){} });
-#endif // FreeHandleAuto
+#endif // HMC_FreeHandleAuto
 
 // 释放vc内存开辟
-#ifndef VcFree
-#define VcFree(Virtua) \
+#ifndef HMC_VcFree
+#define HMC_VcFree(Virtua) \
     if (Virtua != NULL)    \
         ::VirtualFree(Virtua, 0, MEM_RELEASE);
-#endif // VcFree
+#endif // HMC_VcFree
 
-// 自动释放dll
-#ifndef VcAlloc
-#define VcAlloc(Type, leng) \
+#ifndef HMC_VcAlloc
+#define HMC_VcAlloc(Type, leng) \
     (reinterpret_cast<Type>(::VirtualAlloc(nullptr, static_cast<DWORD>(leng), MEM_COMMIT, PAGE_READWRITE)))
-#endif // VcAlloc
+#endif // HMC_VcAlloc
 
+#ifndef HMC_VcAllocAutoLength
+#define HMC_VcAllocAutoLength(Type) \
+    (reinterpret_cast<Type *>(::VirtualAlloc(nullptr, static_cast<DWORD>(sizeof(Type)), MEM_COMMIT, PAGE_READWRITE)))
+#endif // HMC_VcAllocAutoLength
 
 // 自动释放内存
-#ifndef VcFreeAuto
-#define VcFreeAuto(Virtua) \
-	std::shared_ptr<void>##Virtua##_shared_close_FreeVSAuto_(nullptr, [&](void *) {if (Virtua != NULL) {::VirtualFree(Virtua, 0, MEM_RELEASE);} });
+#ifndef HMC_VcFreeAuto
+#define HMC_VcFreeAuto(Virtua) \
+    std::shared_ptr<void>##Virtua##_shared_close_FreeVSAuto_(nullptr, [&](void *) {if (Virtua != NULL) {::VirtualFree(Virtua, 0, MEM_RELEASE);} });
 #endif // VsFreeAuto
 
-
 // 自动释放 注册表key
-#ifndef FreeRegKeyAuto
-        // 关闭注册表键
-#define FreeRegKeyAuto(subHKey) \
+#ifndef HMC_FreeRegKeyAuto
+// 关闭注册表键
+#define HMC_FreeRegKeyAuto(subHKey) \
     std::shared_ptr<void>##subHKey##_shared_close_Library_(nullptr, [&](void *) {\
     try\
     {\
@@ -84,31 +76,30 @@ typedef struct _UNICODE_STRING
         subHKey = nullptr;}\
     }\
     catch(...){} });
-#endif // FreeRegKeyAuto
-
+#endif // HMC_FreeRegKeyAuto
 
 // 自动释放 自定义释放
-#ifndef FreeAnyAuto
-        // 自动释放 自定义释放
-#define CONCAT_IMPL(x, y) x##y
-#define CONCAT(x, y) CONCAT_IMPL(x, y)
+#ifndef HMC_FreeAnyAuto
+// 自动释放 自定义释放
+#define HMC_CONCAT_IMPL(x, y) x##y
+#define HMC_CONCAT(x, y) HMC_CONCAT_IMPL(x, y)
 
-#define FreeAnyAuto(code) \
-    std::shared_ptr<void> CONCAT(_Shared_close_Library,__LINE__) (nullptr, [&](void *) {\
+#define HMC_FreeAnyAuto(code) \
+    std::shared_ptr<void> HMC_CONCAT(_Shared_close_Library, __LINE__)(nullptr, [&](void *) {\
     try\
     {\
        code\
     }\
     catch(...){} });
-#endif // FreeAnyAuto
+#endif // HMC_FreeAnyAuto
 
+// 自动释放 自定义释放
+#ifndef HMC_CATCH_ALL
+#define HMC_CATCH_ALL catch (...){};
+#endif // HMC_FreeAnyAuto
 
 namespace hmc_util
 {
-    namespace hmc_define_util
-    {
-
-    }
 
     /**
      * @brief 删除指定的字符
@@ -183,60 +174,173 @@ namespace hmc_util
     extern inline std::string escapeJsonString(const std::string &input, bool is_to_value = false);
 
     /**
-     * @brief Nt文本轉爲寬文本
+     * @brief 宽窄文本转码 但是仅限于ascii
      *
-     * @param unicodeString
+     * @param input
      * @return std::wstring
      */
-    extern inline std::wstring unicodeStringToWString(UNICODE_STRING unicodeString);
-    
-    /**
-     * @brief 宽窄文本转码 但是仅限于ascii
-     * 
-     * @param input 
-     * @return std::wstring 
-     */
     extern inline std::wstring asciiConvers(std::string input);
-   
+
     /**
      * @brief 宽窄文本转码 但是仅限于ascii
-     * 
-     * @param input 
-     * @return std::wstring 
+     *
+     * @param input
+     * @return std::wstring
      */
     extern inline std::string asciiConvers(std::wstring input);
-    
+
     /**
      * @brief 拼接文本对象进json
-     * 
-     * @param input 
-     * @return std::wstring 
+     *
+     * @param input
+     * @return std::wstring
      */
     extern inline std::wstring vec2ar(std::vector<std::wstring> input);
 
     /**
      * @brief 拼接文本对象进json
-     * 
-     * @param input 
-     * @return std::string 
+     *
+     * @param input
+     * @return std::string
      */
     extern inline std::string vec2ar(std::vector<std::string> input);
-    
+
     extern inline bool is_utf8(const std::string input);
-    
+
     /**
      * @brief 线程id转为数字id
-     * 
-     * @param thread_id 
-     * @return DWORD 
+     *
+     * @param thread_id
+     * @return DWORD
      */
-    extern DWORD toThreadId(std::thread::id thread_id);
+    extern unsigned long toThreadId(std::thread::id thread_id);
     std::string getBaseName(const std::string path);
     std::wstring getBaseName(const std::wstring path);
+
     bool diffBaseName(const std::string path1, const std::string path2);
     bool diffBaseName(const std::wstring path1, const std::wstring path2);
-    
+
 }
+
+#if _HAS_CXX17
+#include <variant>
+#include <optional>
+#include <map>
+#include <any>
+
+namespace hmc_util
+{
+    extern inline bool anyCast(std::any Data, std::wstring Output);
+    extern inline bool anyCast(std::any Data, std::string Output);
+    extern inline bool anyCast(std::any Data, size_t *Output);
+    extern inline bool anyCast(std::any Data, long long *Output);
+
+    class anyCastList
+    {
+    public:
+        std::vector<std::any> *m_data2;
+
+        anyCastList(std::vector<std::any> *Data);
+
+        /**
+         * @brief 判断值是否存在
+         *
+         * @param index
+         * @return true
+         * @return false
+         */
+        bool exists(size_t index);
+
+        /**
+         * @brief 判断值是否存在
+         *
+         * @param index
+         * @return true
+         * @return false
+         */
+        bool exists(size_t index, bool existsValue);
+
+        /**
+         * @brief 取值
+         *
+         * @param index
+         * @return std::any
+         */
+        std::any get(size_t index);
+
+        /**
+         * @brief 取值
+         *
+         * @param index
+         * @return std::any
+         */
+        std::any get(size_t index, std::any orValue);
+
+        /**
+         * @brief 删除指定元素
+         *
+         * @param Index
+         * @return true
+         * @return false
+         */
+        bool removeIndex(size_t Index);
+
+        /**
+         * @brief 是否为空
+         *
+         * @return true
+         * @return false
+         */
+        bool empty();
+
+        /**
+         * @brief 让两个位置的元素互换
+         *
+         * @param Index 索引1
+         * @param Index2 索引2
+         * @return true
+         * @return false
+         */
+        bool swap(size_t Index, size_t Index2);
+
+        /**
+         * @brief 替换指定的元素位置
+         *
+         * @param Index 索引
+         * @param value 新的值
+         * @return true
+         * @return false
+         */
+        bool replace(size_t Index, std::any value);
+
+        /**
+         * @brief 获取数量
+         *
+         * @return size_t
+         */
+        size_t size();
+
+        bool is_wstring(size_t index);
+
+        bool is_string(size_t index);
+
+        bool is_integral(size_t index);
+
+        bool is_floating_point(size_t index);
+
+        const std::type_info & getTypeInfo(size_t index);
+
+        bool diffType(size_t index,const std::type_info &type);
+
+        // bool diffType(size_t index,std::vector<const std::type_info> &type);
+        
+        // bool diffType(std::vector<const std::type_info> &type);
+
+    };
+
+}
+
+#endif // _HAS_CXX17
 
 template <typename T>
 class VcRef
@@ -266,10 +370,12 @@ public:
     }
 
     // 只增不减的内存
-    bool reserve(std::size_t size){
-         bool is_ok = false;
+    bool reserve(std::size_t size)
+    {
+        bool is_ok = false;
 
-        if (size <= m_size) {
+        if (size <= m_size)
+        {
             return is_ok;
         }
 
@@ -290,7 +396,8 @@ public:
     {
         bool is_ok = false;
 
-        if (size > 0 && size == m_size) {
+        if (size > 0 && size == m_size)
+        {
             return is_ok;
         }
 
@@ -306,7 +413,8 @@ public:
         return is_ok;
     }
 
-    size_t size(){
+    size_t size()
+    {
         return m_size;
     }
 

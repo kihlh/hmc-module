@@ -1,7 +1,58 @@
-﻿#include "./hmc_process_util.h"
+﻿#include "hmc_process_util.h"
 // #include "./hmc_util.h"
-#include "./hmc_usb_util.h"
-#include "./hmc_util.h"
+#include "hmc_usb_util.h"
+#include "hmc_string_util.h"
+#include "hmc_util.h"
+#include <memory>
+#include <map>
+#include <set>
+
+#include <type_traits>
+#include <unordered_set>
+
+#include <Shellapi.h>
+#include <process.h>
+#include <Psapi.h>
+#include <winuser.h>
+
+#include <WtsApi32.h>
+#include <ShlObj_core.h>
+#include <Tlhelp32.h>
+#include <iostream>
+
+#pragma comment(lib, "Wtsapi32.lib")
+
+#define PTR_ADD_OFFSET(Pointer, Offset) ((PVOID)((ULONG_PTR)(Pointer) + (ULONG_PTR)(Offset)))
+
+// 自动释放内存
+#ifndef CatchIg
+#define CatchIg \
+    () catch (...) {}
+#endif // CatchIg
+
+// 预赋值头
+namespace hmc_process_util
+{
+
+    namespace hmc_define_util
+    {
+
+#define STATUS_INFO_LENGTH_MISMATCH ((NTSTATUS)0xC0000004L)
+
+        // 定义 ZwQuerySystemInformation 函数签名
+        typedef NTSTATUS(NTAPI *ZwQuerySystemInformation_t)(SYSTEM_INFORMATION_CLASS, PVOID, ULONG, PULONG);
+        typedef BOOL(WINAPI *LPFN_ISWOW64PROCESS)(HANDLE, PBOOL);
+
+        extern std::wstring GetProcessCommandLineOld(_In_ HANDLE ProcessHandle, _Out_ long *status);
+        extern std::wstring GetProcessCommandLineNew(_In_ HANDLE ProcessHandle, _Out_ long *status);
+        extern PVOID GetPebAddress(HANDLE ProcessHandle);
+        extern NTSTATUS PhpQueryProcessVariableSize(_In_ HANDLE ProcessHandle, _In_ _PROCESSINFOCLASS ProcessInformationClass, _Out_ PVOID *Buffer);
+        extern BOOLEAN PhHeapInitialization(_In_opt_ SIZE_T HeapReserveSize, _In_opt_ SIZE_T HeapCommitSize);
+
+    }
+
+    ch_PROCESSENTRY32W PROCESSENTRY32W_TO_ch_PROCESSENTRY32W(PROCESSENTRY32W input);
+}
 
 hmc_process_util::ch_PROCESSENTRY32W::ch_PROCESSENTRY32W()
 {
@@ -17,18 +68,21 @@ hmc_process_util::ch_PROCESSENTRY32W::ch_PROCESSENTRY32W()
     szExeFile = L"";         // 进程名。
 }
 
-hmc_process_util::ch_PROCESSENTRY32W::ch_PROCESSENTRY32W(PROCESSENTRY32W input)
+hmc_process_util::ch_PROCESSENTRY32W hmc_process_util::PROCESSENTRY32W_TO_ch_PROCESSENTRY32W(PROCESSENTRY32W input)
 {
-    dwSize = input.dwSize;                                           // 结构体的大小，以字节为单位。
-    cntUsage = input.cntUsage;                                       // 引用计数。
-    th32ProcessID = input.th32ProcessID;                             // 进程 ID
-    th32DefaultHeapID = static_cast<DWORD>(input.th32DefaultHeapID); // 默认堆 ID
-    th32ModuleID = input.th32ModuleID;                               // 模块 ID
-    cntThreads = input.cntThreads;                                   // 线程计数器。
-    th32ParentProcessID = input.th32ParentProcessID;                 // 父进程 ID。
-    pcPriClassBase = input.pcPriClassBase;                           // 基本优先级。
-    dwFlags = input.dwFlags;                                         // 标志位。
-    szExeFile = std::wstring(input.szExeFile);                       // 进程名。
+    hmc_process_util::ch_PROCESSENTRY32W result = hmc_process_util::ch_PROCESSENTRY32W();
+    result.dwSize = input.dwSize;                                           // 结构体的大小，以字节为单位。
+    result.cntUsage = input.cntUsage;                                       // 引用计数。
+    result.th32ProcessID = input.th32ProcessID;                             // 进程 ID
+    result.th32DefaultHeapID = static_cast<DWORD>(input.th32DefaultHeapID); // 默认堆 ID
+    result.th32ModuleID = input.th32ModuleID;                               // 模块 ID
+    result.cntThreads = input.cntThreads;                                   // 线程计数器。
+    result.th32ParentProcessID = input.th32ParentProcessID;                 // 父进程 ID。
+    result.pcPriClassBase = input.pcPriClassBase;                           // 基本优先级。
+    result.dwFlags = input.dwFlags;                                         // 标志位。
+    result.szExeFile = std::wstring(input.szExeFile);                       // 进程名。
+    hmc_util::removeAllCharPtr(result.szExeFile, '\0');
+    return result;
 }
 
 std::wstring hmc_process_util::ch_PROCESSENTRY32W::to_json()
@@ -132,7 +186,8 @@ hmc_process_util::openProcessToken::operator bool() const
 
 std::vector<DWORD> hmc_process_util::enumProcessIDList()
 {
-    DWORD lp_cblength = 4096;
+
+    DWORD lp_cblength = 1024;
     std::vector<DWORD> processList = {};
     processList.resize(lp_cblength);
 
@@ -144,6 +199,23 @@ std::vector<DWORD> hmc_process_util::enumProcessIDList()
     }
 
     processList.resize(lp_cblength / sizeof(DWORD));
+
+    // 超过了载体极限了
+    if (processList.size() >= 1024) {
+
+        lp_cblength = 10240;
+        
+        processList.resize(lp_cblength);
+
+        // 最好使用大型数组，因为很难预测在调用 EnumProcesses 时将存在多少个进程。
+        if (!::EnumProcesses(processList.data(), sizeof(DWORD) * lp_cblength, &lp_cblength))
+        {
+            processList.resize(0);
+            return processList;
+        }
+
+        processList.resize(lp_cblength / sizeof(DWORD));
+    }
 
     // 去重
     std::unordered_set<DWORD> new_process_ID_List = {};
@@ -212,7 +284,7 @@ std::vector<hmc_process_util::ch_PROCESSENTRY32W> hmc_process_util::getProcessSn
     std::vector<ch_PROCESSENTRY32W> result;
     HANDLE hProcessSnapshot;
     PROCESSENTRY32W PE32;
-    FreeHandleAuto(hProcessSnapshot);
+    HMC_FreeHandleAuto(hProcessSnapshot);
 
     hProcessSnapshot = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
 
@@ -231,7 +303,7 @@ std::vector<hmc_process_util::ch_PROCESSENTRY32W> hmc_process_util::getProcessSn
     do
     {
 
-        auto data = hmc_process_util::ch_PROCESSENTRY32W(PE32);
+        auto data = hmc_process_util::PROCESSENTRY32W_TO_ch_PROCESSENTRY32W(PE32);
         result.push_back(data);
 
     } while (::Process32NextW(hProcessSnapshot, &PE32));
@@ -254,7 +326,7 @@ bool hmc_process_util::killProcess(DWORD processID)
 
 std::vector<DWORD> hmc_process_util::getSubProcess(DWORD processID)
 {
-    std::vector<DWORD> result;
+    std::set<DWORD> result;
 
     const auto tempSnapshotList = getProcessSnapshot();
     const size_t tempSnapshotCount = tempSnapshotList.size();
@@ -263,13 +335,17 @@ std::vector<DWORD> hmc_process_util::getSubProcess(DWORD processID)
     {
         const auto &it = tempSnapshotList.at(i);
 
+        //if (result.find(it.th32ParentProcessID)) {
+            //result.push_back(it.th32ProcessID);
+        //}
+
         if (it.th32ParentProcessID == processID)
         {
-            result.push_back(it.th32ProcessID);
+            result.insert(it.th32ProcessID);
         }
     }
 
-    return result;
+    return std::vector<DWORD>(result.begin(),result.end());
 }
 
 DWORD hmc_process_util::getParentProcess(DWORD processID)
@@ -279,7 +355,7 @@ DWORD hmc_process_util::getParentProcess(DWORD processID)
     WORD PID = 0;
     HANDLE hProcessSnapshot;
     PROCESSENTRY32W PE32;
-    FreeHandleAuto(hProcessSnapshot);
+    HMC_FreeHandleAuto(hProcessSnapshot);
 
     hProcessSnapshot = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
 
@@ -373,6 +449,9 @@ hmc_process_util::EnumProcessUserName::EnumProcessUserName(bool QueryName)
 {
     if (!::IsUserAnAdmin())
         return;
+
+    PWTS_PROCESS_INFOW pi;
+
     std::shared_ptr<void> close_pi(nullptr, [&](void *)
                                    {
 			if (pi != NULL) {
@@ -494,10 +573,84 @@ ULONGLONG hmc_process_util::getProcessStartTime(DWORD processID)
 
     return elapsedTime;
 }
-hmc_process_util::ch_PSYSTEM_PROCESS_INFORMATION::ch_PSYSTEM_PROCESS_INFORMATION(PSYSTEM_PROCESS_INFORMATION processInfo)
+
+typedef NTSTATUS(WINAPI *ZwQueryInformationProcess_t)(
+    HANDLE ProcessHandle,
+    ULONG ProcessInformationClass,
+    PVOID ProcessInformation,
+    ULONG ProcessInformationLength,
+    PULONG ReturnLength);
+
+DWORD GetProcessIdByZwQuery(HANDLE hProcess)
 {
-    ImageName = hmc_util::unicodeStringToWString(processInfo->ImageName);
-    UniqueProcessId = ::GetProcessId(processInfo->UniqueProcessId);
+
+    HMODULE hNtDll = ::LoadLibraryW(L"ntdll.dll");
+    if (!hNtDll)
+    {
+        return 0;
+    }
+
+    HMC_FreeLibraryAuto(hNtDll);
+
+    ZwQueryInformationProcess_t ZwQueryInformationProcess =
+        (ZwQueryInformationProcess_t)::GetProcAddress(hNtDll, "ZwQueryInformationProcess");
+
+    if (!ZwQueryInformationProcess)
+    {
+        return 0;
+    }
+
+    PROCESS_BASIC_INFORMATION pbi;
+    ULONG returnLength = 0;
+
+    NTSTATUS status = ZwQueryInformationProcess(
+        hProcess,
+        0,
+        &pbi,
+        sizeof(pbi),
+        &returnLength);
+
+    if (status == 0)
+    {
+        return static_cast<DWORD>(pbi.UniqueProcessId);
+    }
+
+    return 0;
+}
+
+hmc_process_util::ch_PSYSTEM_PROCESS_INFORMATION::ch_PSYSTEM_PROCESS_INFORMATION(void *ProcessInfo)
+{
+    PSYSTEM_PROCESS_INFORMATION processInfo = (PSYSTEM_PROCESS_INFORMATION)ProcessInfo;
+
+    UniqueProcessId = 0;
+    HANDLE handle = processInfo->UniqueProcessId;
+
+    if (handle == NULL)
+    {
+        handle = ((PSYSTEM_PROCESS_INFORMATION)ProcessInfo)->UniqueProcessId;
+    }
+
+    if (handle != NULL)
+    {
+        UniqueProcessId = ::GetProcessId(handle);
+
+        if (UniqueProcessId <= 0)
+        {
+
+            UniqueProcessId = GetProcessIdByZwQuery(handle);
+            if (UniqueProcessId <= 0)
+            {
+                // 经过多次测试 这个方法也是可以的
+                UniqueProcessId = static_cast<DWORD>((std::uintptr_t)handle);
+            }
+        }
+    }
+
+    UNICODE_STRING imageName = (processInfo->ImageName);
+
+    ImageName = imageName.Buffer == NULL ? L"" : std::wstring(imageName.Buffer, imageName.Length / sizeof(wchar_t));
+    hmc_util::removeAllCharPtr(ImageName, '\0');
+
     BasePriority = (DWORD)processInfo->BasePriority;
     NextEntryOffset = (DWORD)processInfo->NextEntryOffset;
     NumberOfThreads = (DWORD)processInfo->NumberOfThreads;
@@ -540,7 +693,7 @@ std::vector<hmc_process_util::ch_PSYSTEM_PROCESS_INFORMATION> hmc_process_util::
         return result;
     }
 
-    FreeLibraryAuto(ntdll);
+    HMC_FreeLibraryAuto(ntdll);
 
     // 获取 ZwQuerySystemInformation 函数地址
     hmc_define_util::ZwQuerySystemInformation_t ZwQuerySystemInformation = (hmc_define_util::ZwQuerySystemInformation_t)::GetProcAddress(ntdll, "NtQuerySystemInformation");
@@ -572,7 +725,7 @@ std::vector<hmc_process_util::ch_PSYSTEM_PROCESS_INFORMATION> hmc_process_util::
         return result;
     }
 
-    VcFreeAuto(buffer);
+    HMC_VcFreeAuto(buffer);
 
     status = ZwQuerySystemInformation(SystemProcessInformation, buffer, bufferSize, NULL);
 
@@ -594,7 +747,7 @@ std::vector<hmc_process_util::ch_PSYSTEM_PROCESS_INFORMATION> hmc_process_util::
 
     while (processInfo->NextEntryOffset)
     {
-        auto it = ch_PSYSTEM_PROCESS_INFORMATION(processInfo);
+        auto it = ch_PSYSTEM_PROCESS_INFORMATION((void *)processInfo);
 
         result.push_back(it);
 
@@ -797,8 +950,10 @@ std::wstring hmc_process_util::getProcessNameNt(DWORD processID)
         auto it = &Snapshot.at(i);
         if (it->UniqueProcessId == processID)
         {
-            hmc_util::removeAllCharPtr(it->ImageName, L'\0');
-            return it->ImageName;
+            auto ImageName = std::wstring(it->ImageName.begin(), it->ImageName.end());
+
+            hmc_util::removeAllCharPtr(ImageName, L'\0');
+            return ImageName;
         }
     }
 
@@ -837,13 +992,15 @@ std::wstring hmc_process_util::getProcessName(DWORD processID)
         return result;
     }
 
-    DWORD buf_length = ::GetModuleBaseNameW(&hProcess, NULL, &result[0], MAX_PATH);
+    DWORD buf_length = ::GetModuleBaseNameW(hProcess, NULL, &result[0], MAX_PATH);
 
     if (buf_length != 0)
     {
         result.resize(buf_length);
         return result;
     }
+
+    hmc_util::removeAllCharPtr(result, '\0');
 
     return L"";
 }
@@ -863,17 +1020,19 @@ std::wstring hmc_process_util::GpGetProcessNameEx(DWORD processID)
     {
         result.append(getProcessNameNt(processID));
     }
+
+    hmc_util::removeAllCharPtr(result, '\0');
     return result;
 }
 
-std::vector<THREADENTRY32> hmc_process_util::getThreadSnapshot()
+std::vector<hmc_process_util::ch_THREADENTRY32> hmc_process_util::getThreadSnapshot()
 {
-    std::vector<THREADENTRY32> result;
+    std::vector<ch_THREADENTRY32> result;
 
     HANDLE hProcessSnapshot;
     THREADENTRY32 TE32;
 
-    FreeHandleAuto(hProcessSnapshot);
+    HMC_FreeHandleAuto(hProcessSnapshot);
 
     hProcessSnapshot = ::CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
 
@@ -891,16 +1050,25 @@ std::vector<THREADENTRY32> hmc_process_util::getThreadSnapshot()
 
     do
     {
-        result.push_back(TE32);
+        ch_THREADENTRY32 TE32s;
+        TE32s.dwSize = TE32.dwSize;
+        TE32s.cntUsage = TE32.cntUsage;
+        TE32s.th32ThreadID = TE32.th32ThreadID;
+        TE32s.th32OwnerProcessID = TE32.th32OwnerProcessID;
+        TE32s.tpBasePri = TE32.tpBasePri;
+        TE32s.tpDeltaPri = TE32.tpDeltaPri;
+        TE32s.dwFlags = TE32.dwFlags;
+
+        result.push_back(TE32s);
 
     } while (::Thread32Next(hProcessSnapshot, &TE32));
 
     return result;
 }
 
-std::vector<THREADENTRY32> hmc_process_util::getProcessThreadList(DWORD processID)
+std::vector<hmc_process_util::ch_THREADENTRY32> hmc_process_util::getProcessThreadList(DWORD processID)
 {
-    std::vector<THREADENTRY32> result;
+    std::vector<ch_THREADENTRY32> result;
 
     const auto tempSnapshotList = getThreadSnapshot();
     const size_t tempSnapshotCount = tempSnapshotList.size();
@@ -991,7 +1159,7 @@ namespace hmc_process_util
 
         result.resize(MAX_PATH);
 
-        DWORD buf_length = ::GetModuleFileNameExW(&hProcess, NULL, &result[0], static_cast<DWORD>(result.size()));
+        DWORD buf_length = ::GetModuleFileNameExW(hProcess, NULL, &result[0], static_cast<DWORD>(result.size()));
 
         if (buf_length == 0)
         {
@@ -1039,7 +1207,14 @@ namespace hmc_process_util
 
         // 返回单名称
 
-        if (isSnapshotName)
+        if (buf_length <= 1 && (processID == 0 || processID == 4))
+        {
+            result.clear();
+            result.append(L"C:\\Windows\\System32\\ntoskrnl.exe");
+            return result;
+        }
+
+        if (buf_length <= 1 && isSnapshotName)
         {
             result.clear();
             result.resize(0);
@@ -1354,7 +1529,7 @@ namespace hmc_process_util
             OSVERSIONINFOEXW osvi = {sizeof(osvi), 0, 0, 0, 0, {0}, 0, 0};
             DWORDLONG const dwlConditionMask = ::VerSetConditionMask(
                 ::VerSetConditionMask(
-                    VerSetConditionMask(
+                    ::VerSetConditionMask(
                         0, VER_MAJORVERSION, VER_GREATER_EQUAL),
                     VER_MINORVERSION, VER_GREATER_EQUAL),
                 VER_SERVICEPACKMAJOR, VER_GREATER_EQUAL);
@@ -1566,7 +1741,7 @@ namespace hmc_process_util
                 return result;
             }
 
-            FreeHandleAuto(ProcessHandle);
+            HMC_FreeHandleAuto(ProcessHandle);
 
             hmc_process_util::EnableShutDownPriv(TOKEN_ADJUST_PRIVILEGES);
 
@@ -1675,6 +1850,385 @@ std::vector<std::wstring> hmc_process_util::getExecutableCwdList(DWORD processID
         temp.push_back('\\');
         result.push_back(temp);
     }
+
+    return result;
+}
+
+std::wstring hmc_process_util::getProcessName(DWORD ProcessID, hmc_process_util::emGetNameType Type)
+{
+
+    std::wstring result;
+
+    if (Type == GET_MODE)
+    {
+        result.append(getProcessName(ProcessID));
+        hmc_util::removeAllCharPtr(result, '\0');
+        return result;
+    }
+
+    if (Type == GET_ALL)
+    {
+        auto nameList = getProcessAllName(ProcessID);
+        result = hmc_string_util::join(nameList, std::wstring(1, '\0'));
+        return result;
+    }
+
+    if (Type == GET_NT)
+    {
+        result.append(getProcessNameNt(ProcessID));
+        hmc_util::removeAllCharPtr(result, '\0');
+
+        return result;
+    }
+
+    if (Type == GET_SNP)
+    {
+        result.append(getProcessNameSnp(ProcessID));
+        hmc_util::removeAllCharPtr(result, '\0');
+        return result;
+    }
+
+    if (Type == GET_FILE_NAME)
+    {
+
+    GOTO_FILE_NAME:
+        auto temp = getProcessFilePath(ProcessID, false, true);
+        auto baseName = hmc_string_util::getPathBaseName(temp);
+        result.append(baseName);
+        hmc_util::removeAllCharPtr(result, '\0');
+        return result;
+    }
+
+    // GET_FIND
+
+    result.append(getProcessName(ProcessID));
+    if (!result.empty())
+    {
+        hmc_util::removeAllCharPtr(result, '\0');
+        return result;
+    }
+
+    result.append(getProcessNameSnp(ProcessID));
+    if (!result.empty())
+    {
+        hmc_util::removeAllCharPtr(result, '\0');
+        return result;
+    }
+
+    // result.append(getProcessNameNt(ProcessID));
+
+    if (result.empty())
+    {
+        goto GOTO_FILE_NAME;
+    }
+
+    return result;
+}
+
+std::vector<std::wstring> hmc_process_util::getProcessAllName(DWORD ProcessID)
+{
+    std::vector<std::wstring> result;
+    std::set<std::wstring> NameFindList = {};
+
+    if (ProcessID == 0 || ProcessID == 4)
+    {
+        NameFindList.insert(L"ntoskrnl.exe");
+    }
+
+    auto temp = getProcessName(ProcessID);
+    hmc_util::removeAllCharPtr(temp, '\0');
+
+    if (!temp.empty())
+    {
+        NameFindList.insert(std::move(temp));
+    }
+
+    temp = getProcessNameSnp(ProcessID);
+    hmc_util::removeAllCharPtr(temp, '\0');
+
+    if (!temp.empty())
+    {
+        NameFindList.insert(std::move(temp));
+    }
+
+    // temp = getProcessNameNt(ProcessID);
+    // hmc_util::removeAllCharPtr(temp, '\0');
+
+    // if (!temp.empty())
+    // {
+    //     NameFindList.insert(std::move(temp));
+    // }
+
+    temp = getProcessFilePath(ProcessID);
+    hmc_util::removeAllCharPtr(temp, '\0');
+
+    if (!temp.empty())
+    {
+        NameFindList.insert(std::move(temp));
+    }
+
+    for (auto &at : NameFindList)
+    {
+        result.push_back(at);
+    }
+
+    return result;
+}
+
+std::wstring hmc_process_util::ch_ProcessEnumItem::ch_ProcessEnumItem::to_json()
+{
+
+    auto result = std::wstring(L"{ \"pid\":${pid},\"path\":\"${path}\",\"name\":\"${name}\" }");
+    result.reserve(path.size() + name.size() + MAX_PATH);
+
+    hmc_string_util::replace(result, L"${pid}", std::to_wstring(pid));
+    hmc_string_util::replace(result, L"${path}", hmc_string_util::escapeJsonString(path));
+
+    if (!path.empty() && name.empty())
+    {
+        name = hmc_string_util::getPathBaseName(path);
+    }
+
+    hmc_string_util::replace(result, L"${name}", hmc_string_util::escapeJsonString(name));
+
+    return result;
+}
+
+std::vector<hmc_process_util::ch_ProcessEnumItem> hmc_process_util::getAllProcessList(bool isAppendPath)
+{
+
+    auto result = std::vector<ch_ProcessEnumItem>();
+
+    if (isProcessWow64())
+    {
+
+        auto data_list = hmc_process_util::enumProcessIDList();
+
+        for (auto i = 0; i < data_list.size(); i++)
+        {
+            auto pid = data_list[i];
+            ch_ProcessEnumItem obj = {0, std::wstring(), std::wstring()};
+
+            obj.pid = pid;
+
+            if (isAppendPath)
+            {
+                std::wstring filePath = hmc_process_util::getProcessFilePath(pid, false, false);
+
+                if (!filePath.empty())
+                {
+                    obj.path = filePath;
+                    obj.name = hmc_string_util::getPathBaseName(filePath);
+                }
+                else
+                {
+                    obj.name = hmc_process_util::getProcessName(pid, hmc_process_util::GET_MODE);
+                }
+            }
+
+            result.push_back(obj);
+        }
+
+        return result;
+    }
+
+    auto snapshotList = hmc_process_util::getProcessSnapshot();
+    for (size_t i = 0; i < snapshotList.size(); i++)
+    {
+        auto snapshot = snapshotList[i];
+
+        ch_ProcessEnumItem obj = {snapshot.th32ProcessID, std::wstring(), std::wstring()};
+
+        if (!snapshot.szExeFile.empty())
+        {
+            obj.name = std::move(snapshot.szExeFile);
+        }
+
+        if (isAppendPath)
+        {
+            std::wstring filePath = hmc_process_util::getProcessFilePath(snapshot.th32ProcessID, false, false);
+
+            if (!filePath.empty())
+            {
+                obj.path = std::move(filePath);
+
+                if (obj.name.empty())
+                {
+                    obj.name.append(hmc_string_util::getPathBaseName(obj.path));
+                }
+            }
+        }
+
+        result.push_back(obj);
+    }
+
+    return result;
+}
+
+std::wstring hmc_process_util::ch_ProcessEnumItem::ch_ProcessEnumItem::to_json(std::vector<hmc_process_util::ch_ProcessEnumItem> ProcessList)
+{
+
+    std::wstring result = std::wstring(L"[");
+
+    if (ProcessList.empty())
+    {
+        result.push_back(L']');
+        return result;
+    }
+
+    size_t size_max = 0;
+    for (auto Process : ProcessList)
+    {
+        size_max += Process.name.size();
+        size_max += Process.path.size();
+        size_max += 50;
+    }
+
+    result.reserve(size_max + MAX_PATH);
+
+    for (auto Process : ProcessList)
+    {
+        result.append(Process.to_json());
+        result.push_back(L',');
+    }
+
+    if (!result.empty() && result.back() == ',')
+    {
+        result.pop_back();
+    }
+
+    result.push_back(L']');
+
+    return result;
+}
+
+std::wstring hmc_process_util::ch_PSYSTEM_PROCESS_INFORMATION::ch_PSYSTEM_PROCESS_INFORMATION::to_json(std::vector<hmc_process_util::ch_PSYSTEM_PROCESS_INFORMATION> ProcessList)
+{
+
+    std::wstring result = std::wstring(L"[");
+
+    if (ProcessList.empty())
+    {
+        result.push_back(L']');
+        return result;
+    }
+
+    size_t size_max = 0;
+    for (auto Process : ProcessList)
+    {
+        size_max += Process.ImageName.size();
+        size_max += MAX_PATH;
+    }
+
+    result.reserve(size_max + MAX_PATH);
+
+    for (auto Process : ProcessList)
+    {
+        result.append(Process.to_json());
+        result.push_back(L',');
+    }
+
+    if (!result.empty() && result.back() == ',')
+    {
+        result.pop_back();
+    }
+
+    result.push_back(L']');
+
+    return result;
+}
+
+std::wstring hmc_process_util::ch_PROCESSENTRY32W::ch_PROCESSENTRY32W::to_json(std::vector<hmc_process_util::ch_PROCESSENTRY32W> ProcessList)
+{
+
+    std::wstring result = std::wstring(L"[");
+
+    if (ProcessList.empty())
+    {
+        result.push_back(L']');
+        return result;
+    }
+
+    size_t size_max = 0;
+    for (auto Process : ProcessList)
+    {
+        size_max += Process.szExeFile.size();
+        size_max += MAX_PATH;
+    }
+
+    result.reserve(size_max + MAX_PATH);
+
+    for (auto Process : ProcessList)
+    {
+        result.append(Process.to_json());
+        result.push_back(L',');
+    }
+
+    if (!result.empty() && result.back() == ',')
+    {
+        result.pop_back();
+    }
+
+    result.push_back(L']');
+
+    return result;
+}
+
+std::wstring hmc_process_util::ch_THREADENTRY32::to_json()
+{
+    auto result = std::wstring(
+        L"{ "
+        L"\"dwSize\": ${dwSize},"
+        L"\"cntUsage\": ${cntUsage},"
+        L"\"th32ThreadID\": ${th32ThreadID},"
+        L"\"th32OwnerProcessID\": ${th32OwnerProcessID},"
+        L"\"tpBasePri\": ${tpBasePri},"
+        L"\"tpDeltaPri\": ${tpDeltaPri},"
+        L"\"dwFlags\": ${dwFlags} "
+        L" }");
+
+    hmc_string_util::replace(result, L"${dwSize}", std::to_wstring(dwSize));
+    hmc_string_util::replace(result, L"${cntUsage}", std::to_wstring(cntUsage));
+    hmc_string_util::replace(result, L"${th32ThreadID}", std::to_wstring(th32ThreadID));
+    hmc_string_util::replace(result, L"${th32OwnerProcessID}", std::to_wstring(th32OwnerProcessID));
+    hmc_string_util::replace(result, L"${tpBasePri}", std::to_wstring(tpBasePri));
+    hmc_string_util::replace(result, L"${tpDeltaPri}", std::to_wstring(tpDeltaPri));
+    hmc_string_util::replace(result, L"${dwFlags}", std::to_wstring(dwFlags));
+
+
+    return result;
+}
+
+std::wstring hmc_process_util::ch_THREADENTRY32::to_json(std::vector<ch_THREADENTRY32> data)
+{
+    std::wstring result = std::wstring(L"[");
+
+    if (data.empty())
+    {
+        result.push_back(L']');
+        return result;
+    }
+
+    size_t size_max = 0;
+    for (auto Process : data)
+    {
+        size_max += MAX_PATH;
+    }
+
+    result.reserve(size_max + MAX_PATH);
+
+    for (auto Process : data)
+    {
+        result.append(Process.to_json());
+        result.push_back(L',');
+    }
+
+    if (!result.empty() && result.back() == ',')
+    {
+        result.pop_back();
+    }
+
+    result.push_back(L']');
 
     return result;
 }

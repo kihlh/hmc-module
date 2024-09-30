@@ -1,4 +1,17 @@
-﻿#include "./hmc_json_util.h"
+﻿#include "hmc_json_util.h"
+
+namespace hmc_json_util
+{
+    namespace hmc_define_util
+    {
+#define hmc_define_to_Json_Value_caseA(caseIndex) \
+    case caseIndex:                               \
+        return std::to_string(std::get<caseIndex>(value));
+#define hmc_define_to_Json_Value_caseW(caseIndex) \
+    case caseIndex:                               \
+        return std::to_wstring(std::get<caseIndex>(value));
+    }
+}
 
 inline std::string hmc_json_util::toJsonValueA(const std::string &input, bool is_to_value)
 {

@@ -1,6 +1,26 @@
-﻿#include "./hmc_usb_util.h"
-#include "./hmc_json_util.h"
-#include "./hmc_util.h"
+﻿#include "hmc_usb_util.h"
+#include "hmc_json_util.h"
+#include "hmc_util.h"
+
+#include <windows.h>
+#include <setupapi.h>
+#include <Cfgmgr32.h>
+#include <initguid.h>
+#include <Usbiodef.h>
+#include <Usb100.h>
+#include <Usbioctl.h>
+#include <variant>
+
+#pragma comment(lib, "Setupapi.lib")
+namespace hmc_usb_util
+{
+    DEFINE_GUID(UsbClassGuid, 0xa5dcbf10L, 0x6530, 0x11d2, 0x90, 0x1f, 0x00, 0xc0, 0x4f, 0xb9, 0x51, 0xed);
+
+    namespace hmc_define_util
+    {
+        std::wstring hmc_usb_util_escapeJsonString(const std::wstring& input, bool is_to_value);
+    }
+}
 
 std::wstring hmc_usb_util::formatVolumeName(std::wstring VolumeName)
 {

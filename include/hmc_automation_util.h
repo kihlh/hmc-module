@@ -4,19 +4,18 @@
 #ifndef MODE_INTERNAL_INCLUDE_HMC_AUTOMATION_H
 #define MODE_INTERNAL_INCLUDE_HMC_AUTOMATION_H
 
-#include <iostream>
 #include <Windows.h>
 #include <string>
 #include <vector>
-#include <array>
-#include <thread>
-#include <winuser.h>
-#include <shared_mutex>
 #include <atomic>
-#include <random>
 #include <map>
+
+#if  _HAS_CXX17
 #include <optional>
+#endif // _HAS_CXX17
+
 #include <functional>
+#include <shared_mutex>
 
 namespace hmc_Keyboard // hmc_Keyboard 是个鼠标操作功能合集
 {
@@ -27,7 +26,7 @@ namespace hmc_Keyboard // hmc_Keyboard 是个鼠标操作功能合集
         struct KeyboardEvent // 事件数据体
         {
             long long id;   // 事件id
-            long keyCode;   // 键码
+            std::uint8_t keyCode;   // 键码
             DWORD time;     // 事件时间
             bool down;      // 按键是否被按下
             DWORD scanCode; // 执行的设备id
@@ -46,6 +45,7 @@ namespace hmc_Keyboard // hmc_Keyboard 是个鼠标操作功能合集
 
         /**
          * @brief 添加一个低级hook 的工作空间(异步的)
+         * @example ```c++```
          * @return true
          * @return false
          */
@@ -96,13 +96,15 @@ namespace hmc_Keyboard // hmc_Keyboard 是个鼠标操作功能合集
         static DWORD getThreadId();
 
     private:
-        static bool GpAllowHookToken;                                                            // 是否继续执行
+        static std::atomic<bool> GpAllowHookToken;                                               // 是否继续执行
         static HHOOK GpHookHandle;                                                               // 钩子句柄
         static long long GpEventNextID;                                                          // 当前id
         static std::vector<KeyboardEvent> GpEventSessionList;                                    // 鼠标按钮的事件容器(缓冲)  预扩容了256个
         static DWORD GpWorkerThreadID;                                                           // 正在执行hook线程
         static std::shared_mutex GpStoreSharedMutex;                                             // 存储的互斥体
+        #if  _HAS_CXX17
         static std::optional<std::function<bool(KeyboardEvent event)>> GpEventSessionToCallBack; // 当此值为存在的时候将不会触发存储 但是会执行回调
+        #endif // _HAS_CXX17
 
         /**
          * @brief 添加一个低级hook 的工作空间(这里不是异步的)
@@ -147,11 +149,11 @@ namespace hmc_Keyboard // hmc_Keyboard 是个鼠标操作功能合集
 
     /**
      * @brief 判断四大键盘功能键的状态
-     * 
-     * @return chHasKeysBasic 
+     *
+     * @return chHasKeysBasic
      */
     extern chHasKeysBasic hasKeysBasic();
-    
+
     typedef hmc_Keyboard::keyboardHook::KeyboardEvent chKeyboardHookEvent;
 
 }
@@ -206,16 +208,16 @@ namespace hmc_mouse // hmc_mouse 是个鼠标操作功能合集
     public:
         struct MouseEvent // 事件数据体
         {
-            long long id;    // 事件id
-            long button;     // 按钮是哪个
-            long wheelDelta; // 滚轮数据 如果向上则为正值 向下则为负值
-            bool buttonDown; // 按钮是否按下状态的  如果滚轮则为向上
-            DWORD time;      // 事件时间
-            long x;          // 坐标 左到右边
-            long y;          // 坐标 顶部到底部
-            MouseEvent();// 开辟内存
-            bool is_valid();// 判断内容是否有效
-            std::string to_json();// 转到json
+            long long id;          // 事件id
+            long button;           // 按钮是哪个
+            long wheelDelta;       // 滚轮数据 如果向上则为正值 向下则为负值
+            bool buttonDown;       // 按钮是否按下状态的  如果滚轮则为向上
+            DWORD time;            // 事件时间
+            long x;                // 坐标 左到右边
+            long y;                // 坐标 顶部到底部
+            MouseEvent();          // 开辟内存
+            bool is_valid();       // 判断内容是否有效
+            std::string to_json(); // 转到json
         };
 
         /**
@@ -258,10 +260,10 @@ namespace hmc_mouse // hmc_mouse 是个鼠标操作功能合集
 
         /**
          * @brief 设置鼠标位置抖动时间(本次有效) [init以后才能调用]
-         * 
-         * @param time 
-         * @return true 
-         * @return false 
+         *
+         * @param time
+         * @return true
+         * @return false
          */
         static void setShakeEventTime(long time);
 
@@ -273,16 +275,18 @@ namespace hmc_mouse // hmc_mouse 是个鼠标操作功能合集
         static DWORD getThreadId();
 
     private:
-        static std::shared_mutex GpMouseStoreSharedMutex;       // 存储的互斥体
-        static bool GpMouseAllowHookToken;                      // 是否继续执行
-        static DWORD GpMouseTheEventTime;                       // 上次输入体的时间
-        static HHOOK GpHookMouseHandle;                         // 钩子句柄
-        static DWORD GpMouseShakeEventTime;                     // 消除抖动的ms
-        static long long GpMouseEventNextID;                    // 当前id
-        static std::vector<MouseEvent> GpMouseEventSessionList; // 鼠标按钮的事件容器(缓冲)  预扩容了256个
-        static MouseEvent GpMouseTempEventBuffer;               // 预开劈缓冲区 每次鼠标回调不会动态创建 而是把此变量作为temp
-        static DWORD GpMouseWorkerThreadID;                     // 正在执行hook线程
+        static std::shared_mutex GpMouseStoreSharedMutex;                                     // 存储的互斥体
+        static std::atomic<bool> GpMouseAllowHookToken;                                       // 是否继续执行
+        static DWORD GpMouseTheEventTime;                                                     // 上次输入体的时间
+        static HHOOK GpHookMouseHandle;                                                       // 钩子句柄
+        static DWORD GpMouseShakeEventTime;                                                   // 消除抖动的ms
+        static long long GpMouseEventNextID;                                                  // 当前id
+        static std::vector<MouseEvent> GpMouseEventSessionList;                               // 鼠标按钮的事件容器(缓冲)  预扩容了256个
+        static MouseEvent GpMouseTempEventBuffer;                                             // 预开劈缓冲区 每次鼠标回调不会动态创建 而是把此变量作为temp
+        static DWORD GpMouseWorkerThreadID;                                                   // 正在执行hook线程
+        #if  _HAS_CXX17
         static std::optional<std::function<bool(MouseEvent event)>> GpEventSessionToCallBack; // 当此值为存在的时候将不会触发存储 但是会执行回调
+        #endif // _HAS_CXX17
 
         /**
          * @brief 推入事件容器内
@@ -352,8 +356,8 @@ namespace hmc_mouse // hmc_mouse 是个鼠标操作功能合集
 
 namespace hmc_automation_util
 {
-    extern  const  std::map<std::string,UINT> GpMouseEventList;
-    
+    extern const std::map<std::string, UINT> GpMouseEventList;
+
     /**
      * @brief 线程id转数字
      *

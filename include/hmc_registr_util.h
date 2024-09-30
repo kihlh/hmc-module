@@ -2,35 +2,9 @@
 #define HMC_IMPORT_HMC_REGISTR_UTIL_H 2.0
 
 #include <windows.h>
-#include <iostream>
-#include <set>
-#include <string>
-#include <map>
 #include <vector>
-#include <type_traits>
-// #include <ShlObj.h>
-#include <memory>
-#include <array>
+#include <string>
 
-#include "./hmc_byte_util.h"
-
-#define MAX_KEY_LENGTH 255
-#define MAX_VALUE_NAME 16383
-
-
-// 自动释放 注册表key
-#ifndef FreeRegKeyAuto
-        // 关闭注册表键
-#define FreeRegKeyAuto(subHKey) \
-    std::shared_ptr<void>##subHKey##_shared_close_Library_(nullptr, [&](void *) {\
-    try\
-    {\
-        if (subHKey != nullptr) {\
-            ::RegCloseKey(subHKey);\
-        subHKey = nullptr;}\
-    }\
-    catch(...){} });
-#endif // FreeRegKeyAuto
 
 
 namespace hmc_registr_util
@@ -187,7 +161,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 枚举注册表的同级key
 	 *
-	 * @param hKey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param path
 	 * @return chQueryFolderKeyW
 	 */
@@ -196,7 +176,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 枚举注册表的同级key
 	 *
-	 * @param hKey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param path
 	 * @return chQueryFolderKeyA
 	 */
@@ -205,7 +191,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 枚举注册表的同级key
 	 *
-	 * @param hKey 被打开的键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param QueryFolderList 目录key列表
 	 * @param QueryKeyList 值key列表
 	 */
@@ -214,7 +206,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 枚举注册表的同级key
 	 *
-	 * @param hKey 被打开的键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param QueryFolderList 目录key列表
 	 * @param QueryKeyList 值key列表
 	 */
@@ -223,7 +221,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 枚举注册表的同级key
 	 *
-	 * @param hKey 被打开的键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param QueryFolderList 目录key列表
 	 * @param QueryKeyList 值key列表
 	 */
@@ -232,7 +236,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 判断此值是否存在
 	 *
-	 * @param hKey 根键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录路径
 	 * @param key 键名
 	 * @return true
@@ -243,7 +253,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 判断此值是否存在
 	 *
-	 * @param hKey 根键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录路径
 	 * @param key 键名
 	 * @return true
@@ -254,7 +270,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 判断此值是否存在 [值]
 	 *
-	 * @param hKey 根键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录路径
 	 * @param key 键名
 	 * @return true
@@ -265,7 +287,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 判断此值是否存在 [值]
 	 *
-	 * @param hKey 根键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录路径
 	 * @param key 键名
 	 * @return true
@@ -276,7 +304,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 判断此目录是否存在
 	 *
-	 * @param hKey 根键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录路径
 	 * @return true
 	 * @return false
@@ -286,7 +320,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 判断此目录是否存在
 	 *
-	 * @param hKey 根键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录路径
 	 * @return true
 	 * @return false
@@ -296,7 +336,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 删除目录
 	 *
-	 * @param hKey 根键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录路径
 	 * @return true
 	 * @return false
@@ -306,7 +352,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 删除目录
 	 *
-	 * @param hKey 根键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录路径
 	 * @return true
 	 * @return false
@@ -316,7 +368,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 删除指定的键 [值] 键保留
 	 *
-	 * @param hKey 根键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录路径
 	 * @param key 键名
 	 * @return true
@@ -327,7 +385,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 删除指定的键 [值] 键保留
 	 *
-	 * @param hKey 根键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录路径
 	 * @param key 键名
 	 * @return true
@@ -338,7 +402,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 删除指定的键 [键]
 	 *
-	 * @param hKey 根键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录路径
 	 * @param key 键名
 	 * @return true
@@ -349,7 +419,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 删除指定的键 [键]
 	 *
-	 * @param hKey 根键
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录路径
 	 * @param key 键名
 	 * @return true
@@ -360,7 +436,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 反HKEY解析 因为要和napi兼容
 	 *
-	 * @param hkey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @return HKEY
 	 */
 	extern HKEY getHive(std::wstring hkey);
@@ -368,7 +450,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 反HKEY解析 因为要和napi兼容
 	 *
-	 * @param hkey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @return HKEY
 	 */
 	extern HKEY getHive(std::string hkey);
@@ -376,7 +464,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 反HKEY解析 因为要和napi兼容
 	 *
-	 * @param hkey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @return HKEY
 	 */
 	extern std::string getHiveA(HKEY hkey);
@@ -384,7 +478,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 反HKEY解析 因为要和napi兼容
 	 *
-	 * @param hkey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @return HKEY
 	 */
 	extern std::wstring getHiveW(HKEY hkey);
@@ -392,7 +492,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 反HKEY解析 因为要和napi兼容
 	 *
-	 * @param hkey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @return HKEY
 	 */
 	extern bool getHive(HKEY hkey, std::string &ptr_hkey);
@@ -400,7 +506,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 反HKEY解析 因为要和napi兼容
 	 *
-	 * @param hkey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @return HKEY
 	 */
 	extern bool getHive(HKEY hkey, std::wstring &ptr_hkey);
@@ -408,7 +520,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 反HKEY解析 因为要和napi兼容
 	 *
-	 * @param hkey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @return HKEY
 	 */
 	extern std::string getHive(HKEY hkey);
@@ -417,6 +535,12 @@ namespace hmc_registr_util
 	 * @brief 获取值类型与值路径
 	 *
 	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param path 路径
 	 * @return true
 	 * @return false
@@ -427,6 +551,12 @@ namespace hmc_registr_util
 	 * @brief 获取值类型与值路径
 	 *
 	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param path 路径
 	 * @return true
 	 * @return false
@@ -437,6 +567,12 @@ namespace hmc_registr_util
 	 * @brief 获取值类型与值路径
 	 *
 	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param path 路径
 	 * @return true
 	 * @return false
@@ -447,6 +583,12 @@ namespace hmc_registr_util
 	 * @brief 获取值类型与值路径
 	 *
 	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param path 路径
 	 * @return true
 	 * @return false
@@ -456,7 +598,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 创建文件夹
 	 *
-	 * @param hKey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param keyPath
 	 * @return true
 	 * @return false
@@ -476,9 +624,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 复制指定的目录到指定目录
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -487,9 +641,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 复制指定的目录到指定目录
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -498,9 +658,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 复制指定的目录到指定目录
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -509,9 +675,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 复制指定的目录到指定目录
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -520,7 +692,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 删除注册表值树
 	 *
-	 * @param hKey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param subKey
 	 * @return true
 	 * @return false
@@ -530,7 +708,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 删除注册表值树
 	 *
-	 * @param hKey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param subKey
 	 * @return true
 	 * @return false
@@ -541,7 +725,13 @@ namespace hmc_registr_util
 	 * @brief 将两个或者多个路径合并
 	 *
 	 * @tparam Args
-	 * @param root 根
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param Name1 join名称
 	 * @param NameFlag 更多
 	 * @return std::wstring
@@ -552,7 +742,13 @@ namespace hmc_registr_util
 	 * @brief 将两个或者多个路径合并
 	 *
 	 * @tparam Args
-	 * @param root 根
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param Name1 join名称
 	 * @param NameFlag 更多
 	 * @return std::wstring
@@ -562,7 +758,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 获取同级所有数据体
 	 *
-	 * @param hKey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param subKey
 	 * @return std::vector<chValueItmeA>
 	 */
@@ -580,9 +782,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 获取值 低级的二进制值
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -591,9 +799,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 获取值 低级的二进制值
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -602,9 +816,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 获取值 低级的二进制值
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -613,9 +833,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 获取值 低级的二进制值
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -624,9 +850,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 获取值 低级的二进制值
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -635,9 +867,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 设置值 低级的二进制值
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -646,9 +884,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 设置值 低级的二进制值
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -657,9 +901,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 设置值 低级的二进制值
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -668,9 +918,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 设置值 低级的二进制值
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -679,9 +935,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 设置值 低级的二进制值
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -690,9 +952,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 获取值 低级的二进制值
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -701,9 +969,15 @@ namespace hmc_registr_util
 	/**
 	 * @brief 设置值 低级的二进制值
 	 *
-	 * @param hKey
-	 * @param sourcePath
-	 * @param toPath
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param sourcePath 原始路径 如\SOFTWARE\HMC
+
 	 * @return true
 	 * @return false
 	 */
@@ -712,7 +986,13 @@ namespace hmc_registr_util
 	/**
 	 * @brief 获取出目录信息
 	 *
-	 * @param hKey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath
 	 * @return chFolderInfo
 	 */
@@ -721,19 +1001,57 @@ namespace hmc_registr_util
 	/**
 	 * @brief 获取出目录信息
 	 *
-	 * @param hKey
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath
 	 * @return chFolderInfo
 	 */
 	extern chFolderInfo getRegistrFolderInfo(HKEY hKey, std::wstring FolderPath);
-	// 获取文本数组REG_MULTI_SZ
+	/**
+	 * @brief 获取文本数组REG_MULTI_SZ
+	 *
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param FolderPath 目录路径如\SOFTWARE\HMC
+	 * @param KeyName  键名字
+	 * @return std::vector<std::wstring>
+	 */
 	extern std::vector<std::wstring> GetRegistrMulti(HKEY hKey, std::wstring FolderPath, std::wstring KeyName);
-	// 获取文本数组REG_MULTI_SZ
+	/**
+	 * @brief 获取文本数组REG_MULTI_SZ
+	 *
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param FolderPath 目录路径如\SOFTWARE\HMC
+	 * @param KeyName  键名字
+	 * @return std::vector<std::string>
+	 */
 	extern std::vector<std::string> GetRegistrMulti(HKEY hKey, std::string FolderPath, std::string KeyName);
 	/**
 	 * @brief 获取文本
 	 *
 	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录
 	 * @param KeyName 键
 	 * @param expand 是否转义
@@ -744,6 +1062,12 @@ namespace hmc_registr_util
 	 * @brief 获取文本
 	 *
 	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录
 	 * @param KeyName 键
 	 * @param expand 是否转义
@@ -762,6 +1086,12 @@ namespace hmc_registr_util
 	 * @brief 设置文本值
 	 *
 	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录
 	 * @param KeyName 键
 	 * @param Input 内容
@@ -774,6 +1104,12 @@ namespace hmc_registr_util
 	 * @brief 设置文本值
 	 *
 	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录
 	 * @param KeyName 键
 	 * @param Input 内容
@@ -786,6 +1122,12 @@ namespace hmc_registr_util
 	 * @brief 设置文本值
 	 *
 	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录
 	 * @param KeyName 键
 	 * @param Input 内容
@@ -798,6 +1140,12 @@ namespace hmc_registr_util
 	 * @brief 设置文本值
 	 *
 	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录
 	 * @param KeyName 键
 	 * @param Input 内容
@@ -859,7 +1207,34 @@ namespace hmc_registr_util
 			HKEY root_hKey = nullptr;*/
 
 	public:
+		/**
+		 * @brief Set the Registr Value object
+		 *
+		 * @param hKey 根
+		 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+		 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+		 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+		 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+		 * @param subKey 目录
+		 * @param Name 键名
+		 */
 		setRegistrValue(HKEY hKey, std::wstring subKey, std::wstring Name);
+
+		/**
+		 * @brief Set the Registr Value object
+		 *
+		 * @param hKey 根
+		 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+		 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+		 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+		 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+		 * @param subKey 目录
+		 * @param Name 键名
+		 */
 		setRegistrValue(HKEY hKey, std::string subKey, std::string Name);
 
 		// 0x00000000 REG_NONE 未定义
@@ -885,7 +1260,33 @@ namespace hmc_registr_util
 	{
 	private:
 	public:
+		/**
+		 * @brief 获取注册表的值 一个可以连续取值的类
+		 *
+		 * @param hKey 根
+		 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+		 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+		 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+		 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+		 * @param subKey 目录
+		 * @param Name 键名
+		 */
 		getRegistrValue(HKEY hKey, std::wstring subKey, std::wstring Name);
+		/**
+		 * @brief 获取注册表的值 一个可以连续取值的类
+		 *
+		 * @param hKey 根
+		 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+		 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+		 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+		 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+		 * @param subKey 目录
+		 * @param Name 键名
+		 */
 		getRegistrValue(HKEY hKey, std::string subKey, std::string Name);
 
 		std::vector<BYTE> getBuff();
@@ -907,7 +1308,35 @@ namespace hmc_registr_util
 	class OpenKeyToken
 	{
 	public:
+		/**
+		 * @brief 打开一个注册表路径令牌 自释放
+		 *
+		 * @param hKey 根
+		 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+		 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+		 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+		 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+		 * @param FolderPath 目录路径如\SOFTWARE\HMC
+		 * @param KeyName  键名字
+		 * @param CreateNotKey
+		 */
 		OpenKeyToken(HKEY hKey, std::wstring FolderPath, std::wstring KeyName, bool CreateNotKey = false);
+		/**
+		 * @brief 打开一个注册表路径令牌 自释放
+		 *
+		 * @param hKey 根
+		 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+		 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+		 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+		 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+		 * @param FolderPath 目录路径如\SOFTWARE\HMC
+		 * @param KeyName  键名字
+		 * @param CreateNotKey
+		 */
 		OpenKeyToken(HKEY hKey, std::string FolderPath, std::string KeyName, bool CreateNotKey = false);
 		~OpenKeyToken();
 		HKEY token = nullptr;

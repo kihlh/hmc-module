@@ -2,6 +2,70 @@
 
 namespace hmc_windows_util
 {
+    namespace hmc_define_util
+    {
+
+#define HMC_VirtualAlloc(Type, leng) (Type)::VirtualAlloc((LPVOID)NULL, (DWORD)(leng), MEM_COMMIT, PAGE_READWRITE);
+#define HMC_VirtualFree(Virtua)                \
+    if (Virtua != NULL)                        \
+    {                                          \
+        ::VirtualFree(Virtua, 0, MEM_RELEASE); \
+    }
+
+#define HMC_VirtualFreeAuto(Virtua)                                         \
+    std::shared_ptr<void>##Virtua##_Auto_Close_Virtual(nullptr, [&](void *) \
+                                                       { \
+    if (Virtua != NULL) \
+    { \
+        ::VirtualFree(Virtua, 0, MEM_RELEASE); \
+    } });
+
+#define HMC_LibraryFreeAuto(hDllInst)                                         \
+    std::shared_ptr<void>##hDllInst##_Auto_Close_Library(nullptr, [&](void *) \
+                                                         { \
+    if (hDllInst != NULL) \
+    { \
+        ::FreeLibrary(hDllInst); \
+    } });
+
+#define HMC_EQ_RUN_LAST(size)      \
+    if (size == NULL || size <= 0) \
+    {                              \
+        return ::GetLastError();   \
+    }
+
+#define HMC_PUSH_WSRES(WS)    \
+    if (style & WS)           \
+    {                         \
+        result.push_back(WS); \
+    }
+
+#define HMC_CASE_PUSH_WSRES(WS) \
+    case WS:                    \
+        result.append(##WS);    \
+        break;
+
+#define HMC_PUSH_WSRES_STR(WS)                                       \
+    if (style & WS)                                                  \
+    {                                                                \
+        result.push_back(hmc_windows_util::winwowLongClass2str(WS)); \
+    }
+
+#define HMC_PUSH_WSRES_STR_EX(WS)                                      \
+    if (style & WS)                                                    \
+    {                                                                  \
+        result.push_back(hmc_windows_util::winwowLongClass2strEx(WS)); \
+    }
+
+#define HMC_IS_INSIDE(x1, y1, x2, y2, x, y) ((x > x1 && x < x2 && y > y1 && y < y2) ? true : false)
+
+#define HMC_ALL_CATCH_NONE \
+    catch (...) {}
+
+#define None std::nullopt
+
+    }
+
     std::vector<HWND> _$_getSubWindows_temp;
     std::shared_mutex _$_getSubWindows_shared_mutex;
 }
@@ -1514,4 +1578,71 @@ RECT hmc_windows_util::get_variant(std::variant<RECT, DWORD> input)
     of_to.top = 0;
 
     return of_to;
+}
+
+bool hmc_windows_util::closeWindow(HWND hwnd, int grade)
+{
+
+    if (grade == 1)
+    {
+        bool isWindowCloce = ::CloseWindow(hwnd);
+        return !hmc_windows_util::isWindow(hwnd);
+    }
+
+    if (grade == 2)
+    {
+        ::SendMessage(hwnd, WM_SYSCOMMAND, SC_CLOSE, 0);
+
+        if (hmc_windows_util::isWindow(hwnd))
+        {
+            ::CloseHandle(hwnd);
+        }
+
+        return !hmc_windows_util::isWindow(hwnd);
+    }
+
+    if (grade == 3)
+    {
+        DWORD threadId = ::GetWindowThreadProcessId(hwnd, NULL);
+        if (threadId == 0)
+        {
+            return false;
+        }
+
+        // 强制终止线程
+        HANDLE hThread = ::OpenThread(THREAD_TERMINATE, FALSE, threadId);
+        if (hThread == NULL)
+        {
+            return false;
+        }
+
+        BOOL result = TerminateThread(hThread, 0);
+        if (!result)
+        {
+            ::CloseHandle(hThread);
+            return false;
+        }
+
+        ::CloseHandle(hThread);
+        return !hmc_windows_util::isWindow(hwnd);
+    }
+
+    if (grade == 5)
+    {
+        if (closeWindow(hwnd, 1))
+        {
+            return true;
+        }
+        
+        if (closeWindow(hwnd, 2))
+        {
+            return true;
+        }
+        
+        if (closeWindow(hwnd, 3))
+        {
+            return true;
+        }
+    }
+    return false;
 }

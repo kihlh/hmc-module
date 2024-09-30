@@ -15,32 +15,21 @@
 #ifndef MODE_INTERNAL_INCLUDE_HMC_USB_UTIL_HPP
 #define MODE_INTERNAL_INCLUDE_HMC_USB_UTIL_HPP
 
-#include <windows.h>
-#include <setupapi.h>
-#include <Cfgmgr32.h>
-#include <iostream>
+
 #include <vector>
 #include <string>
-#include <initguid.h>
-#include <Usbiodef.h>
-#include <Usb100.h>
-#include <Usbioctl.h>
-#include <variant>
 
+#if _HAS_CXX17
 #include <variant>
+#endif // _HAS_CXX17
 
-#pragma comment(lib, "Setupapi.lib")
+#include <windows.h>
+
 
 #define EPOCH_TIME UINT64_C(116444736000000000) // 1970.01.01 00:00:000 in MS Filetime
 
 namespace hmc_usb_util
 {
-    DEFINE_GUID(UsbClassGuid, 0xa5dcbf10L, 0x6530, 0x11d2, 0x90, 0x1f, 0x00, 0xc0, 0x4f, 0xb9, 0x51, 0xed);
-
-    namespace hmc_define_util
-    {
-        std::wstring hmc_usb_util_escapeJsonString(const std::wstring &input, bool is_to_value);
-    }
     struct chVolume
     {
         // 路径 "D:\\"
@@ -133,12 +122,6 @@ namespace hmc_usb_util
         std::wstring to_json();
     };
 
-    typedef std::variant<hmc_usb_util::chHidSomeInfo, hmc_usb_util::chHidKeyboardInfo, hmc_usb_util::chHidMouseInfo> thHidInfo;
-
-    namespace hmc_define_util
-    {
-    }
-
     /**
      * @brief 格式化 驱动器路径（GUID） '\\\\?\\Volume{68de5ae6-0000-0000-0000-100000000000}\\'  -> H:\\
      *
@@ -184,19 +167,25 @@ namespace hmc_usb_util
     std::vector<std::wstring> getUsbHidNameList();
 
     /**
-     * @brief 获取当前接入的usb hid设备的信息列表（如键盘，鼠标，触摸屏，等）
-     *
-     * @return std::vector<std::wstring>
-     */
-    std::vector<thHidInfo> getUsbHidList();
-
-    /**
      * @brief VolumePath 格式化 驱动器路径
      * @param '\\\\?\\Volume{68de5ae6-0000-0000-0000-100000000000}\\123'  -> H:\\
      * @param '\Device\HarddiskVolume2\\123'   \\DosDevices\\H:\\123  -> H:\\
      * @return std::wstring
      */
     std::wstring formatVolumePath(std::wstring VolumePath);
+
+
+#if _HAS_CXX17
+
+    typedef std::variant<hmc_usb_util::chHidSomeInfo, hmc_usb_util::chHidKeyboardInfo, hmc_usb_util::chHidMouseInfo> thHidInfo;
+
+    /**
+     * @brief 获取当前接入的usb hid设备的信息列表（如键盘，鼠标，触摸屏，等）
+     *
+     * @return std::vector<std::wstring>
+     */
+    std::vector<thHidInfo> getUsbHidList();
+#endif // _HAS_CXX17
 
 }
 

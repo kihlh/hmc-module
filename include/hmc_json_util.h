@@ -4,56 +4,12 @@
 #ifndef MODE_INTERNAL_INCLUDE_HMC_TEXT_JSON_UTIL_H
 #define MODE_INTERNAL_INCLUDE_HMC_TEXT_JSON_UTIL_H
 
-#include <windows.h>
-#include <map>
-#include <set>
-#include <vector>
-#include <string>
-#include <variant>
-#include <unordered_set>
-#include <memory>
-
 #define EPOCH_TIME UINT64_C(116444736000000000) // 1970.01.01 00:00:000 in MS Filetime
+
+#include <string>
 
 namespace hmc_json_util
 {
-    namespace hmc_define_util
-    {
-#define hmc_define_to_Json_Value_caseA(caseIndex) \
-    case caseIndex:                               \
-        return std::to_string(std::get<caseIndex>(value));
-#define hmc_define_to_Json_Value_caseW(caseIndex) \
-    case caseIndex:                               \
-        return std::to_wstring(std::get<caseIndex>(value));
-    }
-
-    typedef std::variant<
-        // std
-        std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t,
-        // >= 32bit
-        char, wchar_t, char16_t, char32_t, int, int64_t, int32_t,
-        // >= 64bit
-        long long, size_t, long int, long, long long int,
-        // unsigned
-        unsigned char, unsigned long, unsigned long long int,
-        // short
-        short, long double, double, float  >  NumberType;
-
-    /**
-     * @brief 转义到jsonValue
-     *
-     * @param value
-     * @return std::string
-     */
-    extern std::string toJsonValueA(NumberType value);
-
-    /**
-     * @brief 转义到jsonValue
-     *
-     * @param value
-     * @return std::string
-     */
-    extern std::wstring toJsonValueW(NumberType value);
 
     /**
      * @brief 转义到jsonValue
@@ -86,8 +42,41 @@ namespace hmc_json_util
      * @return std::string
      */
     std::string formatJson(const std::string &json);
-
-
 }
+
+#if _HAS_CXX17
+#include <variant>
+namespace hmc_json_util
+{
+    typedef std::variant<
+        // std
+        std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t,
+        // >= 32bit
+        char, wchar_t, char16_t, char32_t, int, int64_t, int32_t,
+        // >= 64bit
+        long long, size_t, long int, long, long long int,
+        // unsigned
+        unsigned char, unsigned long, unsigned long long int,
+        // short
+        short, long double, double, float>
+        NumberType;
+
+    /**
+     * @brief 转义到jsonValue
+     *
+     * @param value
+     * @return std::string
+     */
+    extern std::string toJsonValueA(NumberType value);
+
+    /**
+     * @brief 转义到jsonValue
+     *
+     * @param value
+     * @return std::string
+     */
+    extern std::wstring toJsonValueW(NumberType value);
+}
+#endif // _HAS_CXX17
 
 #endif // MODE_INTERNAL_INCLUDE_HMC_TEXT_JSON_UTIL_H

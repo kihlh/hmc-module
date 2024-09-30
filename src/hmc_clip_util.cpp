@@ -1,4 +1,6 @@
-﻿#include "./hmc_clip_util.h"
+﻿#include "hmc_clip_util.h"
+#include <memory>
+#include <Shlobj.h>
 
 hmc_clip_util::chClipInfo hmc_clip_util::GetClipboardInfo()
 {
@@ -432,7 +434,7 @@ bool hmc_clip_util::HasClipboardImage()
     return static_cast<bool>(::GetClipboardData(CF_BITMAP));
 }
 
-bool hmc_clip_util::isFormatAvailable(UINT uCF)
+bool hmc_clip_util::isFormatAvailable(std::uint8_t uCF)
 {
     return IsClipboardFormatAvailable(uCF) != false;
 }
@@ -513,9 +515,9 @@ std::string hmc_clip_util::GetClipboardTextA()
     return result;
 }
 
-std::vector<UINT> hmc_clip_util::EnumClipboardFormatList()
+std::vector<std::uint8_t> hmc_clip_util::EnumClipboardFormatList()
 {
-    std::vector<UINT> result = {};
+    std::vector<std::uint8_t> result = {};
 
     if (::OpenClipboard(NULL))
     {
@@ -528,7 +530,7 @@ std::vector<UINT> hmc_clip_util::EnumClipboardFormatList()
     size_t len = ::CountClipboardFormats();
     result.reserve(len);
 
-    UINT num = 0;
+    std::uint8_t num = 0;
 
     for (size_t i = 0; i < len; i++)
     {
@@ -594,7 +596,7 @@ std::vector<std::wstring> hmc_clip_util::GetClipboardPathListW()
     return result;
 }
 
-std::wstring hmc_clip_util::GetClipboardFormatNameW(UINT format)
+std::wstring hmc_clip_util::GetClipboardFormatNameW(std::uint8_t format)
 {
     std::wstring result = L"";
     result.reserve(MAX_PATH);
@@ -613,7 +615,7 @@ std::wstring hmc_clip_util::GetClipboardFormatNameW(UINT format)
     return result;
 }
 
-std::string hmc_clip_util::GetClipboardFormatNameA(UINT format)
+std::string hmc_clip_util::GetClipboardFormatNameA(std::uint8_t format)
 {
     std::string result = "";
     result.reserve(MAX_PATH);

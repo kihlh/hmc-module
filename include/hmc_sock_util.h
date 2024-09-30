@@ -16,36 +16,13 @@
 #ifndef MODE_INTERNAL_INCLUDE_HMC_SOCK_UTIL_HPP
 #define MODE_INTERNAL_INCLUDE_HMC_SOCK_UTIL_HPP
 
-// WINSOCKAPI 会和winsock2.h 冲突 难以避免 索性提前禁用 WINSOCKAPI
-// !  windows.h 会默认把<winsock.h> 放进来 如果在之前引用了需要把这句放进前面 但是 winsock.h 会和 winsock2.h 冲突导致无法使用ipv6
-#define _WINSOCKAPI_
-
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-
+#include <vector>
 #include <string>
 #include <windows.h>
-#include <vector>
-#include <set>
-#include <variant>
-#include <optional>
 
-#include <winsock2.h>
-#include <ws2ipdef.h>
-#include <ws2tcpip.h>
-#include <ip2string.h>
-#include <iphlpapi.h>
-#include <Psapi.h>
-
-#pragma comment(lib, "ws2_32.lib")
-#pragma comment(lib, "iphlpapi.lib")
-#pragma comment(lib, "Ntdll.lib")
 
 namespace hmc_sock_util
 {
-    namespace hmc_define_util
-    {
-
-    }
 
     // 枚举本机ip本机局域网的ip(v4) 数据体
     struct chLocalVddrItemV4
@@ -63,7 +40,7 @@ namespace hmc_sock_util
     {
         std::string IpAddress;
         std::string IpMask;
-        DWORD context;
+        DWORD Context;
         std::string to_json();
     };
 
@@ -96,11 +73,11 @@ namespace hmc_sock_util
     struct chConnectNet
     {
         std::wstring typeName; // "UDP" / "TCP" / "TCP6" / "UDP6"
-        DWORD type = 0;        // 6 tcp / tcp6   17 udp / udp6
-        DWORD ipAddr;          // dwLocalAddr
-        std::wstring ip;       // 解析出来的实际ip
-        DWORD port;            // 占用的端口
-        DWORD pid;             // 占用此端口的进程
+        DWORD type;            // 6 tcp / tcp6   17 udp / udp6
+        DWORD ipAddr;         // dwLocalAddr
+        std::wstring ip;      // 解析出来的实际ip
+        DWORD port;           // 占用的端口
+        DWORD pid;           // 占用此端口的进程
         bool existsProcess;    // 判断此进程是否存在
         std::wstring to_json();
     };
@@ -112,14 +89,14 @@ namespace hmc_sock_util
         // ip类型名称  ipv4 or ipv6
         std::wstring typeName;
         // ip类型 2(AF_INET) 23(AF_INET6)
-        DWORD type = 0;
+        DWORD type ;
         std::wstring to_json();
     };
 
     struct chConnectNetTCP : public chConnectNet
     {
-        DWORD remotePort;      // 远程的端口
-        DWORD remoteIPAddr;    // 远程的ip (LocalAddr)
+        DWORD remotePort;   // 远程的端口
+        DWORD remoteIPAddr;   // 远程的ip (LocalAddr)
         std::wstring remoteIP; // 解析出来的实际远程ip
         std::wstring state;    // 状态码 "CLOSED"|"LISTEN"|"SYN-SENT"|"SYN-RECEIVED"|"ESTABLISHED"|"FIN-WAIT-1"|"FIN-WAIT-2"|"CLOSE-WAIT"|"CLOSING"|"LAST-ACK"|"TIME-WAIT"|"DELETE-TCB"|"UNKNOWN"
         std::wstring to_json();
@@ -138,20 +115,7 @@ namespace hmc_sock_util
     // 格式化ip
     extern std::wstring formatIP(UCHAR ucLocalAddr[16]);
     // 格式化ip
-    extern std::wstring formatIP(IN6_ADDR dwLocalAddr);
-    // 格式化ip
     extern std::wstring formatIP(DWORD dwLocalAddr);
-
-    /**
-     * @brief 枚举本机连接 端口
-     *
-     * @param tcp 是否枚举 tcp v4 端口
-     * @param udp 是否枚举 udp v4 端口
-     * @param tcp6 是否枚举 tcp v6 端口
-     * @param udp6 是否枚举 udp v6 端口
-     * @return std::vector<std::variant<chConnectNet>>
-     */
-    extern std::vector<std::variant<chConnectNet, chConnectNetTCP>> enumConnectNet(bool tcp, bool udp, bool tcp6, bool udp6);
 
     /**
      * @brief 获取tcp6 端口关联进程
@@ -208,20 +172,6 @@ namespace hmc_sock_util
     extern chNetParams getNetParams();
 
     /**
-     * @brief 获取系统代理链接（仅在启用系统代理时）
-     *
-     * @return std::optional<std::wstring>
-     */
-    extern std::optional<std::wstring> getSystemProxyServer();
-
-    /**
-     * @brief 获取系统代理pac脚本链接
-     *
-     * @return std::optional<std::wstring>
-     */
-    extern std::optional<std::wstring> getSystemProxyPac();
-
-    /**
      * 从默认dns(联网)解析域名主机ip
      * - √ goole.com
      * - √ api.goole.com
@@ -238,14 +188,6 @@ namespace hmc_sock_util
      * @return std::wstring
      */
     extern std::wstring getHostsPath();
-
-    /**
-     * @brief ip 列表 转换函数 [内联]
-     *
-     * @param ua
-     * @return chNetAdapterAddrList
-     */
-    extern chNetAdapterAddrList CpUaToAddrItem(PIP_ADAPTER_UNICAST_ADDRESS ua);
 
     /**
      * @brief 枚举本机TCP v6 当前端口列表
@@ -275,18 +217,62 @@ namespace hmc_sock_util
      */
     extern std::vector<chConnectNet> CpEnumConnectNetConnectUDP4();
 
-    typedef std::variant<
-        chConnectNet, chConnectNetTCP, chNetAdapterAddrList, chNetParams,
-        std::vector<chNetAdapterAddrItem>,
-        std::vector<DWORD>,
-        std::vector<std::variant<chConnectNet, chConnectNetTCP>>>
-        SockJsonType;
+    /**
+     * 格式化mac地址
+     */
+    extern std::string formatMacAddress(const std::uint8_t* address, int length, char joinChar);
 
+    /**
+     * 获取mac地址
+     */
+    extern std::vector<std::string> getMacAddresses(char joinChar);
+
+    /**
+     * 获取mac地址
+     */
+    extern std::vector<std::string> getMacAddresses();
+
+    /**
+     * @brief 获取系统代理链接（仅在启用系统代理时）
+     *
+     * @return std::optional<std::wstring>
+     */
+    extern bool getSystemProxyServer(std::wstring &ProxyServerUrl);
+
+    /**
+     * @brief 获取系统代理pac脚本链接
+     *
+     * @return std::optional<std::wstring>
+     */
+    extern bool getSystemProxyPac(std::wstring& ProxyServerUrl);
+};
+
+#if _HAS_CXX17
+
+#include <set>
+#include <variant>
+#include <optional>
+
+namespace hmc_sock_util {
+
+
+
+    /**
+     * @brief 枚举本机连接 端口
+     *
+     * @param tcp 是否枚举 tcp v4 端口
+     * @param udp 是否枚举 udp v4 端口
+     * @param tcp6 是否枚举 tcp v6 端口
+     * @param udp6 是否枚举 udp v6 端口
+     * @return std::vector<std::variant<chConnectNet>>
+     */
+    extern std::vector<std::variant<chConnectNet, chConnectNetTCP>> enumConnectNet(bool tcp, bool udp, bool tcp6, bool udp6);
+    
     typedef std::vector<
         std::variant<chConnectNet, chConnectNetTCP>>
         ConnectNetList;
 
-    extern std::variant<std::wstring, std::string> to_json(SockJsonType input);
-};
+}
+#endif // _VARIANT_&&_OPTIONAL_
 
 #endif // MODE_INTERNAL_INCLUDE_HMC_SOCK_UTIL_HPP

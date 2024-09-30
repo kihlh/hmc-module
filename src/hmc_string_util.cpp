@@ -1,5 +1,79 @@
 ﻿
-#include "./hmc_string_util.h"
+#include "hmc_string_util.h"
+#include <windows.h>
+#include <crtdbg.h> // For _ASSERTE()
+#include <iomanip>
+#include <limits>    // For numeric_limits
+#include <stdexcept> // For overflow_error
+#include <winternl.h>
+#include <regex>
+
+namespace hmc_string_util
+{
+
+    namespace hmc_define_util
+    {
+        // 自动释放dll
+#define hmc_shared_close_Library(hModule) std::shared_ptr<void>##hModule##_shared_close_Library_(nullptr, [&](void *) {if (hModule != NULL) {::FreeLibrary(hModule);} });
+// 自动释放文本
+#define hmc_shared_close_lpsz(lpwsz) std::shared_ptr<void>##lpwsz##_shared_close_lpsz_(nullptr, [&](void *) {if (lpwsz != NULL) {::GlobalFree(lpwsz);lpwsz = 0; } });
+// 释放进程句柄
+#define hmc_shared_close_handle(handle) std::shared_ptr<void>##lpwsz##_shared_free_handle(nullptr, [&](void *) {if (handle != NULL) { try{::CloseHandle(handle);}catch(...){}} });
+
+// 开辟内存 (请注意需要调用 FreeVS 或者 hmc_FreeVSAuto 释放)
+// -> char* pszMem = AllocVS(char*, leng + 1);
+#define hmc_AllocVS(Type, leng) \
+    (Type)::VirtualAlloc((LPVOID)NULL, (DWORD)(leng), MEM_COMMIT, PAGE_READWRITE);
+
+// 释放空间
+// -> char* pszMem = hmc_AllocVS(char*, leng + 1);
+// -> FreeVS(pszMem);
+#define hmc_FreeVS(Virtua) \
+    if (Virtua != NULL)    \
+        ::VirtualFree(Virtua, 0, MEM_RELEASE);
+
+// 释放空间
+// -> char* pszMem = hmc_AllocVS(char*, leng + 1);
+// -> FreeVSAuto(pszMem);
+#define hmc_FreeVSAuto(Virtua) \
+    std::shared_ptr<void>##Virtua##_shared_close_FreeVSAuto_(nullptr, [&](void *) {if (Virtua != NULL) {::VirtualFree(Virtua, 0, MEM_RELEASE);} });
+
+// 开辟内存
+#define hmc_AllocHeap(variable) ::HeapAlloc(::GetProcessHeap(), 0, (variable))
+// 释放内存
+#define hmc_FreeHeap(variable) ::HeapFree(::GetProcessHeap(), 0, (variable))
+
+// 让代码在异步线程中执行
+#define hmc_Thread (code) std::thread([]() -> void { code }).detach();
+
+#define hmc_Catch                                                                                  \
+    catch (char *e) { std::cout << "ERROR:"                                                        \
+                                << "<" << __FUNCSIG__ << " @ " << __LINE__ << "> " << e << "\n"; } \
+    catch (const std::exception &ex)                                                               \
+    {                                                                                              \
+        std::cout << "exception:"                                                                  \
+                  << "<" << __FUNCSIG__ << " @ " << __LINE__ << "> " << ex.what() << "\n";         \
+    }                                                                                              \
+    catch (...) { std::cout << "ERROR:"                                                            \
+                            << "<" << __FUNCSIG__ << " @ " << __LINE__ << "> "                     \
+                            << "unknown"                                                           \
+                            << "\n"; };
+
+#define ___hmc_string_util_eq(types) (input.type() == typeid(types) ? true : false)
+#define ___hmc_string_util_eqt(types) (input.type() == types ? true : false)
+#define ___hmc_string_util_diff_any_value_eval_map_to_fn_map(any_value, fn_name, map_type, key_type, value_type) \
+    if (any_value.type() == typeid(map_type<key_type, value_type>))                                              \
+    {                                                                                                            \
+        return fn_name(std::any_cast<map_type<key_type, value_type>>(any_value));                                \
+    }                                                                                                            \
+    if (any_value.type() == typeid(map_type<value_type, key_type>))                                              \
+    {                                                                                                            \
+        return fn_name(std::any_cast<map_type<value_type, key_type>>(any_value));                                \
+    }
+
+    }
+
+};
 
 /**
  * @brief 仅拼接文本
@@ -216,7 +290,7 @@ std::string hmc_string_util::utf8_to_gbk(const std::string u8str)
 
     pTempTstr = new TCHAR[strSizeTempVar + 1];
 
-    ::WideCharToMultiByte(CP_ACP, 0, pTempwstr, -1, (LPSTR)pTempTstr, strSizeTempVar, NULL, NULL);
+    ::WideCharToMultiByte(CP_ACP, 0, pTempwstr, -1, (char *)pTempTstr, strSizeTempVar, NULL, NULL);
     Result = (char *)pTempTstr;
     delete[] pTempTstr;
     delete[] pTempwstr;
@@ -1092,7 +1166,7 @@ std::wstring hmc_string_util::text_to_lower(std::wstring data)
     return Result;
 }
 
-LPCSTR hmc_string_util::string_to_lpstr(std::string input, size_t *psize)
+const char *hmc_string_util::string_to_lpstr(std::string input, size_t *psize)
 {
 
     std::string copy_input = std::string(input.begin(), input.end());
@@ -1114,7 +1188,7 @@ LPCSTR hmc_string_util::string_to_lpstr(std::string input, size_t *psize)
     return output;
 }
 
-LPWSTR hmc_string_util::string_to_lpstr(std::wstring input, size_t *psize)
+wchar_t *hmc_string_util::string_to_lpstr(std::wstring input, size_t *psize)
 {
 
     std::wstring copy_input = std::wstring(input.begin(), input.end());
@@ -1136,7 +1210,7 @@ LPWSTR hmc_string_util::string_to_lpstr(std::wstring input, size_t *psize)
     return output;
 }
 
-LPWSTR hmc_string_util::string_to_lpstr(std::vector<std::wstring> input_list, size_t *psize)
+wchar_t *hmc_string_util::string_to_lpstr(std::vector<std::wstring> input_list, size_t *psize)
 {
 
     std::wstring copy_input_list;
@@ -1171,7 +1245,7 @@ LPWSTR hmc_string_util::string_to_lpstr(std::vector<std::wstring> input_list, si
     return output;
 }
 
-LPCSTR hmc_string_util::string_to_lpstr(std::vector<std::string> input_list, size_t *psize)
+const char *hmc_string_util::string_to_lpstr(std::vector<std::string> input_list, size_t *psize)
 {
 
     std::string copy_input_list;
@@ -1206,26 +1280,26 @@ LPCSTR hmc_string_util::string_to_lpstr(std::vector<std::string> input_list, siz
     return output;
 }
 
-LPCSTR hmc_string_util::string_to_lpstr(std::string input)
+const char *hmc_string_util::string_to_lpstr(std::string input)
 {
     size_t psize = 0;
     return string_to_lpstr(input, &psize);
 }
 
-LPWSTR hmc_string_util::string_to_lpstr(std::wstring input)
+wchar_t *hmc_string_util::string_to_lpstr(std::wstring input)
 {
 
     size_t psize = 0;
     return string_to_lpstr(input, &psize);
 }
 
-std::wstring hmc_string_util::lpstr_to_string(LPWSTR input)
+std::wstring hmc_string_util::lpstr_to_string(wchar_t *input)
 {
 
     std::wstring result = L"";
     if (input != nullptr)
     {
-        LPWSTR current = input;
+        wchar_t *current = input;
         while (*current != L'\0')
         {
             // 打印当前字符
@@ -1237,13 +1311,13 @@ std::wstring hmc_string_util::lpstr_to_string(LPWSTR input)
     return result;
 }
 
-std::string hmc_string_util::lpstr_to_string(LPSTR input)
+std::string hmc_string_util::lpstr_to_string(char *input)
 {
 
     std::string result = "";
     if (input != nullptr)
     {
-        LPSTR current = input;
+        char *current = input;
         while (*current != '\0')
         {
             // 打印当前字符
@@ -1255,7 +1329,7 @@ std::string hmc_string_util::lpstr_to_string(LPSTR input)
     return result;
 }
 
-std::wstring hmc_string_util::lpstr_to_string(LPWSTR input, int nBufSize, bool earlyTruncation)
+std::wstring hmc_string_util::lpstr_to_string(wchar_t *input, int nBufSize, bool earlyTruncation)
 {
     std::wstring result = L"";
     if (input == nullptr && nBufSize < 0)
@@ -1277,7 +1351,7 @@ std::wstring hmc_string_util::lpstr_to_string(LPWSTR input, int nBufSize, bool e
     return result;
 }
 
-std::string hmc_string_util::lpstr_to_string(LPSTR input, int nBufSize, bool earlyTruncation)
+std::string hmc_string_util::lpstr_to_string(char *input, int nBufSize, bool earlyTruncation)
 {
     std::string result = "";
     if (input == nullptr && nBufSize < 0)
@@ -3261,7 +3335,7 @@ std::string hmc_string_util::getPathBaseName(const std::string &path)
     return path;
 }
 
-std::wstring hmc_string_util::unicodeStringToWString(UNICODE_STRING unicodeString)
+std::wstring hmc_string_util::unicodeStringToWString(HMC_UNICODE_STRING unicodeString)
 {
     std::wstring result;
     if (unicodeString.Buffer)
@@ -3354,7 +3428,7 @@ std::string hmc_string_util::base64_encode(const std::vector<std::uint8_t> &inpu
     output.reserve(base64_size);
 
     const unsigned char *bytes_to_encode = &input[0];
-    unsigned int len = input.size();
+    size_t len = input.size();
     int i = 0;
     int j = 0;
     unsigned char char_array_3[3];
@@ -3406,45 +3480,45 @@ std::string hmc_string_util::base64_encode(const std::vector<std::uint8_t> &inpu
 #ifndef HMC_IMPORT_HMC_BYTE_UTIL_H
 namespace hmc_string_util
 {
-std::vector<std::uint8_t> int32ToBytes(const std::uint32_t data)
-{
-    std::vector<std::uint8_t> bytes = std::vector<std::uint8_t>();
-    bytes.reserve(4);
-    bytes.push_back((data >> 24) & 0xFF);
-    bytes.push_back((data >> 16) & 0xFF);
-    bytes.push_back((data >> 8) & 0xFF);
-    bytes.push_back(data & 0xFF);
-    return bytes;
-}
-
-std::vector<std::uint8_t> wstringToBytes(const wchar_t &bytes_string)
-{
-    std::vector<std::uint8_t> buff = {};
-
-    // utf32
-    if (bytes_string >= 0x10FFFF)
+    std::vector<std::uint8_t> int32ToBytes(const std::uint32_t data)
     {
-        std::uint32_t value = static_cast<std::uint32_t>(bytes_string);
-        auto int32Bytes = int32ToBytes(value);
+        std::vector<std::uint8_t> bytes = std::vector<std::uint8_t>();
+        bytes.reserve(4);
+        bytes.push_back((data >> 24) & 0xFF);
+        bytes.push_back((data >> 16) & 0xFF);
+        bytes.push_back((data >> 8) & 0xFF);
+        bytes.push_back(data & 0xFF);
+        return bytes;
+    }
 
-        for (size_t i = 0; i < int32Bytes.size(); i++)
+    std::vector<std::uint8_t> wstringToBytes(const wchar_t &bytes_string)
+    {
+        std::vector<std::uint8_t> buff = {};
+
+        // utf32
+        if (bytes_string >= 0x10FFFF)
         {
-            buff.push_back(int32Bytes.at(i));
+            std::uint32_t value = static_cast<std::uint32_t>(bytes_string);
+            auto int32Bytes = int32ToBytes(value);
+
+            for (size_t i = 0; i < int32Bytes.size(); i++)
+            {
+                buff.push_back(int32Bytes.at(i));
+            }
         }
-    }
-    else
-    {
+        else
+        {
 
-        // utf16
-        std::uint16_t value = static_cast<std::uint16_t>(bytes_string);
-        std::uint8_t partA = (std::uint8_t)((value & 0xFF00) >> 8);
-        std::uint8_t partB = (std::uint8_t)(value & 0x00FF);
-        buff.push_back(partA);
-        buff.push_back(partB);
-    }
+            // utf16
+            std::uint16_t value = static_cast<std::uint16_t>(bytes_string);
+            std::uint8_t partA = (std::uint8_t)((value & 0xFF00) >> 8);
+            std::uint8_t partB = (std::uint8_t)(value & 0x00FF);
+            buff.push_back(partA);
+            buff.push_back(partB);
+        }
 
-    return buff;
-}
+        return buff;
+    }
 }
 
 #endif // HMC_IMPORT_HMC_BYTE_UTIL_H
@@ -3461,4 +3535,286 @@ std::string hmc_string_util::base64_encode(const std::wstring &input)
     }
 
     return std::string(encoded_temp.begin(), encoded_temp.end());
+}
+
+bool hmc_string_util::includes(const std::wstring &text, const std::wstring &substring)
+{
+    return text.find(substring) != text.npos;
+}
+
+bool hmc_string_util::includes(const std::string &text, const std::string &substring)
+{
+    return text.find(substring) != text.npos;
+}
+
+bool hmc_string_util::includes(const std::string &text, const char &substring)
+{
+    return text.find(substring) != text.npos;
+}
+
+bool hmc_string_util::includes(const std::wstring &text, const wchar_t &substring)
+{
+    return text.find(substring) != text.npos;
+}
+
+inline std::string hmc_string_util::slice(const std::string &str, int start, int end)
+{
+    int length = static_cast<int>(str.length());
+
+    if (start < 0)
+    {
+        start = length + start;
+    }
+    if (end < 0)
+    {
+        end = length + end + 1;
+    }
+
+    int i_temp = (start < length) ? start : length;
+    start = (0 > i_temp) ? 0 : i_temp;
+
+    int a_temp = (end > length) ? end : length;
+    end = (start > a_temp) ? start : a_temp;
+
+    return str.substr(start, end - start);
+}
+
+inline std::wstring hmc_string_util::slice(const std::wstring &str, int start, int end)
+{
+    int length = static_cast<int>(str.length());
+
+    if (start < 0)
+    {
+        start = length + start;
+    }
+    if (end < 0)
+    {
+        end = length + end + 1;
+    }
+
+    int i_temp = (start < length) ? start : length;
+    start = (0 > i_temp) ? 0 : i_temp;
+
+    int a_temp = (end > length) ? end : length;
+    end = (start > a_temp) ? start : a_temp;
+
+    return str.substr(start, end - start);
+}
+
+long long hmc_string_util::search(const std::string &str, const std::string &pattern)
+{
+    std::regex regexPattern(pattern);
+    std::smatch match;
+    if (std::regex_search(str, match, regexPattern))
+    {
+        return match.position();
+    }
+    return -1;
+}
+
+std::vector<std::string> hmc_string_util::match(const std::string &str, const std::string &pattern)
+{
+    std::regex regexPattern(pattern);
+    std::smatch match;
+    std::vector<std::string> matches;
+
+    std::string::const_iterator searchStart(str.cbegin());
+    while (std::regex_search(searchStart, str.cend(), match, regexPattern))
+    {
+        matches.push_back(match.str());
+        searchStart = match.suffix().first; // Move to next match
+    }
+
+    return matches;
+}
+
+long long hmc_string_util::indexOf(const std::string &str, const std::string &substr)
+{
+    size_t pos = str.find(substr);
+    if (pos != str.npos)
+    {
+        return static_cast<long long>(pos);
+    }
+    return -1;
+}
+
+std::vector<size_t> hmc_string_util::indexOfs(const std::string &str, const std::string &substr)
+{
+    std::vector<size_t> positionList = {};
+
+    size_t pos = str.find(substr);
+    if (pos != str.npos)
+    {
+        do
+        {
+            positionList.push_back(pos);
+            if (pos != str.npos)
+                pos = str.find(substr, pos + 1);
+        } while (pos != str.npos);
+    }
+    return positionList;
+}
+
+long long hmc_string_util::indexOf(const std::string &str, const char &substr)
+{
+    long long pos = str.find(substr);
+    if (pos != str.npos)
+    {
+        return static_cast<long long>(pos);
+    }
+    return -1;
+}
+
+std::vector<size_t> hmc_string_util::indexOfs(const std::string &str, const char &substr)
+{
+    std::vector<size_t> positionList = {};
+    for (size_t i = 0; i < str.size(); i++)
+    {
+        auto &at = str.at(i);
+        if (at == substr)
+        {
+            positionList.push_back(i);
+        }
+    }
+    return positionList;
+}
+
+long long hmc_string_util::search(const std::wstring &str, const std::wstring &pattern)
+{
+    std::wregex regexPattern(pattern);
+    std::wsmatch match;
+    if (std::regex_search(str, match, regexPattern))
+    {
+        return match.position();
+    }
+    return -1;
+}
+
+std::vector<std::wstring> hmc_string_util::match(const std::wstring &str, const std::wstring &pattern)
+{
+    std::wregex regexPattern(pattern);
+    std::wsmatch match;
+    std::vector<std::wstring> matches;
+
+    std::wstring::const_iterator searchStart(str.cbegin());
+    while (std::regex_search(searchStart, str.cend(), match, regexPattern))
+    {
+        matches.push_back(match.str());
+        searchStart = match.suffix().first; // Move to next match
+    }
+
+    return matches;
+}
+
+long long hmc_string_util::indexOf(const std::wstring &str, const std::wstring &substr)
+{
+    size_t pos = str.find(substr);
+    if (pos != str.npos)
+    {
+        return static_cast<long long>(pos);
+    }
+    return -1;
+}
+
+std::vector<size_t> hmc_string_util::indexOfs(const std::wstring &str, const std::wstring &substr)
+{
+    std::vector<size_t> positionList = {};
+
+    size_t pos = str.find(substr);
+    if (pos != str.npos)
+    {
+        do
+        {
+            positionList.push_back(pos);
+            if (pos != str.npos)
+                pos = str.find(substr, pos + 1);
+        } while (pos != str.npos);
+    }
+    return positionList;
+}
+
+long long hmc_string_util::indexOf(const std::wstring &str, const wchar_t &substr)
+{
+    long long pos = str.find(substr);
+    if (pos != str.npos)
+    {
+        return static_cast<long long>(pos);
+    }
+    return -1;
+}
+
+std::vector<size_t> hmc_string_util::indexOfs(const std::wstring &str, const wchar_t &substr)
+{
+    std::vector<size_t> positionList = {};
+    for (size_t i = 0; i < str.size(); i++)
+    {
+        auto &at = str.at(i);
+        if (at == substr)
+        {
+            positionList.push_back(i);
+        }
+    }
+    return positionList;
+}
+
+std::string hmc_string_util::replaceRegex(const std::string &input, const std::string &pattern, const std::string &replacement, std::regex_constants::syntax_option_type flags)
+{
+    std::regex re(pattern, flags);
+    std::string output = std::regex_replace(input, re, replacement);
+    return output;
+}
+
+std::string hmc_string_util::replaceRegex(const std::string &input, const std::string &pattern, const std::string &replacement)
+{
+    std::regex re(pattern);
+    std::string output = std::regex_replace(input, re, replacement);
+    return output;
+}
+
+std::wstring hmc_string_util::replaceRegex(const std::wstring &input, const std::wstring &pattern, const std::wstring &replacement, std::regex_constants::syntax_option_type flags)
+{
+    std::wregex re(pattern, flags);
+    std::wstring output = std::regex_replace(input, re, replacement);
+    return output;
+}
+
+std::wstring hmc_string_util::replaceRegex(const std::wstring &input, const std::wstring &pattern, const std::wstring &replacement)
+{
+    std::wregex re(pattern);
+    std::wstring output = std::regex_replace(input, re, replacement);
+    return output;
+}
+
+
+inline std::wstring hmc_string_util::asciiConvers(std::string input)
+{
+    std::wstring result = std::wstring();
+
+    result.reserve(input.size());
+
+    for (auto &&item : input)
+    {
+        if (127 >= item && item >= 0)
+        {
+            result.push_back(static_cast<wchar_t>(item));
+        }
+    }
+
+    return result;
+}
+
+inline std::string hmc_string_util::asciiConvers(std::wstring input)
+{
+    std::string result = std::string();
+    result.reserve(input.size());
+
+    for (auto &&item : input)
+    {
+        if (127 >= item && item >= 0)
+        {
+            result.push_back(static_cast<char>(item));
+        }
+    }
+
+    return result;
 }

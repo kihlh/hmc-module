@@ -3,85 +3,37 @@
 // 防止重复导入
 #ifndef MODE_INTERNAL_INCLUDE_HMC_PROCESS_UTIL_H
 #define MODE_INTERNAL_INCLUDE_HMC_PROCESS_UTIL_H
-#include <memory>
-#include <map>
-#include <set>
-#include <vector>
-#include <string>
-#include <windows.h>
-#include <type_traits>
-#include <unordered_set>
-
-#include <Shellapi.h>
-#include <process.h>
-#include <Tlhelp32.h>
-#include <Psapi.h>
-#include <winuser.h>
-#include <winternl.h>
-#include <functional>
-
-#include <WtsApi32.h>
-#include <ShlObj_core.h>
-#pragma comment(lib, "Wtsapi32.lib")
 
 #define HMC_ENABLE_SHUT_DOWN_PRIV_TOKEN 1
 
-// 自动释放内存
-#ifndef VcFreeAuto
-#define VcFreeAuto(Virtua) \
-    std::shared_ptr<void>##Virtua##_shared_close_FreeVSAuto_(nullptr, [&](void *) {if (Virtua != NULL) {::VirtualFree(Virtua, 0, MEM_RELEASE);} });
-#endif // VcFreeAuto
-
-// 自动释放内存
-#ifndef CatchIg
-#define CatchIg \
-    () catch (...) {}
-#endif // CatchIg
-
-// 自动释放dll
-#ifndef FreeLibraryAuto
-#define FreeLibraryAuto(hModule) \
-    std::shared_ptr<void>##hModule##_shared_close_Library_(nullptr, [&](void *) {\
-    try\
-    {\
-        if (hModule != NULL) {::FreeLibrary(hModule);}\
-    }\
-    catch(...){} });
-#endif // FreeLibraryAuto
-
-// 自动释放Handle
-#ifndef FreeHandleAuto
-#define FreeHandleAuto(hModule) \
-    std::shared_ptr<void>##hModule##_shared_close_Handle_(nullptr, [&](void *) {\
-    try\
-    {\
-        if (hModule != NULL) {::CloseHandle(hModule);}\
-    }\
-    catch(...){} });
-#endif // FreeHandleAuto
+#include <vector>
+#include <string>
+#include <windows.h>
+// #include <Tlhelp32.h>
+#include <winternl.h>
+// #include <WtsApi32.h>
 
 // 预赋值头
 namespace hmc_process_util
 {
 
-    namespace hmc_define_util
+    struct ch_THREADENTRY32
     {
-
-#define None std::nullopt
-
-#define STATUS_INFO_LENGTH_MISMATCH ((NTSTATUS)0xC0000004L)
-
-        // 定义 ZwQuerySystemInformation 函数签名
-        typedef NTSTATUS(NTAPI *ZwQuerySystemInformation_t)(SYSTEM_INFORMATION_CLASS, PVOID, ULONG, PULONG);
-        typedef BOOL(WINAPI *LPFN_ISWOW64PROCESS)(HANDLE, PBOOL);
-
-        extern std::wstring GetProcessCommandLineOld(_In_ HANDLE ProcessHandle, _Out_ long *status);
-        extern std::wstring GetProcessCommandLineNew(_In_ HANDLE ProcessHandle, _Out_ long *status);
-        extern PVOID GetPebAddress(HANDLE ProcessHandle);
-        extern NTSTATUS PhpQueryProcessVariableSize(_In_ HANDLE ProcessHandle, _In_ _PROCESSINFOCLASS ProcessInformationClass, _Out_ PVOID *Buffer);
-        extern BOOLEAN PhHeapInitialization(_In_opt_ SIZE_T HeapReserveSize, _In_opt_ SIZE_T HeapCommitSize);
-
-    }
+        DWORD dwSize;
+        DWORD cntUsage;
+        DWORD th32ThreadID;       // this thread
+        DWORD th32OwnerProcessID; // Process this thread is associated with
+        LONG tpBasePri;
+        LONG tpDeltaPri;
+        DWORD dwFlags;
+        /**
+         * @brief 转为json
+         *
+         * @return std::wstring
+         */
+        std::wstring to_json();
+        static std::wstring to_json(std::vector<ch_THREADENTRY32> data);
+    };
 
     // （进程快照）PROCESSENTRY 结构体  它包含了进程的各种信息，如进程 ID、线程计数器、优先级等等
     struct ch_PROCESSENTRY32W
@@ -97,13 +49,15 @@ namespace hmc_process_util
         DWORD dwFlags;             // 标志位。
         std::wstring szExeFile;    // 进程名。
         ch_PROCESSENTRY32W();
-        ch_PROCESSENTRY32W(PROCESSENTRY32W input);
+        // ch_PROCESSENTRY32W(PROCESSENTRY32W input);
         /**
          * @brief 转为json
          *
          * @return std::wstring
          */
         std::wstring to_json();
+
+        static std::wstring to_json(std::vector<ch_PROCESSENTRY32W> data);
     };
 
     struct ch_ProcessHandle
@@ -153,7 +107,7 @@ namespace hmc_process_util
         // 进程的私有页计数。私有页是进程专用的虚拟内存页面，不被其他进程共享。
         DWORD PrivatePageCount;
 
-        ch_PSYSTEM_PROCESS_INFORMATION(PSYSTEM_PROCESS_INFORMATION processInfo);
+        ch_PSYSTEM_PROCESS_INFORMATION(void *processInfo);
 
         /**
          * @brief 转为json
@@ -161,6 +115,25 @@ namespace hmc_process_util
          * @return std::wstring
          */
         std::wstring to_json();
+
+        static std::wstring to_json(std::vector<ch_PSYSTEM_PROCESS_INFORMATION> data);
+    };
+
+    struct ch_ProcessEnumItem{
+        /**
+         * @brief 转为json
+         *
+         * @return std::wstring
+         */
+        std::wstring to_json();
+        // 进程id
+        DWORD pid;
+        // 进程的名称
+        std::wstring name;
+        // 进程路径
+        std::wstring path;
+
+        static std::wstring to_json(std::vector<ch_ProcessEnumItem> data);
     };
 
     /**
@@ -290,6 +263,14 @@ namespace hmc_process_util
      * @return std::vector<ch_PSYSTEM_PROCESS_INFORMATION>
      */
     extern std::vector<ch_PSYSTEM_PROCESS_INFORMATION> getAllProcessNtList();
+    
+    /**
+     * @brief 枚舉進程列表 
+     * @details wow64 下使用 EnumProcesses 正常模式下使用镜像获取
+     *
+     * @return std::vector<ch_PSYSTEM_PROCESS_INFORMATION>
+     */
+    extern std::vector<ch_ProcessEnumItem> getAllProcessList(bool isAppendPath);
 
     /**
      * @brief 判断进程是否在64位系统下运行32位镜像 `WOW64 是 x86 仿真器`
@@ -331,14 +312,14 @@ namespace hmc_process_util
      * @param processID
      * @return std::vector<THREADENTRY32>
      */
-    extern std::vector<THREADENTRY32> getProcessThreadList(DWORD processID);
+    extern std::vector<ch_THREADENTRY32> getProcessThreadList(DWORD processID);
 
     /**
      * @brief 枚举线程快照
      *
      * @return std::vector<THREADENTRY32>
      */
-    extern std::vector<THREADENTRY32> getThreadSnapshot();
+    extern std::vector<ch_THREADENTRY32> getThreadSnapshot();
 
     /**
      * @brief 枚举进程打开的模块路径
@@ -373,11 +354,11 @@ namespace hmc_process_util
 
     /**
      * @brief 尽可能的获取出此可执行文件的工作路径 哪怕他不是正确的
-     * 
-     * @param processID 
-     * @return std::wstring 
+     *
+     * @param processID
+     * @return std::wstring
      */
-    extern std::vector<std::wstring> getExecutableCwdList (DWORD processID);
+    extern std::vector<std::wstring> getExecutableCwdList(DWORD processID);
 
     class openProcessToken
     {
@@ -439,7 +420,8 @@ namespace hmc_process_util
     private:
         DWORD dwCount = 0;
         // 取值指针容器 需要调用WTSFreeMemory释放
-        PWTS_PROCESS_INFOW pi = {0};
+        // PWTS_PROCESS_INFOW pi ;
+
         int i = 0;
         //
         SID_NAME_USE nameuse = SidTypeUser;
@@ -452,8 +434,6 @@ namespace hmc_process_util
     class CpGetProcessCwdPath
     {
     private:
-#define PTR_ADD_OFFSET(Pointer, Offset) ((PVOID)((ULONG_PTR)(Pointer) + (ULONG_PTR)(Offset)))
-
         struct CURDIR
         {
             UNICODE_STRING DosPath;
@@ -523,6 +503,38 @@ namespace hmc_process_util
     {
         inline void operator()(wchar_t **ptr) const { ::LocalFree(ptr); }
     };
+
+    enum emGetNameType
+    {
+        // 查找所有可能性
+        GET_ALL = 1,
+        // 使用内核法查找
+        GET_NT = 2,
+        // 获取进程快照的名字
+        GET_SNP = 3,
+        // 找到时就停下
+        GET_FIND = 5,
+        // 找模块名
+        GET_MODE = 7,
+        // 即便是从可执行文件中路径获取也行
+        GET_FILE_NAME = 8
+    };
+
+    /**
+     * @brief 获取进程所有可能的名称
+     * 
+     * @param processID 进程id
+     * @return std::vector<std::wstring> 
+     */
+    extern std::vector<std::wstring> getProcessAllName(DWORD ProcessID);
+    /**
+     * @brief 获取进程名称
+     * 
+     * @param processID 进程id
+     * @param Type 获取类别
+     * @return std::wstring 
+     */
+    extern std::wstring getProcessName(DWORD ProcessID, emGetNameType Type );
 
 }
 

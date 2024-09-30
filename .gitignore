@@ -28,3 +28,15 @@ x64_Release/
 x86_Release/
 x64_Debug/
 x86_Debug/
+SharedLibrary/hmc-module-static_DEBUG_X64.idb
+SharedLibrary/hmc-module-static_DEBUG_X64.lib
+SharedLibrary/hmc-module-static_DEBUG_X64.pdb
+SharedLibrary/hmc-module-static_DEBUG_X86.idb
+SharedLibrary/hmc-module-static_DEBUG_X86.lib
+SharedLibrary/hmc-module-static_DEBUG_X86.pdb
+SharedLibrary/hmc-module-static_RELEASE_X64.lib
+SharedLibrary/hmc-module-static_RELEASE_X64.pdb
+SharedLibrary/hmc-module-static_RELEASE_X86.lib
+SharedLibrary/hmc-module-static_RELEASE_X86.pdb
+_Temp/
+example/example_sock/hmc-module

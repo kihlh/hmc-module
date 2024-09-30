@@ -1,9 +1,11 @@
 ﻿#include "hmc_automation_util.h"
 
+#include <random>
+
 //  keyboardHook functions
 namespace hmc_Keyboard
 {
-    bool hmc_Keyboard::keyboardHook::GpAllowHookToken = false;                                                                                               // 是否继续执行
+    std::atomic<bool> hmc_Keyboard::keyboardHook::GpAllowHookToken = false;                                                                                  // 是否继续执行
     HHOOK hmc_Keyboard::keyboardHook::GpHookHandle = NULL;                                                                                                   // 钩子句柄
     long long hmc_Keyboard::keyboardHook::GpEventNextID = 1;                                                                                                 // 当前id
     std::vector<hmc_Keyboard::keyboardHook::KeyboardEvent> hmc_Keyboard::keyboardHook::GpEventSessionList;                                                   // 鼠标按钮的事件容器(缓冲)  预扩容了256个
@@ -13,9 +15,9 @@ namespace hmc_Keyboard
 
     void hmc_Keyboard::keyboardHook::initializeBasicValues()
     {
-        if (!GpAllowHookToken && GpHookHandle == NULL)
+        if (!GpAllowHookToken.load(std::memory_order_seq_cst) && GpHookHandle == NULL)
         {
-            GpAllowHookToken = false;
+            GpAllowHookToken.store(false, std::memory_order_seq_cst);
             GpHookHandle = NULL;
             GpEventNextID = 1;
             GpWorkerThreadID = 0;
@@ -28,8 +30,9 @@ namespace hmc_Keyboard
     {
         return time > 0 || id >= 0;
     }
-    
-    std::string hmc_Keyboard::keyboardHook::KeyboardEvent::to_mpCode(){
+
+    std::string hmc_Keyboard::keyboardHook::KeyboardEvent::to_mpCode()
+    {
         std::string result = hmc_automation_util::GpMapVirtualCode(keyCode);
 
         if (!result.empty() && result.back() == '\\')
@@ -37,11 +40,11 @@ namespace hmc_Keyboard
             result.clear();
             result.append("\\\\");
         }
-         return result;
+        return result;
     }
 
-    
-    std::string hmc_Keyboard::keyboardHook::KeyboardEvent::to_mpKey(){
+    std::string hmc_Keyboard::keyboardHook::KeyboardEvent::to_mpKey()
+    {
         std::string result = hmc_automation_util::GpMapVirtualKey(keyCode);
 
         if (!result.empty() && result.back() == '\\')
@@ -49,9 +52,8 @@ namespace hmc_Keyboard
             result.clear();
             result.append("\\\\");
         }
-         return result;
+        return result;
     }
-
 
     std::string hmc_Keyboard::keyboardHook::KeyboardEvent::to_json()
     {
@@ -110,8 +112,8 @@ namespace hmc_Keyboard
 
             KeyboardEvent data = KeyboardEvent();
 
-            data.keyCode = ks->vkCode;
-            data.scanCode = ks->scanCode;
+            data.keyCode = static_cast<std::uint8_t>(ks->vkCode);
+            data.scanCode = static_cast<DWORD>(ks->scanCode);
             data.id = GpEventNextID;
             data.time = ks->time;
             data.flags = ks->flags;
@@ -152,7 +154,7 @@ namespace hmc_Keyboard
         {
             return result;
         }
-        GpAllowHookToken = true;
+        GpAllowHookToken.store(true, std::memory_order_seq_cst);
         GpEventSessionList.clear();
 
         GpHookHandle = ::SetWindowsHookExW(
@@ -172,7 +174,7 @@ namespace hmc_Keyboard
         // 获取消息循环
         while ((bRet = ::GetMessageW(&msg, nullptr, 0, 0)) != 0)
         {
-            if (bRet == -1 || (!GpAllowHookToken || !GpWorkerThreadID || GpHookHandle == NULL))
+            if (bRet == -1 || (!GpAllowHookToken.load(std::memory_order_seq_cst) || !GpWorkerThreadID || GpHookHandle == NULL))
             {
                 break;
             }
@@ -253,7 +255,7 @@ namespace hmc_Keyboard
     bool hmc_Keyboard::keyboardHook::isValidHookKeyboard()
     {
 
-        if (!GpAllowHookToken)
+        if (!GpAllowHookToken.load(std::memory_order_seq_cst))
         {
             if (GpHookHandle != NULL)
             {
@@ -267,7 +269,7 @@ namespace hmc_Keyboard
             }
         }
 
-        return GpAllowHookToken;
+        return GpAllowHookToken.load(std::memory_order_seq_cst);
     }
 
     void hmc_Keyboard::keyboardHook::push_keyboard_data(KBDLLHOOKSTRUCT *input)
@@ -275,8 +277,8 @@ namespace hmc_Keyboard
 
         KeyboardEvent data = KeyboardEvent();
 
-        data.keyCode = input->vkCode;
-        data.scanCode = input->scanCode;
+        data.keyCode = static_cast<std::uint8_t>(input->vkCode);
+        data.scanCode = static_cast<DWORD>(input->scanCode);
         data.id = GpEventNextID;
         data.time = input->time;
         data.flags = input->flags;
@@ -348,7 +350,7 @@ namespace hmc_Keyboard
 
     bool hmc_Keyboard::keyboardHook::stopHookKeyboard()
     {
-        if (!GpAllowHookToken)
+        if (!GpAllowHookToken.load(std::memory_order_seq_cst))
         {
             if (GpHookHandle != NULL)
             {
@@ -359,7 +361,7 @@ namespace hmc_Keyboard
                 }
 
                 GpEventSessionList.clear();
-                GpAllowHookToken = false;
+                GpAllowHookToken.store(false, std::memory_order_seq_cst);
                 GpEventNextID = 0;
                 GpWorkerThreadID = 0;
                 GpHookHandle = NULL;
@@ -372,7 +374,7 @@ namespace hmc_Keyboard
         bool is_kiilThread = GpWorkerThreadID == NULL ? true : ::PostThreadMessageW(GpWorkerThreadID, WM_QUIT, NULL, NULL);
 
         GpEventSessionList.clear();
-        GpAllowHookToken = false;
+        GpAllowHookToken.store(false, std::memory_order_seq_cst);
         GpEventNextID = 0;
         GpWorkerThreadID = 0;
         GpHookHandle = NULL;
@@ -386,7 +388,7 @@ namespace hmc_Keyboard
 namespace hmc_mouse
 {
     std::shared_mutex hmc_mouse::MouseHook::GpMouseStoreSharedMutex;                                                                          // 存储的互斥体
-    bool hmc_mouse::MouseHook::GpMouseAllowHookToken = false;                                                                                 // 是否继续执行
+    std::atomic<bool> hmc_mouse::MouseHook::GpMouseAllowHookToken = false;                                                                    // 是否继续执行
     DWORD hmc_mouse::MouseHook::GpMouseTheEventTime = 0;                                                                                      // 上次输入体的时间
     HHOOK hmc_mouse::MouseHook::GpHookMouseHandle = NULL;                                                                                     // 钩子句柄
     DWORD hmc_mouse::MouseHook::GpMouseShakeEventTime = 35;                                                                                   // 消除抖动的ms
@@ -463,7 +465,8 @@ namespace hmc_mouse
 
             return item_data;
         }
-        return std::string(R"({ "id":null,"time":null})");
+
+        return std::string(R"({ "id":0,"time":0})");
     }
 
     hmc_mouse::MouseHook::MouseEvent::MouseEvent()
@@ -479,7 +482,7 @@ namespace hmc_mouse
 
     bool hmc_mouse::MouseHook::isValidHookMouse()
     {
-        if (!GpMouseAllowHookToken)
+        if (!GpMouseAllowHookToken.load(std::memory_order_seq_cst))
         {
             if (GpHookMouseHandle != NULL)
             {
@@ -487,7 +490,7 @@ namespace hmc_mouse
             }
         }
 
-        return GpMouseAllowHookToken;
+        return GpMouseAllowHookToken.load(std::memory_order_seq_cst);
     }
 
     void hmc_mouse::MouseHook::push_Mouse_Event(hmc_mouse::MouseHook::MouseEvent event)
@@ -523,7 +526,7 @@ namespace hmc_mouse
         }
 
         // 结束监听或者句柄丢失
-        if (!GpMouseAllowHookToken || GpHookMouseHandle == NULL)
+        if (!GpMouseAllowHookToken.load(std::memory_order_seq_cst) || GpHookMouseHandle == NULL)
         {
             if (GpHookMouseHandle != NULL)
             {
@@ -664,7 +667,7 @@ namespace hmc_mouse
 
     void hmc_mouse::MouseHook::InitHookMouse()
     {
-        GpMouseAllowHookToken = true;
+        GpMouseAllowHookToken.store(true, std::memory_order_seq_cst);
 
         if (GpMouseEventSessionList.capacity() < 50)
         {
@@ -688,7 +691,7 @@ namespace hmc_mouse
         // 获取消息循环
         while ((bRet = ::GetMessageW(&msg, nullptr, 0, 0)) != 0)
         {
-            if (bRet == -1 || (!GpMouseAllowHookToken || GpHookMouseHandle == NULL))
+            if (bRet == -1 || (!GpMouseAllowHookToken.load(std::memory_order_seq_cst) || GpHookMouseHandle == NULL))
             {
                 break;
             }
@@ -758,9 +761,9 @@ namespace hmc_mouse
 
     void hmc_mouse::MouseHook::initializeBasicValues()
     {
-        if (!GpMouseAllowHookToken || GpHookMouseHandle == NULL)
+        if (!GpMouseAllowHookToken.load(std::memory_order_seq_cst) || GpHookMouseHandle == NULL)
         {
-            GpMouseAllowHookToken = false;
+            GpMouseAllowHookToken.store(false, std::memory_order_seq_cst);
             GpHookMouseHandle = NULL;
             GpMouseEventSessionList.clear();
             GpMouseTheEventTime = 0;

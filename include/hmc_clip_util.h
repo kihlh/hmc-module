@@ -4,11 +4,19 @@
 #ifndef MODE_INTERNAL_INCLUDE_HMC_CLIP_UTIL_H
 #define MODE_INTERNAL_INCLUDE_HMC_CLIP_UTIL_H
 
-#include <windows.h>
 #include <vector>
 #include <string>
-#include <Shlobj.h>
-#include <memory>
+#include <Windows.h>
+
+#ifndef _DWORD_DEFINED
+#define _DWORD_DEFINED
+typedef unsigned long DWORD;
+#endif // !_DWORD_DEFINED
+
+// #ifndef HWND
+// typedef struct HWND__* HWND;
+// #endif
+
 
 namespace hmc_clip_util
 {
@@ -37,17 +45,17 @@ namespace hmc_clip_util
     // 清空剪贴板
     extern bool ClearClipboard();
     // 获取当前剪贴板内容唯一id
-    extern DWORD GetClipboardSequenceID();
+    extern unsigned long GetClipboardSequenceID();
     // 枚举剪贴板中的格式列表
-    extern std::vector<UINT> EnumClipboardFormatList();
+    extern std::vector<std::uint8_t> EnumClipboardFormatList();
     // 剪贴板中的格式转文本
-    extern std::wstring GetClipboardFormatNameW(UINT format);
+    extern std::wstring GetClipboardFormatNameW(std::uint8_t format);
     // 剪贴板中的格式转文本
-    extern std::string GetClipboardFormatNameA(UINT format);
+    extern std::string GetClipboardFormatNameA(std::uint8_t format);
     // 判断剪贴板里面是否有图片
     extern bool HasClipboardImage();
     // 判断格式是否有效
-    extern bool isFormatAvailable(UINT uCF);
+    extern bool isFormatAvailable(std::uint8_t uCF);
     // 判断剪贴板数据是否为文本
     extern chClipTextType isClipboardText();
 
@@ -95,8 +103,8 @@ namespace hmc_clip_util
     {
         HWND hwnd;
         DWORD id;
-        std::vector<UINT> format;
-        UINT formatCount;
+        std::vector<std::uint8_t> format;
+        std::uint8_t formatCount;
     };
 
     chClipInfo GetClipboardInfo();

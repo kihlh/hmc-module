@@ -1,4 +1,18 @@
-﻿#include "./hmc_registr_util.h"
+﻿#include "hmc_registr_util.h"
+#include "hmc_util.h"
+
+#include <set>
+#include <map>
+#include <type_traits>
+// #include <ShlObj.h>
+#include <memory>
+#include <array>
+
+#include "hmc_byte_util.h"
+
+#define MAX_KEY_LENGTH 255
+#define MAX_VALUE_NAME 16383
+
 
 bool hmc_registr_util::eq_target_type(DWORD theType, DWORD targetType)
 {
@@ -92,7 +106,7 @@ std::uint32_t hmc_registr_util::chValue::getInt32()
 		return res;
 	}
 
-	return bytesToInt32(value);
+	return hmc_byte_util::bytesToInt32(value);
 
 	return res;
 }
@@ -105,7 +119,7 @@ std::uint16_t hmc_registr_util::chValue::getInt16()
 		return res;
 	}
 
-	return bytesToInt16(value);
+	return hmc_byte_util::bytesToInt16(value);
 
 	return res;
 }
@@ -118,7 +132,7 @@ std::uint64_t hmc_registr_util::chValue::getInt64()
 		return res;
 	}
 
-	return bytesToInt64(value);
+	return hmc_byte_util::bytesToInt64(value);
 }
 
 std::string hmc_registr_util::type_nameA(DWORD theType)
@@ -210,7 +224,7 @@ bool hmc_registr_util::hasRegistrFolder(HKEY hKey, std::string FolderPath)
 	bool result = false;
 	HKEY open_hkey;
 	DWORD openResult = ::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey);
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	switch (openResult)
 	{
@@ -227,7 +241,7 @@ bool hmc_registr_util::hasRegistrFolder(HKEY hKey, std::wstring FolderPath)
 	bool result = false;
 	HKEY open_hkey;
 	DWORD openResult = ::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey);
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	switch (openResult)
 	{
@@ -249,7 +263,7 @@ bool hmc_registr_util::removeRegistrFolder(HKEY hKey, std::wstring FolderPath, s
 	bool result = false;
 	HKEY open_hkey;
 	DWORD openResult = ::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey);
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	if (openResult == ERROR_SUCCESS)
 	{
@@ -270,7 +284,7 @@ bool hmc_registr_util::removeRegistrFolder(HKEY hKey, std::string FolderPath, st
 	bool result = false;
 	HKEY open_hkey;
 	DWORD openResult = ::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey);
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	if (openResult == ERROR_SUCCESS)
 	{
@@ -291,7 +305,7 @@ bool hmc_registr_util::removeRegistrValue(HKEY hKey, std::string FolderPath, std
 	}
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 	if (ERROR_SUCCESS == ::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey))
 	{
 		auto open_value = getValueStat(open_hkey, key);
@@ -310,7 +324,7 @@ bool hmc_registr_util::removeRegistrValue(HKEY hKey, std::wstring FolderPath, st
 	}
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 	if (ERROR_SUCCESS == ::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey))
 	{
 		auto open_value = getValueStat(open_hkey, key);
@@ -323,7 +337,7 @@ bool hmc_registr_util::removeRegistrValue(HKEY hKey, std::wstring FolderPath, st
 bool hmc_registr_util::removeRegistrKey(HKEY hKey, std::string FolderPath, std::string key)
 {
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 	if (ERROR_SUCCESS == ::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey))
 	{
 		return ::RegDeleteValueA(open_hkey, key.c_str()) == ERROR_SUCCESS;
@@ -335,7 +349,7 @@ bool hmc_registr_util::removeRegistrKey(HKEY hKey, std::string FolderPath, std::
 bool hmc_registr_util::removeRegistrKey(HKEY hKey, std::wstring FolderPath, std::wstring key)
 {
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 	if (ERROR_SUCCESS == ::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey))
 	{
 		return ::RegDeleteValueW(open_hkey, key.c_str()) == ERROR_SUCCESS;
@@ -347,7 +361,7 @@ bool hmc_registr_util::removeRegistrKey(HKEY hKey, std::wstring FolderPath, std:
 bool hmc_registr_util::removeRegistrTree(HKEY hKey, std::string subKey, std::string DirName)
 {
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 	if (ERROR_SUCCESS == ::RegOpenKeyExA(hKey, subKey.c_str(), 0, KEY_ALL_ACCESS, &open_hkey))
 	{
 		RegDeleteTreeA(open_hkey, DirName.c_str());
@@ -358,7 +372,7 @@ bool hmc_registr_util::removeRegistrTree(HKEY hKey, std::string subKey, std::str
 bool hmc_registr_util::removeRegistrTree(HKEY hKey, std::wstring subKey, std::wstring DirName)
 {
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 	if (ERROR_SUCCESS == ::RegOpenKeyExW(hKey, subKey.c_str(), 0, KEY_ALL_ACCESS, &open_hkey))
 	{
 		RegDeleteTreeW(open_hkey, DirName.c_str());
@@ -510,7 +524,7 @@ hmc_registr_util::chValueStat hmc_registr_util::getValueStat(HKEY hKey, std::str
 	hmc_registr_util::chValueStat result = {0, 0, false};
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 	if (::RegOpenKeyExA(hKey, subKey.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) == ERROR_SUCCESS)
 	{
 		// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
@@ -528,7 +542,7 @@ hmc_registr_util::chValueStat hmc_registr_util::getValueStat(HKEY hKey, std::wst
 	hmc_registr_util::chValueStat result = {0, 0, false};
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 	if (::RegOpenKeyExW(hKey, subKey.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) == ERROR_SUCCESS)
 	{
 		// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
@@ -573,7 +587,7 @@ hmc_registr_util::chFolderInfo hmc_registr_util::getRegistrFolderInfo(HKEY hKey,
 	DWORD cValues = 0;	// 目录键 的个数
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	if (::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) == ERROR_SUCCESS)
 	{
@@ -627,7 +641,7 @@ hmc_registr_util::chFolderInfo hmc_registr_util::getRegistrFolderInfo(HKEY hKey,
 	DWORD cValues = 0;	// 目录键 的个数
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	if (::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) == ERROR_SUCCESS)
 	{
@@ -677,7 +691,7 @@ size_t hmc_registr_util::getRegistrKeys(HKEY hKey, std::string path, std::vector
 {
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 	bool is_open = ::RegOpenKeyExA(hKey, path.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) == ERROR_SUCCESS;
 	if (is_open)
 	{
@@ -689,7 +703,7 @@ size_t hmc_registr_util::getRegistrKeys(HKEY hKey, std::string path, std::vector
 size_t hmc_registr_util::getRegistrKeys(HKEY hKey, std::wstring path, std::vector<std::wstring> &QueryFolderList, std::vector<std::wstring> &QueryKeyList)
 {
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 	bool is_open = ::RegOpenKeyExW(hKey, path.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) == ERROR_SUCCESS;
 	if (is_open)
 	{
@@ -1081,7 +1095,7 @@ hmc_registr_util::chValue hmc_registr_util::GetRegistrSourceValue(HKEY hKey, std
 {
 	hmc_registr_util::chValue result = {0, 0, {}, false};
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	if (::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) == ERROR_SUCCESS)
 	{
@@ -1095,7 +1109,7 @@ hmc_registr_util::chValue hmc_registr_util::GetRegistrSourceValue(HKEY hKey, std
 {
 	hmc_registr_util::chValue result = {0, 0, {}, false};
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	if (::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) == ERROR_SUCCESS)
 	{
@@ -1177,7 +1191,7 @@ bool hmc_registr_util::createRegistrFolder(HKEY hKey, std::string keyPath)
 	HKEY open_hkey = nullptr;
 	DWORD dwOptions = REG_OPTION_NON_VOLATILE;
 	DWORD dwDisposition;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 	long resulte = ::RegCreateKeyExA(hKey, keyPath.c_str(), 0, NULL,
 									 dwOptions, KEY_WRITE, NULL, &open_hkey, &dwDisposition);
 	if (resulte != ERROR_SUCCESS)
@@ -1192,7 +1206,7 @@ bool hmc_registr_util::createRegistrFolder(HKEY hKey, std::wstring keyPath)
 	HKEY open_hkey = nullptr;
 	DWORD dwOptions = REG_OPTION_NON_VOLATILE;
 	DWORD dwDisposition;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	long resulte = ::RegCreateKeyExW(hKey, keyPath.c_str(), 0, NULL,
 									 dwOptions, KEY_WRITE, NULL, &open_hkey, &dwDisposition);
@@ -1209,8 +1223,8 @@ bool hmc_registr_util::copyRegistrFolder(HKEY hKey, std::string sourcePath, std:
 	HKEY toHKey = nullptr;
 	DWORD dwDisposition;
 
-	FreeRegKeyAuto(sourceHKey);
-	FreeRegKeyAuto(toHKey);
+	HMC_FreeRegKeyAuto(sourceHKey);
+	HMC_FreeRegKeyAuto(toHKey);
 
 	if (ERROR_SUCCESS != ::RegOpenKeyExA(hKey, sourcePath.c_str(), 0, KEY_ALL_ACCESS, &sourceHKey))
 	{
@@ -1231,8 +1245,8 @@ bool hmc_registr_util::copyRegistrFolder(HKEY hKey, std::wstring sourcePath, std
 	HKEY toHKey = nullptr;
 	DWORD dwDisposition;
 
-	FreeRegKeyAuto(sourceHKey);
-	FreeRegKeyAuto(toHKey);
+	HMC_FreeRegKeyAuto(sourceHKey);
+	HMC_FreeRegKeyAuto(toHKey);
 
 	if (ERROR_SUCCESS != ::RegOpenKeyExW(hKey, sourcePath.c_str(), 0, KEY_ALL_ACCESS, &sourceHKey))
 	{
@@ -1318,7 +1332,7 @@ bool hmc_registr_util::SetRegistrSourceValue(HKEY hKey, std::string FolderPath, 
 bool hmc_registr_util::SetRegistrSourceValue(HKEY hKey, std::wstring FolderPath, std::wstring KeyName, DWORD type, const std::vector<BYTE> &value)
 {
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 	bool is_open = ::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) == ERROR_SUCCESS;
 
 	if (is_open)
@@ -1332,7 +1346,7 @@ bool hmc_registr_util::SetRegistrSourceValue(HKEY hKey, std::wstring FolderPath,
 bool hmc_registr_util::SetRegistrSourceValue(HKEY hKey, std::string FolderPath, std::string KeyName, DWORD type, const std::vector<BYTE> &value)
 {
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 	bool is_open = ::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) == ERROR_SUCCESS;
 
 	if (is_open)
@@ -1825,7 +1839,7 @@ bool hmc_registr_util::SetRegistrString(HKEY hKey, std::wstring FolderPath, std:
 	}
 
 	DWORD to_type = expand ? REG_EXPAND_SZ : REG_SZ;
-	DWORD buff_size = static_cast<DWORD>(Input.size() * sizeof(char));
+	DWORD buff_size = static_cast<DWORD>(Input.size() * sizeof(wchar_t));
 
 	if (::RegSetValueExW(token, KeyName.c_str(), NULL, to_type, reinterpret_cast<const BYTE *>(Input.c_str()), buff_size) == ERROR_SUCCESS)
 	{
@@ -1882,7 +1896,7 @@ bool hmc_registr_util::SetRegistrString(HKEY hKey, std::wstring FolderPath, std:
 		return result;
 	}
 
-	DWORD buff_size = static_cast<DWORD>(Input.size() * sizeof(char));
+	DWORD buff_size = static_cast<DWORD>(Input.size() * sizeof(wchar_t));
 
 	if (::RegSetValueExW(token, KeyName.c_str(), NULL, retype, reinterpret_cast<const BYTE *>(Input.c_str()), buff_size) == ERROR_SUCCESS)
 	{
@@ -2205,7 +2219,7 @@ std::vector<std::wstring> hmc_registr_util::GetRegistrMulti(HKEY hKey, std::wstr
 	std::vector<std::wstring> list = {};
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	if (::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) != ERROR_SUCCESS)
 	{
@@ -2264,7 +2278,7 @@ std::vector<std::string> hmc_registr_util::GetRegistrMulti(HKEY hKey, std::strin
 	std::vector<std::string> list = {};
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	if (::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) != ERROR_SUCCESS)
 	{
@@ -2323,7 +2337,7 @@ std::wstring hmc_registr_util::GetRegistrString(HKEY hKey, std::wstring FolderPa
 	std::wstring result = L"";
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	if (::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) != ERROR_SUCCESS)
 	{
@@ -2382,7 +2396,7 @@ std::string hmc_registr_util::GetRegistrString(HKEY hKey, std::string FolderPath
 	std::string result = {};
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	if (::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) != ERROR_SUCCESS)
 	{
@@ -2437,7 +2451,7 @@ std::uint32_t hmc_registr_util::GetRegistrInt32(HKEY hKey, std::wstring FolderPa
 	std::uint32_t result = 0;
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	if (::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) != ERROR_SUCCESS)
 	{
@@ -2478,7 +2492,7 @@ std::uint32_t hmc_registr_util::GetRegistrInt32(HKEY hKey, std::string FolderPat
 	std::uint32_t result = 0;
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	if (::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) != ERROR_SUCCESS)
 	{
@@ -2519,7 +2533,7 @@ std::uint64_t hmc_registr_util::GetRegistrInt64(HKEY hKey, std::wstring FolderPa
 	std::uint64_t result = 0;
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	if (::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) != ERROR_SUCCESS)
 	{
@@ -2560,7 +2574,7 @@ std::uint64_t hmc_registr_util::GetRegistrInt64(HKEY hKey, std::string FolderPat
 	std::uint64_t result = 0;
 
 	HKEY open_hkey = nullptr;
-	FreeRegKeyAuto(open_hkey);
+	HMC_FreeRegKeyAuto(open_hkey);
 
 	if (::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) != ERROR_SUCCESS)
 	{
@@ -2595,3 +2609,4 @@ std::uint64_t hmc_registr_util::GetRegistrInt64(HKEY hKey, std::string FolderPat
 
 	return result;
 }
+
