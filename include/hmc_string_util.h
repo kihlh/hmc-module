@@ -742,57 +742,134 @@ namespace hmc_string_util
 
 	/**
 	 * @brief 正则替换
-	 * 
+	 *
 	 * @param input 文本体
 	 * @param pattern 正则匹配式
 	 * @param replacement 替换值
 	 * @param flags 执行的标志 默认为 std::regex_constants::ECMAScript
-	 * @return std::string 
+	 * @return std::string
 	 */
 	extern std::string replaceRegex(const std::string &input, const std::string &pattern, const std::string &replacement, std::regex_constants::syntax_option_type flags);
 	/**
 	 * @brief 正则替换
-	 * 
+	 *
 	 * @param input 文本体
 	 * @param pattern 正则匹配式
 	 * @param replacement 替换值
-	 * @return std::string 
+	 * @return std::string
 	 */
 	extern std::string replaceRegex(const std::string &input, const std::string &pattern, const std::string &replacement);
 	/**
 	 * @brief 正则替换
-	 * 
+	 *
 	 * @param input 文本体
 	 * @param pattern 正则匹配式
 	 * @param replacement 替换值
-	 * @return std::wstring 
+	 * @return std::wstring
 	 */
 	extern std::wstring replaceRegex(const std::wstring &input, const std::wstring &pattern, const std::wstring &replacement);
 	/**
 	 * @brief 正则替换
-	 * 
+	 *
 	 * @param input 文本体
 	 * @param pattern 正则匹配式
 	 * @param replacement 替换值
 	 * @param flags 执行的标志 默认为 std::regex_constants::ECMAScript
-	 * @return std::wstring 
+	 * @return std::wstring
 	 */
 	extern std::wstring replaceRegex(const std::wstring &input, const std::wstring &pattern, const std::wstring &replacement, std::regex_constants::syntax_option_type flags);
-    /**
-     * @brief 宽窄文本转码 但是仅限于ascii
-     *
-     * @param input
-     * @return std::wstring
-     */
-    extern inline std::wstring asciiConvers(std::string input);
+	/**
+	 * @brief 宽窄文本转码 但是仅限于ascii
+	 *
+	 * @param input
+	 * @return std::wstring
+	 */
+	extern std::wstring asciiConvers(std::string input);
 
-    /**
-     * @brief 宽窄文本转码 但是仅限于ascii
-     *
-     * @param input
-     * @return std::wstring
-     */
-    extern inline std::string asciiConvers(std::wstring input);
+	/**
+	 * @brief 宽窄文本转码 但是仅限于ascii
+	 *
+	 * @param input
+	 * @return std::wstring
+	 */
+	extern std::string asciiConvers(std::wstring input);
+
+	/**
+	 * @brief 删除指定的字符
+	 *
+	 * @param input 输入
+	 * @param matching 匹配的字符
+	 * @return size_t
+	 */
+	extern size_t removeAllCharPtr(std::wstring& input, wchar_t matching);
+
+	/**
+	 * @brief 删除指定的字符
+	 *
+	 * @param input 输入
+	 * @param matching 匹配的字符
+	 * @return size_t
+	 */
+	extern size_t removeAllCharPtr(std::string& input, char matching);
+	/**
+	 * @brief 纯文本数组 \0 截断单个string  \0\0结束
+	 *
+	 * @param input
+	 * @return std::wstring
+	 */
+	extern std::wstring convertMultiStringArray(const std::vector<std::wstring> input);
+	/**
+	 * @brief 纯文本数组 \0 截断单个string  \0\0结束
+	 *
+	 * @param input
+	 * @return std::string
+	 */
+	extern std::string convertMultiStringArray(const std::vector<std::string> input);	/**
+	 * @brief 纯文本数组 \0 截断单个string  \0\0结束
+	 *
+	 * @param input
+	 * @return std::vector<std::string>
+	 */
+	extern std::vector<std::wstring> convertMultiStringArray(const std::wstring input);
+	/**
+	 * @brief 纯文本数组 \0 截断单个string  \0\0结束
+	 *
+	 * @param input
+	 * @return std::vector<std::string>
+	 */
+	extern std::vector<std::string> convertMultiStringArray(const std::string input);
+	/**
+	 * @brief 拼接文本 并且添加分隔符
+	 *
+	 * @param input 数组
+	 * @param separator 分隔符
+	 * @return std::wstring
+	 */
+	extern std::wstring join(const std::vector<std::wstring> input, wchar_t separator);
+	/**
+	 * @brief 拼接文本 并且添加分隔符
+	 *
+	 * @param input 数组
+	 * @param separator 分隔符
+	 * @return std::string
+	 */
+	extern std::string join(const std::vector<std::string> input, char separator);
+
+	/**
+	 * @brief 计算出数组文本总长度
+	 * 
+	 * @param input 
+	 * @return size_t 
+	 */
+	extern size_t size (const std::vector<std::string> input);
+	/**
+	 * @brief 计算出数组文本总长度
+	 * 
+	 * @param input 
+	 * @return size_t 
+	 */
+	extern size_t size (const std::vector<std::wstring> input);
+
 };
 
 #if _HAS_CXX17

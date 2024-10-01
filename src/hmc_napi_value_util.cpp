@@ -3766,7 +3766,7 @@ napi_value hmc_napi_create_value::ErrorBreak(napi_env env, std::wstring error, s
     napi_throw_error(
         env,
         hmc_string_util::utf16_to_utf8(ErrorCode).c_str(),
-        hmc_string_util::utf16_to_utf8(ErrorCode).c_str());
+        hmc_string_util::utf16_to_utf8(msg_data).c_str());
     return hmc_napi_create_value::Null(env);
 }
 

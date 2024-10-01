@@ -7,6 +7,7 @@
 #define MODE_INTERNAL_INCLUDE_HMC_NAPI_VALUE_UTIL_HPP
 
 #define NAPI_EXPERIMENTAL
+#include "node/node_api.h"
 
 #include <atomic>
 #include <windows.h>
@@ -16,9 +17,6 @@
 #include <map>
 #include <set>
 #include <string>
-#include <iostream>
-#include <node_api.h>
-#include <iostream>
 #include <functional>
 #include <unordered_map>
 #include <thread>
@@ -33,6 +31,15 @@ const size_t BIT_2GB = 8589934592ull;
 const size_t BIT_2GB = 8589934592ui32;
 #endif
 
+#ifdef _WIN64 
+// 如果发现无法找到静态文件可以测试以下方法(其中一种)
+// 1. 将路径替换为绝对的路径(d:/SharedLibrary/node_x64.lib)
+// 2. 在vs属性页中配置 VC++目录 ->常规->库目录 ($(静态模块位置)/SharedLibrary)
+// 3. 在vs属性页中配置 链接器->常规->附加库目录($(静态模块位置)/SharedLibrary)
+#pragma comment(lib, "node_x64.lib")
+#else  
+#pragma comment(lib, "node_x86.lib")
+#endif
 
 
 #define NAME_STR(func) #func

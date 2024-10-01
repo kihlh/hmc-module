@@ -88,7 +88,7 @@
     std::shared_ptr<void> HMC_CONCAT(_Shared_close_Library, __LINE__)(nullptr, [&](void *) {\
     try\
     {\
-       code\
+       code;\
     }\
     catch(...){} });
 #endif // HMC_FreeAnyAuto

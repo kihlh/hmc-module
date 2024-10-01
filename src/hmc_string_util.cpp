@@ -3785,7 +3785,6 @@ std::wstring hmc_string_util::replaceRegex(const std::wstring &input, const std:
     return output;
 }
 
-
 inline std::wstring hmc_string_util::asciiConvers(std::string input)
 {
     std::wstring result = std::wstring();
@@ -3814,6 +3813,230 @@ inline std::string hmc_string_util::asciiConvers(std::wstring input)
         {
             result.push_back(static_cast<char>(item));
         }
+    }
+
+    return result;
+}
+
+std::wstring hmc_string_util::convertMultiStringArray(const std::vector<std::wstring> input)
+{
+    std::wstring result = std::wstring();
+
+    result.reserve(size(input) + input.size() * 2);
+
+    for (size_t i = 0; i < input.size(); i++)
+    {
+        auto &at = input.at(i);
+        std::wstring temp = std::wstring(at.begin(), at.end());
+        removeAllCharPtr(temp, '\0');
+        result.append(std::move(temp));
+
+        if (i + 1 < input.size())
+        {
+            result.push_back('\0');
+        }
+    }
+
+    for (size_t i = 0; i < result.size(); i++)
+    {
+        if (result.empty() || result.back() != '\0')
+        {
+            break;
+        }
+
+        result.pop_back();
+    }
+
+    result.push_back('\0');
+    result.push_back('\0');
+    return result;
+}
+
+std::string hmc_string_util::convertMultiStringArray(const std::vector<std::string> input)
+{
+    std::string result = std::string();
+    result.reserve(size(input) + input.size() * 2);
+
+    for (size_t i = 0; i < input.size(); i++)
+    {
+        auto &at = input.at(i);
+        std::string temp = std::string(at.begin(), at.end());
+        removeAllCharPtr(temp, '\0');
+        result.append(std::move(temp));
+
+        if (i + 1 < input.size())
+        {
+            result.push_back('\0');
+        }
+    }
+
+    for (size_t i = 0; i < result.size(); i++)
+    {
+        if (result.empty() || result.back() != '\0')
+        {
+            break;
+        }
+
+        result.pop_back();
+    }
+
+    result.push_back('\0');
+    result.push_back('\0');
+    return result;
+}
+
+std::wstring hmc_string_util::join(const std::vector<std::wstring> input, wchar_t separator)
+{
+    std::wstring result = std::wstring();
+    result.reserve(size(input) + input.size() * 2);
+
+    for (size_t i = 0; i < input.size(); i++)
+    {
+        auto &at = input.at(i);
+        result.append(at.begin(), at.end());
+        if (i + 1 < input.size())
+        {
+            result.push_back(separator);
+        }
+    }
+    return result;
+}
+
+std::string hmc_string_util::join(const std::vector<std::string> input, char separator)
+{
+    std::string result = std::string();
+    result.reserve(size(input) + input.size() * 2);
+
+    for (size_t i = 0; i < input.size(); i++)
+    {
+        auto &at = input.at(i);
+        result.append(at.begin(), at.end());
+
+        if (i + 1 < input.size())
+        {
+            result.push_back(separator);
+        }
+    }
+    return result;
+}
+
+inline size_t hmc_string_util::size(const std::vector<std::string> input)
+{
+    size_t result = 0;
+
+    for (size_t i = 0; i < input.size(); i++)
+    {
+        auto &at = input.at(i);
+        result = result + at.size();
+    }
+
+    return result;
+}
+
+inline size_t hmc_string_util::size(const std::vector<std::wstring> input)
+{
+    size_t result = 0;
+
+    for (size_t i = 0; i < input.size(); i++)
+    {
+        auto &at = input.at(i);
+        result = result + at.size();
+    }
+
+    return result;
+}
+
+inline size_t hmc_string_util::removeAllCharPtr(std::wstring &input, wchar_t matching)
+{
+    size_t replacementFrequency = 0;
+
+    auto end_pos = input.size();
+    while ((end_pos = input.find_last_not_of(matching)) != input.size() - 1)
+    {
+        input.erase(end_pos + 1);
+        replacementFrequency++;
+    }
+
+    return replacementFrequency;
+}
+
+inline size_t hmc_string_util::removeAllCharPtr(std::string &input, char matching)
+{
+    size_t replacementFrequency = 0;
+
+    auto end_pos = input.size();
+    while ((end_pos = input.find_last_not_of(matching)) != input.size() - 1)
+    {
+        input.erase(end_pos + 1);
+        replacementFrequency++;
+    }
+
+    return replacementFrequency;
+}
+
+std::vector<std::wstring> convertMultiStringArray(const std::wstring input)
+{
+    std::vector<std::wstring> result = {};
+
+    std::wstring temp = std::wstring();
+
+    size_t size = input.size();
+
+    for (size_t i = 0; i < size; i++)
+    {
+        auto &it = input.at(i);
+
+        if (it == '\0')
+        {
+            // 最后两位如果是\0忽略它
+            if (i + 2 < size)
+            {
+                result.push_back(std::move(temp));
+                temp.clear();
+            }
+
+            continue;
+        }
+        temp.push_back(it);
+    }
+
+    if (!temp.empty())
+    {
+        result.push_back(std::move(temp));
+    }
+
+    return result;
+}
+
+std::vector<std::string> convertMultiStringArray(const std::string input)
+{
+    std::vector<std::string> result = {};
+
+    std::string temp = std::string();
+
+    size_t size = input.size();
+
+    for (size_t i = 0; i < size; i++)
+    {
+        auto &it = input.at(i);
+
+        if (it == '\0')
+        {
+            // 最后两位如果是\0忽略它
+            if (i + 2 < size)
+            {
+                result.push_back(std::move(temp));
+                temp.clear();
+            }
+
+            continue;
+        }
+        temp.push_back(it);
+    }
+
+    if (!temp.empty())
+    {
+        result.push_back(std::move(temp));
     }
 
     return result;
