@@ -201,8 +201,21 @@ namespace hmc_string_util
 	extern std::vector<std::string> split(std::string &sourcePtr, char splitter);
 	extern void split(std::string &sourcePtr, char splitter, std::vector<std::string> &item_list);
 
-	// 转义json文本
+	/**
+	 * @brief 转义json文本
+	 * 
+	 * @param input 文本
+	 * @param is_to_value 添加 " 
+	 * @return std::wstring 
+	 */
 	extern std::wstring escapeJsonString(const std::wstring &input, bool is_to_value = false);
+	/**
+	 * @brief 转义json文本
+	 * 
+	 * @param input 文本
+	 * @param is_to_value 添加 " 
+	 * @return std::wstring 
+	 */
 	extern std::string escapeJsonString(const std::string &input, bool is_to_value = false);
 
 	// 替换单次

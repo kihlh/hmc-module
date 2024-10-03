@@ -1370,7 +1370,7 @@ POINT hmc_napi_get_value::point(napi_env env, napi_value objectValue)
     POINT result = POINT{};
     result.x = 0;
     result.y = 0;
-    //napi_status status;
+    // napi_status status;
     napi_value x_value;
     napi_value y_value;
 
@@ -1551,7 +1551,7 @@ napi_value hmc_napi_create_value::String(napi_env env, std::string value, size_t
     napi_status status;
     napi_value result;
 
-    if (re_size > value.size())
+    if (re_size > value.size() || re_size == 0)
     {
         re_size = value.size();
     }
@@ -1586,7 +1586,7 @@ napi_value hmc_napi_create_value::StringA(napi_env env, std::string value, size_
 
     std::wstring result2w = hmc_string_util::ansi_to_utf16(value);
 
-    if (re_size > value.size())
+    if (re_size > value.size() || re_size == 0)
     {
         re_size = value.size();
     }
@@ -1614,7 +1614,7 @@ napi_value hmc_napi_create_value::String(napi_env env, std::wstring value, size_
     napi_status status;
     napi_value result;
 
-    if (re_size > value.size())
+    if (re_size > value.size() || re_size == 0)
     {
         re_size = value.size();
     }
@@ -1733,7 +1733,7 @@ napi_value hmc_napi_create_value::Number(napi_env env, HWND number)
     return result;
 }
 
-napi_value hmc_napi_create_value::Number(napi_env env, unsigned long number)
+napi_value hmc_napi_create_value::Number(napi_env env, unsigned long long number)
 {
     napi_status status;
     napi_value result;
@@ -1754,7 +1754,7 @@ napi_value hmc_napi_create_value::Number(napi_env env, unsigned long number)
  * @param bigint
  * @return napi_value
  */
-napi_value hmc_napi_create_value::Bigint(napi_env env, long bigint)
+napi_value hmc_napi_create_value::Bigint(napi_env env, int64_t bigint)
 {
 
     napi_status status;
@@ -1770,7 +1770,7 @@ napi_value hmc_napi_create_value::Bigint(napi_env env, long bigint)
     return result;
 }
 
-napi_value hmc_napi_create_value::Bigint(napi_env env, long long bigint)
+napi_value hmc_napi_create_value::Bigint(napi_env env, unsigned long long bigint)
 {
 
     napi_status status;
@@ -1957,107 +1957,217 @@ napi_value hmc_napi_create_value::Undefined(napi_env env)
  */
 napi_value hmc_napi_create_value::New(napi_env env, std::any anyValue)
 {
-    //napi_status status;
+    // napi_status status;
     napi_value ResultForAny = NULL;
     if (anyValue.has_value())
     {
+        auto openAny = hmc_util::anyCast(&anyValue);
+
+        if (openAny.is_value())
+        {
+
+            if (openAny.is_int64())
+            {
+                ResultForAny = Number(env, openAny.get_int64().value_or(0));
+                return ResultForAny;
+            }
+
+            if (openAny.is_bool())
+            {
+                ResultForAny = Boolean(env, openAny.get_bool().value_or(0));
+                return ResultForAny;
+            }
+
+            if (openAny.is_buffer())
+            {
+                auto buff = openAny.get_buffer().value_or(std::vector<uint8_t>());
+                ResultForAny = Buffer(env, buff);
+                return ResultForAny;
+            }
+
+            if (openAny.is_string())
+            {
+                auto buff = openAny.get_string().value_or("");
+                ResultForAny = String(env, buff);
+                return ResultForAny;
+            }
+
+            if (openAny.is_wstring())
+            {
+                auto buff = openAny.get_wstring().value_or(L"");
+                ResultForAny = String(env, buff);
+                return ResultForAny;
+            }
+
+            if (openAny.is_float())
+            {
+                auto buff = openAny.get_float().value_or((long double)0.0);
+                ResultForAny = Number(env, static_cast<double>(buff));
+                return ResultForAny;
+            }
+
+        }
+
         // 整形
-        if (anyValue.type() == typeid(DWORD))
-        {
-            ResultForAny = Number(env, std::any_cast<DWORD>(anyValue));
-        }
-        else if (anyValue.type() == typeid(int))
-        {
-            ResultForAny = Number(env, std::any_cast<int>(anyValue));
-        }
-        else if (anyValue.type() == typeid(long))
-        {
-            ResultForAny = Number(env, (int64_t)std::any_cast<long>(anyValue));
-        }
-        else if (anyValue.type() == typeid(long long))
-        {
-            ResultForAny = Number(env, std::any_cast<long long>(anyValue));
-        }
-        else if (anyValue.type() == typeid(HWND))
+        // if (anyValue.type() == typeid(DWORD))
+        // {
+        //     ResultForAny = Number(env, (long long)std::any_cast<DWORD>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(int))
+        // {
+        //     ResultForAny = Number(env, std::any_cast<int>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(long))
+        // {
+        //     ResultForAny = Number(env, (int64_t)std::any_cast<long>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(long long))
+        // {
+        //     ResultForAny = Number(env, std::any_cast<long long>(anyValue));
+        //     return ResultForAny;
+        // }
+         if (anyValue.type() == typeid(HWND))
         {
             ResultForAny = Number(env, std::any_cast<HWND>(anyValue));
+            return ResultForAny;
         }
-        else if (anyValue.type() == typeid(int64_t))
+        // else if (anyValue.type() == typeid(int64_t))
+        // {
+        //     ResultForAny = Number(env, std::any_cast<int64_t>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(unsigned short))
+        // {
+        //     ResultForAny = Number(env, (int)std::any_cast<unsigned short>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(unsigned int))
+        // {
+        //     ResultForAny = Number(env, (int64_t)std::any_cast<unsigned int>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(signed char))
+        // {
+        //     ResultForAny = Number(env, (int)std::any_cast<signed char>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(short))
+        // {
+        //     ResultForAny = Number(env, std::any_cast<short>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(unsigned long long) || anyValue.type() == typeid(unsigned long))
+        // {
+        //     ResultForAny = Number(env, (unsigned long long)std::any_cast<unsigned long long>(anyValue));
+        //     return ResultForAny;
+        // }
+        // // 浮点
+        // else if (anyValue.type() == typeid(float))
+        // {
+        //     ResultForAny = Number(env, (double)std::any_cast<float>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(double))
+        // {
+        //     ResultForAny = Number(env, std::any_cast<double>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(long double))
+        // {
+        //     ResultForAny = Number(env, (double)std::any_cast<long double>(anyValue));
+        //     return ResultForAny;
+        // }
+        // // 文本型
+        // else if (anyValue.type() == typeid(std::string))
+        // {
+        //     ResultForAny = String(env, std::any_cast<std::string>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(std::wstring))
+        // {
+        //     ResultForAny = String(env, std::any_cast<std::wstring>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(char *))
+        // {
+        //     ResultForAny = String(env, std::any_cast<char *>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(CHAR *))
+        // {
+        //     ResultForAny = String(env, std::any_cast<CHAR *>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(WCHAR *))
+        // {
+        //     ResultForAny = String(env, std::any_cast<WCHAR *>(anyValue));
+        //     return ResultForAny;
+        // }
+        // // bool
+        // else if (anyValue.type() == typeid(bool))
+        // {
+        //     ResultForAny = Boolean(env, std::any_cast<bool>(anyValue));
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(std::vector<uint8_t>))
+        // {
+        //     auto temp = std::any_cast<std::vector<uint8_t>>(anyValue);
+        //     ResultForAny = Buffer(env, temp);
+        //     return ResultForAny;
+        // }
+        else if (typeid(std::vector<std::wstring>) == anyValue.type())
         {
-            ResultForAny = Number(env, std::any_cast<int64_t>(anyValue));
+            auto Input = std::any_cast<std::vector<std::wstring>>(anyValue);
+            auto array = hmc_napi_create_value::jsArray(env);
+            for (size_t i = 0; i < Input.size(); i++)
+            {
+                auto &at = Input.at(i);
+                array.putString(at, at.size());
+            }
+            ResultForAny = array.toValue();
+            return ResultForAny;
         }
-        else if (anyValue.type() == typeid(short))
+        else if (typeid(std::vector<std::string>) == anyValue.type())
         {
-            ResultForAny = Number(env, std::any_cast<short>(anyValue));
+            auto Input = std::any_cast<std::vector<std::string>>(anyValue);
+            auto array = hmc_napi_create_value::jsArray(env);
+            for (size_t i = 0; i < Input.size(); i++)
+            {
+                auto &at = Input.at(i);
+                array.putString(at, at.size());
+            }
+            ResultForAny = array.toValue();
+            return ResultForAny;
         }
-        else if (anyValue.type() == typeid(unsigned long long) || anyValue.type() == typeid(unsigned long))
-        {
-            ResultForAny = Number(env, (unsigned long)std::any_cast<unsigned long long>(anyValue));
-        }
-        // 浮点
-        else if (anyValue.type() == typeid(float))
-        {
-            ResultForAny = Number(env, (double)std::any_cast<float>(anyValue));
-        }
-        else if (anyValue.type() == typeid(double))
-        {
-            ResultForAny = Number(env, std::any_cast<double>(anyValue));
-        }
-        else if (anyValue.type() == typeid(long double))
-        {
-            ResultForAny = Number(env, (double)std::any_cast<long double>(anyValue));
-        }
-        // 文本型
-        else if (anyValue.type() == typeid(std::string))
-        {
-            ResultForAny = String(env, std::any_cast<std::string>(anyValue));
-        }
-        else if (anyValue.type() == typeid(std::wstring))
-        {
-            ResultForAny = String(env, std::any_cast<std::wstring>(anyValue));
-        }
-        else if (anyValue.type() == typeid(char *))
-        {
-            ResultForAny = String(env, std::any_cast<char *>(anyValue));
-        }
-        else if (anyValue.type() == typeid(CHAR *))
-        {
-            ResultForAny = String(env, std::any_cast<CHAR *>(anyValue));
-        }
-        else if (anyValue.type() == typeid(WCHAR *))
-        {
-            ResultForAny = String(env, std::any_cast<WCHAR *>(anyValue));
-        }
-        // bool
-        else if (anyValue.type() == typeid(bool))
-        {
-            ResultForAny = Boolean(env, std::any_cast<bool>(anyValue));
-        }
-        else if (anyValue.type() == typeid(std::vector<uint8_t>))
-        {
-            auto temp = std::any_cast<std::vector<uint8_t>>(anyValue);
-            ResultForAny = Buffer(env, temp);
-        }
-        else if (anyValue.type() == typeid(std::vector<BYTE>))
-        {
-            auto temp = std::any_cast<std::vector<BYTE>>(anyValue);
-            ResultForAny = Buffer(env, temp);
-        }
-        else if (anyValue.type() == typeid(std::vector<byte>))
-        {
-            auto temp = std::any_cast<std::vector<byte>>(anyValue);
-            ResultForAny = Buffer(env, temp);
-        }
+        // else if (anyValue.type() == typeid(std::vector<BYTE>))
+        // {
+        //     auto temp = std::any_cast<std::vector<BYTE>>(anyValue);
+        //     ResultForAny = Buffer(env, temp);
+        //     return ResultForAny;
+        // }
+        // else if (anyValue.type() == typeid(std::vector<byte>))
+        // {
+        //     auto temp = std::any_cast<std::vector<byte>>(anyValue);
+        //     ResultForAny = Buffer(env, temp);
+        //     return ResultForAny;
+        // }
         else if (anyValue.type() == typeid(BOOL))
         {
             ResultForAny = Boolean(env, std::any_cast<BOOL>(anyValue));
+            return ResultForAny;
         }
 
         else
         {
             ResultForAny = Undefined(env);
+            return ResultForAny;
         }
     }
+
+    ResultForAny = Undefined(env);
 
     return ResultForAny;
 }
@@ -2757,7 +2867,7 @@ bool hmc_NodeArgsValue::replace(size_t Index, napi_value value)
         results = true;
         return results;
     }
-    
+
     return results;
 }
 namespace hmc_PromiseSession
@@ -3258,148 +3368,6 @@ std::vector<int> hmc_PromiseSession::completeTasks()
     return result;
 }
 
-napi_value _PromiseSession_getAll(napi_env env, napi_callback_info info)
-{
-    hmc_NodeArgsValue input = hmc_NodeArgsValue(env, info);
-
-    // 参数预设 如果不符合则返回void
-    if (!input.eq(0, {js_number}, true))
-    {
-        return NULL;
-    }
-    return hmc_PromiseSession::getAll(env, static_cast<size_t>(input.getInt64(0)), static_cast<size_t>(input.exists(1)) ? static_cast<size_t>(input.getInt64(1)) : 999);
-}
-
-napi_value _PromiseSession_stop(napi_env env, napi_callback_info info)
-{
-    hmc_NodeArgsValue input = hmc_NodeArgsValue(env, info);
-
-    // 参数预设 如果不符合则返回void
-    if (!input.eq(0, {js_number}, true))
-    {
-        return NULL;
-    }
-    hmc_PromiseSession::end(static_cast<size_t>(input.getInt64(0)));
-    return hmc_napi_create_value::Undefined(env);
-}
-
-napi_value _PromiseSession_isClosed(napi_env env, napi_callback_info info)
-{
-    hmc_NodeArgsValue input = hmc_NodeArgsValue(env, info);
-
-    // 参数预设 如果不符合则返回void
-    if (!input.eq(0, {js_number}, true))
-    {
-        return NULL;
-    }
-    auto int_64_temp = static_cast<size_t>(input.getInt64(0));
-    bool isClosed = (int_64_temp > hmc_PromiseSession::max_id()) ? false : hmc_PromiseSession::isClosed(int_64_temp);
-    return hmc_napi_create_value::Boolean(env, isClosed);
-}
-
-napi_value _PromiseSession_max_id(napi_env env, napi_callback_info info)
-{
-    return hmc_napi_create_value::Number(env, (int64_t)hmc_PromiseSession::max_id());
-}
-
-napi_value _PromiseSession_data_size(napi_env env, napi_callback_info info)
-{
-    hmc_NodeArgsValue input = hmc_NodeArgsValue(env, info);
-
-    // 参数预设 如果不符合则返回void
-    if (!input.eq(0, {js_number}, true))
-    {
-        return NULL;
-    }
-    return hmc_napi_create_value::Number(env, (int64_t)hmc_PromiseSession::data_size(static_cast<size_t>(input.getInt64(0))));
-}
-
-napi_value _PromiseSession_await(napi_env env, napi_callback_info info)
-{
-    hmc_NodeArgsValue input = hmc_NodeArgsValue(env, info);
-
-    // 参数预设 如果不符合则返回void
-    if (!input.eq(0, {js_number}, true))
-    {
-        return NULL;
-    }
-
-    int id = input.getInt(0, -999);
-
-    if (hmc_PromiseSession::____$hmcPromise_PromiseTaskList.count(id) > 0)
-    {
-        while (true)
-        {
-            if (!hmc_PromiseSession::isClosed(id))
-            {
-                ::Sleep(hmc_PromiseSession::___$Sleep_time);
-            }
-            else
-            {
-                return hmc_napi_create_value::Undefined(env);
-            }
-        }
-    }
-
-    return hmc_napi_create_value::Undefined(env);
-}
-
-napi_value _PromiseSession_set_sleep_time(napi_env env, napi_callback_info info)
-{
-    hmc_NodeArgsValue input = hmc_NodeArgsValue(env, info);
-
-    // 参数预设 如果不符合则返回void
-    if (!input.eq(0, {js_number}, true))
-    {
-        return NULL;
-    }
-
-    int64_t sleep_time = input.getInt64(0, 10);
-
-    if (sleep_time > 0 && sleep_time < 1000000)
-    {
-        hmc_PromiseSession::___$Sleep_time = static_cast<long>(sleep_time);
-    }
-
-    return hmc_napi_create_value::Number(env, (int64_t)hmc_PromiseSession::___$Sleep_time);
-}
-
-napi_value _PromiseSession_ongoingTasks(napi_env env, napi_callback_info info)
-{
-    auto list = hmc_PromiseSession::ongoingTasks();
-    auto ouput = hmc_napi_create_value::jsArray(env);
-    for (auto &&it : list)
-    {
-        ouput.putNumber(static_cast<int64_t>(it));
-    }
-
-    return ouput.toValue();
-}
-
-napi_value _PromiseSession_allTasks(napi_env env, napi_callback_info info)
-{
-
-    auto list = hmc_PromiseSession::allTasks();
-    auto ouput = hmc_napi_create_value::jsArray(env);
-    for (auto &&it : list)
-    {
-        ouput.putNumber(static_cast<int64_t>(it));
-    }
-    return ouput.toValue();
-}
-
-napi_value _PromiseSession_completeTasks(napi_env env, napi_callback_info info)
-{
-    auto list = hmc_PromiseSession::completeTasks();
-    auto ouput = hmc_napi_create_value::jsArray(env);
-    for (auto &&it : list)
-    {
-        ouput.putNumber(static_cast<int64_t>(it));
-    }
-
-    return ouput.toValue();
-}
-
 size_t hmc_PromiseSession::get_sleep_time()
 {
     return hmc_PromiseSession::___$Sleep_time;
@@ -3594,7 +3562,7 @@ HWND js_value::getHwnd(HWND defaultValue)
 
     if (this->isNumber())
     {
-        return (HWND)static_cast<unsigned long long>(std::any_cast<long>(this->data));
+        return (HWND) static_cast<unsigned long long>(std::any_cast<long>(this->data));
     }
     return defaultValue;
 }
@@ -3788,7 +3756,7 @@ hmc_napi_create_value::jsArray::jsArray(napi_env env)
     }
 
     node_env = env;
-    //napi_value ResultforArray;
+    // napi_value ResultforArray;
     status = napi_create_array(env, &array_value);
     is_ready_ok = status == napi_ok;
 }
@@ -4268,24 +4236,25 @@ napi_value HMC_PromiseEval::StartAsyncTask(napi_env env, napi_callback_info info
         return NULL;
     }
 
-    if (workData != NULL) {
+    if (workData != NULL)
+    {
         workData->TASK_TYPE = static_cast<size_t>(input.getInt64(0, 0));
     }
 
     input.removeIndex(0);
 
-        if (workData != NULL&&HMC_PromiseStore::PromiseFormatEventListenerFunList.find(workData->TASK_TYPE) != HMC_PromiseStore::PromiseFormatEventListenerFunList.end())
+    if (workData != NULL && HMC_PromiseStore::PromiseFormatEventListenerFunList.find(workData->TASK_TYPE) != HMC_PromiseStore::PromiseFormatEventListenerFunList.end())
+    {
+
+        workData->ArgsStore = new std::vector<std::any>();
+        bool is_next = HMC_PromiseStore::PromiseFormatEventListenerFunList.at(workData->TASK_TYPE)(env, info, input, workData->ArgsStore);
+
+        if (!is_next)
         {
-
-            workData->ArgsStore = new std::vector<std::any>();
-            bool is_next = HMC_PromiseStore::PromiseFormatEventListenerFunList.at(workData->TASK_TYPE)(env, info, input, workData->ArgsStore);
-
-            if (!is_next)
-            {
-                napi_throw_type_error(env, NULL, hmc_string_util::string_to_lpstr("The passed argument was rejected by the formatting function"));
-                return NULL;
-            }
+            napi_throw_type_error(env, NULL, hmc_string_util::string_to_lpstr("The passed argument was rejected by the formatting function"));
+            return NULL;
         }
+    }
 
     if (HMC_PromiseStore::PromiseWorkEventListenerFunList.find(workData->TASK_TYPE) == HMC_PromiseStore::PromiseWorkEventListenerFunList.end())
     {
@@ -4317,8 +4286,9 @@ void HMC_PromiseEval::ResolveWork(napi_env env, napi_status status, void *data)
 
     if (workData == NULL || !workData->ResultStore->has_value())
     {
-        
-        if (workData != NULL) {
+
+        if (workData != NULL)
+        {
             napi_resolve_deferred(env, workData->deferred, result);
         }
 

@@ -214,12 +214,16 @@ namespace hmc_util
      * @return DWORD
      */
     extern unsigned long toThreadId(std::thread::id thread_id);
-    std::string getBaseName(const std::string path);
-    std::wstring getBaseName(const std::wstring path);
+    extern std::string getBaseName(const std::string path);
+    extern std::wstring getBaseName(const std::wstring path);
 
-    bool diffBaseName(const std::string path1, const std::string path2);
-    bool diffBaseName(const std::wstring path1, const std::wstring path2);
+    extern bool diffBaseName(const std::string path1, const std::string path2);
+    extern bool diffBaseName(const std::wstring path1, const std::wstring path2);
 
+    extern bool writeFile(std::string output, std::vector<std::uint8_t> data);
+    extern bool writeFile(std::wstring output, std::vector<std::uint8_t> data);
+    extern bool writeFile(std::string output, std::string data);
+    extern bool writeFile(std::wstring output, std::wstring data);
 }
 
 #if _HAS_CXX17
@@ -230,10 +234,45 @@ namespace hmc_util
 
 namespace hmc_util
 {
-    extern inline bool anyCast(std::any Data, std::wstring Output);
-    extern inline bool anyCast(std::any Data, std::string Output);
-    extern inline bool anyCast(std::any Data, size_t *Output);
-    extern inline bool anyCast(std::any Data, long long *Output);
+
+    class anyCast
+    {
+    public:
+        std::any *m_data2;
+        anyCast(std::any *Data);
+
+        bool is_uint32();
+        bool is_uint64();
+        bool is_int32();
+        bool is_int64();
+        bool is_float();
+        bool is_wstring();
+        bool is_string();
+        bool is_buffer();
+        bool is_bool();
+        bool is_value();
+
+        // bool is_
+        int32_t get_int32(int32_t orData);
+        int64_t get_int64(int64_t orData);
+        uint64_t get_uint64(uint64_t orData);
+        uint32_t get_uint32(uint32_t orData);
+        bool get_bool(bool orData);
+        std::wstring get_wstring(std::wstring orData );
+        std::string get_string(std::string orData);
+        std::vector<std::uint8_t> get_buffer(std::vector<std::uint8_t> orData);
+        long double get_float(long double orData);
+
+        std::optional<int32_t> get_int32();
+        std::optional<int64_t> get_int64();
+        std::optional<uint64_t> get_uint64();
+        std::optional<uint32_t> get_uint32();
+        std::optional<bool> get_bool();
+        std::optional<std::wstring> get_wstring();
+        std::optional<long double> get_float();
+        std::optional<std::string> get_string();
+        std::optional<std::vector<std::uint8_t>> get_buffer();
+    };
 
     class anyCastList
     {
@@ -267,6 +306,8 @@ namespace hmc_util
          * @return std::any
          */
         std::any get(size_t index);
+        
+        anyCast at(size_t index);
 
         /**
          * @brief 取值
@@ -328,14 +369,13 @@ namespace hmc_util
 
         bool is_floating_point(size_t index);
 
-        const std::type_info & getTypeInfo(size_t index);
+        const std::type_info &getTypeInfo(size_t index);
 
-        bool diffType(size_t index,const std::type_info &type);
+        bool diffType(size_t index, const std::type_info &type);
 
         // bool diffType(size_t index,std::vector<const std::type_info> &type);
-        
-        // bool diffType(std::vector<const std::type_info> &type);
 
+        // bool diffType(std::vector<const std::type_info> &type);
     };
 
 }

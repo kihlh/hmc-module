@@ -4,27 +4,101 @@
 #include <windows.h>
 #include <vector>
 #include <string>
+#include <map>
 
 
 
 namespace hmc_registr_util
 {
-	// 枚举键 ansi字符
-	struct chQueryFolderKeyA
-	{
-		std::vector<std::string> key;
-		std::vector<std::string> Folder;
-		size_t size;
+
+	struct chQueryValueKeyItemW{
+		std::wstring name;
+		DWORD type;
+		DWORD size;
+		};
+	
+	struct chQueryValueKeyItemA{
+		std::string name;
+		DWORD type;
+		DWORD size;
 	};
 
-	// 枚举键 wide字符
-	struct chQueryFolderKeyW
+	struct chQueryFolderKeyItemW{
+		std::wstring name;
+		long long time;
+	};
+	
+	struct chQueryFolderKeyItemA{
+		std::string name;
+		long long time;
+	};
+	// 获取目录信息
+	struct chQueryFolderInfoA
 	{
-		std::vector<std::wstring> key;
-		std::vector<std::wstring> Folder;
-		size_t size;
+		std::vector<chQueryValueKeyItemA> valueKeyList;
+		std::vector<chQueryFolderKeyItemA> folderKeyList;
+		DWORD size;		  // 此所有键总数量
+		bool exists;	  // 此键是否存在
+		DWORD folderSize; // 此目录键总数量
+		DWORD keySize;	  // 此目录键总数量
+		long long time;	  // 时间戳
+		DWORD maxValueDataSize; //最长值数据的大小
+		chQueryFolderInfoA();
+		std::string to_json();
+		static std::string to_json(chQueryFolderInfoA QueryFolderInfoA);
 	};
 
+	// 获取目录信息
+	struct chQueryFolderInfoW
+	{
+		std::vector<chQueryValueKeyItemW> valueKeyList;
+		std::vector<chQueryFolderKeyItemW> folderKeyList;
+		DWORD size;		  // 此所有键总数量
+		bool exists;	  // 此键是否存在
+		DWORD folderSize; // 此目录键总数量
+		DWORD keySize;	  // 此目录键总数量
+		long long time;	  // 时间戳
+		DWORD maxValueDataSize; //最长值数据的大小
+		chQueryFolderInfoW();
+		std::wstring to_json();
+		static std::wstring to_json(chQueryFolderInfoW QueryFolderInfo);
+	};
+
+
+
+	/**
+	 * @brief 查询指定目录的信息  并是否返回 键/目录键
+	 * 
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param FolderPath 目录路径
+	 * @param isQueryFolderKey 目录键查询
+	 * @param isQueryValueKey 键查询
+	 * @return chQueryFolderInfoA 
+	 */
+	extern chQueryFolderInfoA queryRegistrFolderInfo(HKEY hKey, std::string FolderPath,bool isQueryFolderKey = false,bool isQueryValueKey= false);
+	/**
+	 * @brief 查询指定目录的信息  并是否返回 键/目录键
+	 * 
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param FolderPath 目录路径
+	 * @param isQueryFolderKey 目录键查询
+	 * @param isQueryValueKey 键查询
+	 * @return chQueryFolderInfoA 
+	 */
+	extern chQueryFolderInfoW queryRegistrFolderInfo(HKEY hKey, std::wstring FolderPath,bool isQueryFolderKey,bool isQueryValueKey);
+	
 	enum REG_TYPE
 	{
 		_REG_NONE = 0,		// 没有类型
@@ -74,16 +148,6 @@ namespace hmc_registr_util
 		std::uint64_t getInt64(); // 取值为 int64
 	};
 
-	// 获取目录信息
-	struct chFolderInfo
-	{
-		DWORD size;		  // 此所有键总数量
-		bool exists;	  // 此键是否存在
-		DWORD folderSize; // 此目录键总数量
-		DWORD keySize;	  // 此目录键总数量
-		long long time;	  // 时间戳
-	};
-
 	// 枚举数据体 如果key是目录请勿调用type 因为他被作为目录键数量存储了
 	struct chValueItme : public chType
 	{
@@ -96,7 +160,6 @@ namespace hmc_registr_util
 
 		// 区分出实际的内容
 
-		chFolderInfo getFolderInfo(); // 转换成文件夹信息数据体
 		chValue getValueInfo();		  // 转换成值信息数据体
 	};
 
@@ -148,90 +211,6 @@ namespace hmc_registr_util
 	 * @return std::string
 	 */
 	extern std::wstring type_nameW(DWORD theType);
-
-	/**
-	 * @brief 枚举注册表的同级key
-	 *
-	 * @param hKey 被打开的键
-	 * @param QueryFolderList 目录key列表
-	 * @param QueryKeyList 值key列表
-	 */
-	extern size_t getRegistrKeys(HKEY hKey, std::string path, std::vector<std::string> &QueryFolderList, std::vector<std::string> &QueryKeyList);
-
-	/**
-	 * @brief 枚举注册表的同级key
-	 *
-	 * @param hKey 根
-	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
-	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
-	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
-	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
-	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
-	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
-	 * @param path
-	 * @return chQueryFolderKeyW
-	 */
-	extern chQueryFolderKeyW getRegistrKeys(HKEY hKey, std::wstring path);
-
-	/**
-	 * @brief 枚举注册表的同级key
-	 *
-	 * @param hKey 根
-	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
-	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
-	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
-	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
-	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
-	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
-	 * @param path
-	 * @return chQueryFolderKeyA
-	 */
-	extern chQueryFolderKeyA getRegistrKeys(HKEY hKey, std::string path);
-
-	/**
-	 * @brief 枚举注册表的同级key
-	 *
-	 * @param hKey 根
-	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
-	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
-	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
-	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
-	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
-	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
-	 * @param QueryFolderList 目录key列表
-	 * @param QueryKeyList 值key列表
-	 */
-	extern size_t getRegistrKeys(HKEY hKey, std::wstring path, std::vector<std::wstring> &QueryFolderList, std::vector<std::wstring> &QueryKeyList);
-
-	/**
-	 * @brief 枚举注册表的同级key
-	 *
-	 * @param hKey 根
-	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
-	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
-	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
-	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
-	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
-	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
-	 * @param QueryFolderList 目录key列表
-	 * @param QueryKeyList 值key列表
-	 */
-	extern size_t getRegistrKeys(HKEY hKey, std::vector<std::wstring> &QueryFolderList, std::vector<std::wstring> &QueryKeyList);
-
-	/**
-	 * @brief 枚举注册表的同级key
-	 *
-	 * @param hKey 根
-	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
-	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
-	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
-	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
-	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
-	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
-	 * @param QueryFolderList 目录key列表
-	 * @param QueryKeyList 值key列表
-	 */
-	extern size_t getRegistrKeys(HKEY hKey, std::vector<std::string> &QueryFolderList, std::vector<std::string> &QueryKeyList);
 
 	/**
 	 * @brief 判断此值是否存在
@@ -366,6 +345,38 @@ namespace hmc_registr_util
 	extern bool removeRegistrFolder(HKEY hKey, std::string FolderPath, std::string FolderName, bool tree = false);
 
 	/**
+	 * @brief 删除目录
+	 *
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param FolderPath 目录路径
+	 * @return true
+	 * @return false
+	 */
+	extern bool removeRegistrFolder(HKEY hKey, std::wstring FolderPath, bool tree = false);
+
+	/**
+	 * @brief 删除目录
+	 *
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param FolderPath 目录路径
+	 * @return true
+	 * @return false
+	 */
+	extern bool removeRegistrFolder(HKEY hKey, std::string FolderPathbool,bool tree = false);
+
+	/**
 	 * @brief 删除指定的键 [值] 键保留
 	 *
 	 * @param hKey 根
@@ -398,6 +409,9 @@ namespace hmc_registr_util
 	 * @return false
 	 */
 	extern bool removeRegistrValue(HKEY hKey, std::wstring FolderPath, std::wstring key);
+
+	extern bool removeRegistrValue(HKEY hKey,const std::wstring FolderPath,const std::vector<std::wstring> keyList);
+	extern bool removeRegistrValue(HKEY hKey,const std::string FolderPath,const std::vector<std::string> keyList);
 
 	/**
 	 * @brief 删除指定的键 [键]
@@ -432,6 +446,9 @@ namespace hmc_registr_util
 	 * @return false
 	 */
 	extern bool removeRegistrKey(HKEY hKey, std::wstring FolderPath, std::wstring key);
+
+	extern bool removeRegistrKey(HKEY hKey,const std::wstring FolderPath,const std::vector<std::wstring> keyList);
+	extern bool removeRegistrKey(HKEY hKey,const std::string FolderPath,const std::vector<std::string> keyList);
 
 	/**
 	 * @brief 反HKEY解析 因为要和napi兼容
@@ -722,6 +739,38 @@ namespace hmc_registr_util
 	extern bool removeRegistrTree(HKEY hKey, std::wstring subKey, std::wstring DirName);
 
 	/**
+	 * @brief 删除注册表值树
+	 *
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param subKey
+	 * @return true
+	 * @return false
+	 */
+	extern bool removeRegistrTree(HKEY hKey, std::string subKey);
+
+	/**
+	 * @brief 删除注册表值树
+	 *
+	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param subKey
+	 * @return true
+	 * @return false
+	 */
+	extern bool removeRegistrTree(HKEY hKey, std::wstring subKey);
+
+	/**
 	 * @brief 将两个或者多个路径合并
 	 *
 	 * @tparam Args
@@ -982,36 +1031,6 @@ namespace hmc_registr_util
 	 * @return false
 	 */
 	extern bool SetRegistrSourceValue(HKEY hKey, std::string KeyName, chValue Value);
-
-	/**
-	 * @brief 获取出目录信息
-	 *
-	 * @param hKey 根
-	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
-	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
-	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
-	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
-	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
-	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
-	 * @param FolderPath
-	 * @return chFolderInfo
-	 */
-	extern chFolderInfo getRegistrFolderInfo(HKEY hKey, std::string FolderPath);
-
-	/**
-	 * @brief 获取出目录信息
-	 *
-	 * @param hKey 根
-	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
-	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
-	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
-	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
-	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
-	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
-	 * @param FolderPath
-	 * @return chFolderInfo
-	 */
-	extern chFolderInfo getRegistrFolderInfo(HKEY hKey, std::wstring FolderPath);
 	/**
 	 * @brief 获取文本数组REG_MULTI_SZ
 	 *
@@ -1167,6 +1186,39 @@ namespace hmc_registr_util
 	// 设置数字值 REG_QWORD
 	extern bool SetRegistrInt64(HKEY hKey, std::wstring FolderPath, std::wstring KeyName, const std::uint64_t &Input);
 
+	/**
+	 * @brief 创建注册表键 以及空值
+	 * 
+ 	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param FolderPath 目录路径如\SOFTWARE\HMC
+	 * @param keyList 键列表,类型
+	 * @return true 
+	 * @return false 
+	 */
+	extern bool createRegistrValueKey(HKEY hKey, const std::string FolderPath, const std::map<std::string, DWORD> ValueKeyList);
+	/**
+	 * @brief 创建注册表键 以及空值
+	 * 
+ 	 * @param hKey 根
+	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+	 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+	 * @param FolderPath 目录路径如\SOFTWARE\HMC
+	 * @param keyList 键列表,类型
+	 * @return true 
+	 * @return false 
+	 */
+	extern bool createRegistrValueKey(HKEY hKey, const std::wstring FolderPath, const std::map<std::wstring, DWORD> ValueKeyList);
+	
 	// 仅处理值打开
 	class RegistrValueUtil
 	{
@@ -1205,38 +1257,11 @@ namespace hmc_registr_util
 			bool is_wide = false;
 			bool _is_ready = false;
 			HKEY root_hKey = nullptr;*/
-
+	
 	public:
-		/**
-		 * @brief Set the Registr Value object
-		 *
-		 * @param hKey 根
-		 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
-		 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
-		 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
-		 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
-		 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
-		 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
-		 * @param subKey 目录
-		 * @param Name 键名
-		 */
-		setRegistrValue(HKEY hKey, std::wstring subKey, std::wstring Name);
-
-		/**
-		 * @brief Set the Registr Value object
-		 *
-		 * @param hKey 根
-		 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
-		 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
-		 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
-		 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
-		 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
-		 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
-		 * @param subKey 目录
-		 * @param Name 键名
-		 */
 		setRegistrValue(HKEY hKey, std::string subKey, std::string Name);
-
+		setRegistrValue(HKEY hKey, std::wstring subKey, std::wstring Name);
+		
 		// 0x00000000 REG_NONE 未定义
 		bool set(/*REG_NONE*/);
 		// 0x0000000B REG_QWORD 64 位数字

@@ -3974,7 +3974,7 @@ inline size_t hmc_string_util::removeAllCharPtr(std::string &input, char matchin
     return replacementFrequency;
 }
 
-std::vector<std::wstring> convertMultiStringArray(const std::wstring input)
+std::vector<std::wstring> hmc_string_util::convertMultiStringArray(const std::wstring input)
 {
     std::vector<std::wstring> result = {};
 
@@ -4008,7 +4008,7 @@ std::vector<std::wstring> convertMultiStringArray(const std::wstring input)
     return result;
 }
 
-std::vector<std::string> convertMultiStringArray(const std::string input)
+std::vector<std::string> hmc_string_util::convertMultiStringArray(const std::string input)
 {
     std::vector<std::string> result = {};
 
