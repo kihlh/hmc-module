@@ -1202,6 +1202,8 @@ namespace hmc_registr_util
 	 * @return false 
 	 */
 	extern bool createRegistrValueKey(HKEY hKey, const std::string FolderPath, const std::map<std::string, DWORD> ValueKeyList);
+
+	extern bool createRegistrValueKey(HKEY hKey, const std::string FolderPath, std::string ValueKey, DWORD ValueType);
 	/**
 	 * @brief 创建注册表键 以及空值
 	 * 
@@ -1218,6 +1220,8 @@ namespace hmc_registr_util
 	 * @return false 
 	 */
 	extern bool createRegistrValueKey(HKEY hKey, const std::wstring FolderPath, const std::map<std::wstring, DWORD> ValueKeyList);
+	
+	extern bool createRegistrValueKey(HKEY hKey, const std::wstring FolderPath, std::wstring ValueKey, DWORD ValueType);
 	
 	// 仅处理值打开
 	class RegistrValueUtil

@@ -624,7 +624,7 @@ std::vector<hmc_registr_util::chValueItmeA> hmc_registr_util::getRegistrValueItm
 {
 	std::vector<hmc_registr_util::chValueItmeA> result = {};
 
-	auto queryFolderInfo = queryRegistrFolderInfo(hKey,subKey,true,true);
+	auto queryFolderInfo = queryRegistrFolderInfo(hKey, subKey, true, true);
 
 	for (size_t i = 0; i < queryFolderInfo.folderKeyList.size(); i++)
 	{
@@ -673,7 +673,7 @@ std::vector<hmc_registr_util::chValueItmeA> hmc_registr_util::getRegistrValueItm
 std::vector<hmc_registr_util::chValueItmeW> hmc_registr_util::getRegistrValueItmeList(HKEY hKey, std::wstring subKey)
 {
 	std::vector<hmc_registr_util::chValueItmeW> result = {};
-	auto queryFolderInfo = queryRegistrFolderInfo(hKey,subKey,true,true);
+	auto queryFolderInfo = queryRegistrFolderInfo(hKey, subKey, true, true);
 
 	for (size_t i = 0; i < queryFolderInfo.folderKeyList.size(); i++)
 	{
@@ -2097,10 +2097,11 @@ std::uint32_t hmc_registr_util::GetRegistrInt32(HKEY hKey, std::wstring FolderPa
 		// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
 		if (RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
 		{
-			if (lpType == REG_QWORD) {
+			if (lpType == REG_QWORD)
+			{
 				std::uint64_t lpValue = 0;
 
-				if (::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, reinterpret_cast<BYTE*>(&lpValue), &pDataSize) == ERROR_SUCCESS)
+				if (::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, reinterpret_cast<BYTE *>(&lpValue), &pDataSize) == ERROR_SUCCESS)
 				{
 					result = static_cast<std::uint32_t>(lpValue);
 					return result;
@@ -2262,7 +2263,7 @@ bool hmc_registr_util::removeRegistrTree(HKEY hKey, std::string subKey)
 	splitSubKey.pop_back();
 
 	auto new_SubKey = hmc_string_util::join(splitSubKey, '\\');
-	result =  removeRegistrTree(hKey, new_SubKey, Key);
+	result = removeRegistrTree(hKey, new_SubKey, Key);
 	return result;
 }
 
@@ -2473,22 +2474,23 @@ hmc_registr_util::chQueryFolderInfoW::chQueryFolderInfoW()
 	maxValueDataSize = 0i32; // 最长值数据的大小
 }
 
-std::wstring hmc_registr_util::chQueryFolderInfoW::to_json(){
+std::wstring hmc_registr_util::chQueryFolderInfoW::to_json()
+{
 	return to_json(*this);
 }
 
 std::wstring hmc_registr_util::chQueryFolderInfoW::to_json(hmc_registr_util::chQueryFolderInfoW QueryFolderInfo)
 {
-	const wchar_t template_data_ValueKey [46]=L"{"
-		L"\"name\":\"{name}\","
-		L"\"type\":{type},"
-		L"\"size\":{size}"
-		L"}";
+	const wchar_t template_data_ValueKey[46] = L"{"
+											   L"\"name\":\"{name}\","
+											   L"\"type\":{type},"
+											   L"\"size\":{size}"
+											   L"}";
 
-	const wchar_t template_data_FolderKey[32] =L"{"
-		L"\"name\":\"{name}\","
-		L"\"time\":{time}"
-		L"}";
+	const wchar_t template_data_FolderKey[32] = L"{"
+												L"\"name\":\"{name}\","
+												L"\"time\":{time}"
+												L"}";
 
 	const wchar_t template_data[148] =
 		L"{"
@@ -2497,11 +2499,10 @@ std::wstring hmc_registr_util::chQueryFolderInfoW::to_json(hmc_registr_util::chQ
 		L"\"folderSize\":{folderSize},"
 		L"\"keySize\":{keySize},"
 		L"\"time\":{time},"
-		L"\"maxValueDataSize\":{maxValueDataSize},"
-		;
-		// L"\"folderKeyList\":{folderKeyList}"
-		// L"}";
-		
+		L"\"maxValueDataSize\":{maxValueDataSize},";
+	// L"\"folderKeyList\":{folderKeyList}"
+	// L"}";
+
 	std::wstring result = std::wstring();
 
 	size_t size = sizeof(template_data);
@@ -2530,13 +2531,14 @@ std::wstring hmc_registr_util::chQueryFolderInfoW::to_json(hmc_registr_util::chQ
 	hmc_string_util::replace(result, L"{keySize}", std::to_wstring(QueryFolderInfo.keySize));
 	hmc_string_util::replace(result, L"{time}", std::to_wstring(QueryFolderInfo.time));
 	hmc_string_util::replace(result, L"{maxValueDataSize}", std::to_wstring(QueryFolderInfo.maxValueDataSize));
-	
+
 	result.append(L"\"valueKeyList\":[");
-	for (size_t i = 0; i < QueryFolderInfo.valueKeyList.size(); i++){
+	for (size_t i = 0; i < QueryFolderInfo.valueKeyList.size(); i++)
+	{
 		auto &at = QueryFolderInfo.valueKeyList.at(i);
-		
+
 		result.append(L"{\"name\":");
-		result.append(hmc_string_util::escapeJsonString(at.name,true));
+		result.append(hmc_string_util::escapeJsonString(at.name, true));
 		result.push_back(',');
 		result.append(L"\"type\":");
 		result.append(std::to_wstring(at.type));
@@ -2546,57 +2548,58 @@ std::wstring hmc_registr_util::chQueryFolderInfoW::to_json(hmc_registr_util::chQ
 		result.append(std::to_wstring(at.size));
 		result.push_back('}');
 
-		if(i+1 < QueryFolderInfo.valueKeyList.size()){
+		if (i + 1 < QueryFolderInfo.valueKeyList.size())
+		{
 			result.push_back(',');
 		}
-
 	}
 	result.push_back(']');
 	result.push_back(',');
 
-
 	result.append(L"\"folderKeyList\":[");
-	for (size_t i = 0; i < QueryFolderInfo.folderKeyList.size(); i++){
+	for (size_t i = 0; i < QueryFolderInfo.folderKeyList.size(); i++)
+	{
 		auto &at = QueryFolderInfo.folderKeyList.at(i);
-		
+
 		result.append(L"{\"name\":");
-		result.append(hmc_string_util::escapeJsonString(at.name,true));
+		result.append(hmc_string_util::escapeJsonString(at.name, true));
 		result.push_back(',');
 		result.append(L"\"time\":");
 		result.append(std::to_wstring(at.time));
 		result.push_back('}');
 
-		if(i+1 < QueryFolderInfo.folderKeyList.size()){
+		if (i + 1 < QueryFolderInfo.folderKeyList.size())
+		{
 			result.push_back(',');
 		}
-
 	}
 
 	result.push_back(']');
-	
+
 	result.push_back('}');
-	
-	hmc_string_util::removeAllCharPtr(result,'\0');
+
+	hmc_string_util::removeAllCharPtr(result, '\0');
 
 	return result;
 }
 
-std::string hmc_registr_util::chQueryFolderInfoA::to_json(){
+std::string hmc_registr_util::chQueryFolderInfoA::to_json()
+{
 	return to_json(*this);
 }
 
 std::string hmc_registr_util::chQueryFolderInfoA::to_json(hmc_registr_util::chQueryFolderInfoA QueryFolderInfo)
 {
-	const char template_data_ValueKey [46]="{"
-		"\"name\":\"{name}\","
-		"\"type\":{type},"
-		"\"size\":{size}"
-		"}";
+	const char template_data_ValueKey[46] = "{"
+											"\"name\":\"{name}\","
+											"\"type\":{type},"
+											"\"size\":{size}"
+											"}";
 
-	const char template_data_FolderKey[32] ="{"
-		"\"name\":\"{name}\","
-		"\"time\":{time}"
-		"}";
+	const char template_data_FolderKey[32] = "{"
+											 "\"name\":\"{name}\","
+											 "\"time\":{time}"
+											 "}";
 
 	const char template_data[148] =
 		"{"
@@ -2605,11 +2608,10 @@ std::string hmc_registr_util::chQueryFolderInfoA::to_json(hmc_registr_util::chQu
 		"\"folderSize\":{folderSize},"
 		"\"keySize\":{keySize},"
 		"\"time\":{time},"
-		"\"maxValueDataSize\":{maxValueDataSize},"
-		;
-		// "\"folderKeyList\":{folderKeyList}"
-		// "}";
-		
+		"\"maxValueDataSize\":{maxValueDataSize},";
+	// "\"folderKeyList\":{folderKeyList}"
+	// "}";
+
 	std::string result = std::string();
 
 	size_t size = sizeof(template_data);
@@ -2638,13 +2640,14 @@ std::string hmc_registr_util::chQueryFolderInfoA::to_json(hmc_registr_util::chQu
 	hmc_string_util::replace(result, "{keySize}", std::to_string(QueryFolderInfo.keySize));
 	hmc_string_util::replace(result, "{time}", std::to_string(QueryFolderInfo.time));
 	hmc_string_util::replace(result, "{maxValueDataSize}", std::to_string(QueryFolderInfo.maxValueDataSize));
-	
+
 	result.append("\"valueKeyList\":[");
-	for (size_t i = 0; i < QueryFolderInfo.valueKeyList.size(); i++){
+	for (size_t i = 0; i < QueryFolderInfo.valueKeyList.size(); i++)
+	{
 		auto &at = QueryFolderInfo.valueKeyList.at(i);
-		
+
 		result.append("{\"name\":");
-		result.append(hmc_string_util::escapeJsonString(at.name,true));
+		result.append(hmc_string_util::escapeJsonString(at.name, true));
 		result.push_back(',');
 		result.append("\"type\":");
 		result.append(std::to_string(at.type));
@@ -2654,37 +2657,37 @@ std::string hmc_registr_util::chQueryFolderInfoA::to_json(hmc_registr_util::chQu
 		result.append(std::to_string(at.size));
 		result.push_back('}');
 
-		if(i+1 < QueryFolderInfo.valueKeyList.size()){
+		if (i + 1 < QueryFolderInfo.valueKeyList.size())
+		{
 			result.push_back(',');
 		}
-
 	}
 	result.push_back(']');
 	result.push_back(',');
 
-
 	result.append("\"folderKeyList\":[");
-	for (size_t i = 0; i < QueryFolderInfo.folderKeyList.size(); i++){
+	for (size_t i = 0; i < QueryFolderInfo.folderKeyList.size(); i++)
+	{
 		auto &at = QueryFolderInfo.folderKeyList.at(i);
-		
+
 		result.append("{\"name\":");
-		result.append(hmc_string_util::escapeJsonString(at.name,true));
+		result.append(hmc_string_util::escapeJsonString(at.name, true));
 		result.push_back(',');
 		result.append("\"time\":");
 		result.append(std::to_string(at.time));
 		result.push_back('}');
 
-		if(i+1 < QueryFolderInfo.folderKeyList.size()){
+		if (i + 1 < QueryFolderInfo.folderKeyList.size())
+		{
 			result.push_back(',');
 		}
-
 	}
 
 	result.push_back(']');
-	
+
 	result.push_back('}');
-	
-	hmc_string_util::removeAllCharPtr(result,'\0');
+
+	hmc_string_util::removeAllCharPtr(result, '\0');
 
 	return result;
 }
@@ -2943,3 +2946,35 @@ hmc_registr_util::chQueryFolderInfoW hmc_registr_util::queryRegistrFolderInfo(HK
 	return result;
 }
 
+bool hmc_registr_util::createRegistrValueKey(HKEY hKey, const std::wstring FolderPath, std::wstring ValueKey, DWORD ValueType)
+{
+
+	bool result = false;
+	HKEY open_hkey = nullptr;
+
+	HMC_FreeRegKeyAuto(open_hkey);
+
+	if (ERROR_SUCCESS == ::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey))
+	{
+		bool temp = ::RegSetValueExW(open_hkey, ValueKey.c_str(), 0, ValueType, nullptr, 0) == ERROR_SUCCESS;
+		result = temp;
+	}
+
+	return result;
+}
+
+bool hmc_registr_util::createRegistrValueKey(HKEY hKey, const std::string FolderPath, std::string ValueKey, DWORD ValueType)
+{
+
+	bool result = false;
+	HKEY open_hkey = nullptr;
+
+	HMC_FreeRegKeyAuto(open_hkey);
+
+	if (ERROR_SUCCESS == ::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey))
+	{
+		bool temp = ::RegSetValueExA(open_hkey, ValueKey.c_str(), 0, ValueType, nullptr, 0) == ERROR_SUCCESS;
+		result = temp;
+	}
+	return result;
+}
