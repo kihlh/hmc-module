@@ -46,6 +46,12 @@ namespace hmc_registr_util
 		chQueryFolderInfoA();
 		std::string to_json();
 		static std::string to_json(chQueryFolderInfoA QueryFolderInfoA);
+		std::vector<std::string> getFolderKeys();
+		std::vector<std::string> getValueKeys();
+		static std::vector<std::string> getFolderKeys(std::vector<chQueryFolderKeyItemA> folderKeyList);
+		static std::vector<std::string> getValueKeys(std::vector<chQueryValueKeyItemA> valueKeyList);
+		static std::vector<std::string> getFolderKeys(chQueryFolderInfoA QueryFolderInfo);
+		static std::vector<std::string> getValueKeys(chQueryFolderInfoA QueryFolderInfo);
 	};
 
 	// 获取目录信息
@@ -62,6 +68,12 @@ namespace hmc_registr_util
 		chQueryFolderInfoW();
 		std::wstring to_json();
 		static std::wstring to_json(chQueryFolderInfoW QueryFolderInfo);
+		std::vector<std::wstring> getFolderKeys();
+		std::vector<std::wstring> getValueKeys();
+		static std::vector<std::wstring> getFolderKeys(std::vector<chQueryFolderKeyItemW> folderKeyList);
+		static std::vector<std::wstring> getValueKeys(std::vector<chQueryValueKeyItemW> valueKeyList);
+		static std::vector<std::wstring> getFolderKeys(chQueryFolderInfoW QueryFolderInfo);
+		static std::vector<std::wstring> getValueKeys(chQueryFolderInfoW QueryFolderInfo);
 	};
 
 
@@ -184,6 +196,11 @@ namespace hmc_registr_util
 		DWORD size;
 		// 此键是否存在
 		bool exists;
+	};
+	
+	struct chValueData : public chValueStat
+	{
+		std::vector<std::uint8_t> value;
 	};
 
 	/**
@@ -827,6 +844,10 @@ namespace hmc_registr_util
 	 * @return std::vector<chValueItmeA>
 	 */
 	extern std::vector<chValueItmeW> getRegistrValueItmeList(HKEY hKey, std::wstring subKey);
+	
+	extern chValueData getRegistrBuffer(HKEY hKey, std::string FolderPath, std::string KeyName);
+
+	extern chValueData getRegistrBuffer(HKEY hKey, std::wstring FolderPath, std::wstring KeyName);
 
 	/**
 	 * @brief 获取值 低级的二进制值
@@ -1223,7 +1244,63 @@ namespace hmc_registr_util
 	
 	extern bool createRegistrValueKey(HKEY hKey, const std::wstring FolderPath, std::wstring ValueKey, DWORD ValueType);
 	
-	// 仅处理值打开
+
+	class OpenKeyToken
+	{
+	public:
+		/**
+		 * @brief 打开一个注册表路径令牌 自释放
+		 *
+		 * @param hKey 根
+		 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+		 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+		 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+		 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+		 * @param FolderPath 目录路径如\SOFTWARE\HMC
+		 * @param KeyName  键名字
+		 * @param CreateNotKey
+		 */
+		OpenKeyToken(HKEY hKey, std::wstring FolderPath, std::wstring KeyName, bool CreateNotKey = false);
+		/**
+		 * @brief 打开一个注册表路径令牌 自释放
+		 *
+		 * @param hKey 根
+		 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
+		 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
+		 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
+		 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
+		 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
+		 * @param FolderPath 目录路径如\SOFTWARE\HMC
+		 * @param KeyName  键名字
+		 * @param CreateNotKey
+		 */
+		OpenKeyToken(HKEY hKey, std::string FolderPath, std::string KeyName, bool CreateNotKey = false);
+		~OpenKeyToken();
+		HKEY token = nullptr;
+		LSTATUS status = ERROR_SUCCESS;
+		// if
+		operator bool() const;
+		// &
+		operator HKEY() const;
+		// !
+		bool operator!() const;
+
+	private:
+	};
+
+}
+
+#endif // HMC_IMPORT_HMC_REGISTR_UTIL_H
+
+
+#ifdef HMC_IMPORT_HMC_REGISTR_UTIL_REMOVE
+
+namespace hmc_registr_util
+{
+		// 仅处理值打开
 	class RegistrValueUtil
 	{
 	protected:
@@ -1332,54 +1409,10 @@ namespace hmc_registr_util
 		bool isInt64();
 		bool isType(DWORD type);
 		DWORD getType();
-	};
-
-	class OpenKeyToken
-	{
-	public:
-		/**
-		 * @brief 打开一个注册表路径令牌 自释放
-		 *
-		 * @param hKey 根
-		 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
-		 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
-		 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
-		 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
-		 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
-		 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
-		 * @param FolderPath 目录路径如\SOFTWARE\HMC
-		 * @param KeyName  键名字
-		 * @param CreateNotKey
-		 */
-		OpenKeyToken(HKEY hKey, std::wstring FolderPath, std::wstring KeyName, bool CreateNotKey = false);
-		/**
-		 * @brief 打开一个注册表路径令牌 自释放
-		 *
-		 * @param hKey 根
-		 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
-		 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
-		 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
-		 * @param hKey `HKEY_USERS`   用作默认用户首选设置，也作为单个用户的首选设置
-		 * @param hKey `HKEY_CURRENT_CONFIG`   用作默认用户首选设置，也作为单个用户的首选设置
-		 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
-		 * @param FolderPath 目录路径如\SOFTWARE\HMC
-		 * @param KeyName  键名字
-		 * @param CreateNotKey
-		 */
-		OpenKeyToken(HKEY hKey, std::string FolderPath, std::string KeyName, bool CreateNotKey = false);
-		~OpenKeyToken();
-		HKEY token = nullptr;
-		LSTATUS status = ERROR_SUCCESS;
-		// if
-		operator bool() const;
-		// &
-		operator HKEY() const;
-		// !
-		bool operator!() const;
-
-	private:
+		DWORD getSize();
+		chValueStat getStat();
 	};
 
 }
 
-#endif // HMC_IMPORT_HMC_REGISTR_UTIL_H
+#endif

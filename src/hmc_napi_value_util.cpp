@@ -1776,7 +1776,7 @@ napi_value hmc_napi_create_value::Bigint(napi_env env, unsigned long long bigint
     napi_status status;
     napi_value result;
 
-    status = napi_create_bigint_int64(env, bigint, &result);
+    status = napi_create_bigint_uint64(env, bigint, &result);
 
     if (status != napi_ok)
     {
@@ -1792,7 +1792,7 @@ void hmc_napi_create_value::BufferFinalizer(napi_env env, void *data, void *poin
     {
         return;
     }
-    free(pointer);
+    ::free(pointer);
 }
 
 /**
@@ -1965,6 +1965,17 @@ napi_value hmc_napi_create_value::New(napi_env env, std::any anyValue)
 
         if (openAny.is_value())
         {
+            if (openAny.is_uint32())
+            {
+                ResultForAny = Number(env, (unsigned long long)openAny.get_uint32().value_or(0));
+                return ResultForAny;
+            }
+
+            if (openAny.is_uint64())
+            {
+                ResultForAny = Bigint(env, openAny.get_uint64().value_or(0));
+                return ResultForAny;
+            }
 
             if (openAny.is_int64())
             {

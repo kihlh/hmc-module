@@ -1,6 +1,16 @@
 ﻿#include "./hmc_util.h"
 #include <fstream>
 
+// 解决微软的头定义的min和max 宏定义 以解决 std::numeric_limits<double>::min() 无法使用
+
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
+
 inline size_t hmc_util::removeAllCharPtr(std::wstring &input, wchar_t matching)
 {
     size_t replacementFrequency = 0;
@@ -1443,63 +1453,83 @@ std::optional<int64_t> hmc_util::anyCast::get_int64()
 
         if (typeid(signed char) == ti)
         {
-            return static_cast<int64_t>(std::any_cast<signed char>(*m_data2));
+            auto data = std::any_cast<signed char>(*m_data2);
+            result = static_cast<int64_t>(data);
         }
         else if (typeid(short) == ti)
         {
-            return static_cast<int64_t>(std::any_cast<short>(*m_data2));
+            auto data = std::any_cast<short>(*m_data2);
+            result = static_cast<int64_t>(data);
         }
         else if (typeid(int) == ti)
         {
-            return static_cast<int64_t>(std::any_cast<int>(*m_data2));
+            auto data = std::any_cast<int>(*m_data2);
+            result = static_cast<int64_t>(data);
         }
         else if (typeid(long) == ti)
         {
-            return static_cast<int64_t>(std::any_cast<long>(*m_data2));
+            auto data = std::any_cast<long>(*m_data2);
+            result = static_cast<int64_t>(data);
         }
         else if (typeid(long long) == ti)
         {
-            return static_cast<int64_t>(std::any_cast<long long>(*m_data2));
+            auto data = std::any_cast<long long>(*m_data2);
+            result = static_cast<int64_t>(data);
         }
         else if (typeid(unsigned char) == ti)
         {
-            return static_cast<int64_t>(std::any_cast<unsigned char>(*m_data2));
+            auto data = std::any_cast<unsigned char>(*m_data2);
+
+            int64_t data2 = static_cast<int64_t>(data);
+            result = data2;
         }
         else if (typeid(unsigned short) == ti)
         {
-            return static_cast<int64_t>(std::any_cast<unsigned short>(*m_data2));
+            auto data = std::any_cast<unsigned short>(*m_data2);
+            int64_t data2 = static_cast<int64_t>(data);
+            result = data2;
         }
         else if (typeid(unsigned int) == ti)
         {
-            return static_cast<int64_t>(std::any_cast<unsigned int>(*m_data2));
+            auto data = std::any_cast<unsigned int>(*m_data2);
+            int64_t data2 = static_cast<int64_t>(data);
+            result = data2;
         }
         else if (typeid(unsigned long) == ti)
         {
-            return static_cast<int64_t>(std::any_cast<unsigned long>(*m_data2));
+            auto data = std::any_cast<unsigned long>(*m_data2);
+            int64_t data2 = static_cast<int64_t>(data);
+            result = data2;
         }
         else if (typeid(unsigned long long) == ti)
         {
-            return static_cast<int64_t>(std::any_cast<unsigned long long>(*m_data2));
+            auto data = std::any_cast<unsigned long long>(*m_data2);
+            int64_t data2 = static_cast<int64_t>(data);
+            result = data2;
         }
         else if (typeid(int64_t) == ti)
         {
-            return std::any_cast<int64_t>(*m_data2);
+            result = std::any_cast<int64_t>(*m_data2);
         }
         else if (typeid(int32_t) == ti)
         {
-            return static_cast<int64_t>(std::any_cast<int32_t>(*m_data2));
+            auto data = std::any_cast<int32_t>(*m_data2);
+            result = static_cast<int64_t>(data);
         }
         else if (typeid(size_t) == ti)
         {
-            return static_cast<int64_t>(std::any_cast<size_t>(*m_data2));
+            auto data = std::any_cast<size_t>(*m_data2);
+            result = static_cast<int64_t>(data);
         }
         else if (typeid(char) == ti)
         {
-            return static_cast<int64_t>(std::any_cast<char>(*m_data2));
+            auto data = std::any_cast<char>(*m_data2);
+            result = static_cast<int64_t>(data);
         }
         else if (typeid(wchar_t) == ti)
         {
-            return static_cast<int64_t>(std::any_cast<wchar_t>(*m_data2));
+            auto data = std::any_cast<wchar_t>(*m_data2);
+            result = static_cast<int64_t>(data);
         }
     }
     catch (...)
@@ -1516,14 +1546,85 @@ std::optional<uint64_t> hmc_util::anyCast::get_uint64()
         return result;
     try
     {
-        auto data = get_int64();
-        if (!data.has_value())
-        {
+        if (!is_value())
             return result;
-        }
-        if (data.value() >= 0)
+
+        const std::type_info &ti = m_data2->type();
+
+        if (typeid(signed char) == ti)
         {
-            return static_cast<uint64_t>(data.value());
+            auto data = std::any_cast<signed char>(*m_data2);
+            result = static_cast<uint64_t>(data);
+        }
+        else if (typeid(short) == ti)
+        {
+            auto data = std::any_cast<short>(*m_data2);
+            result = static_cast<uint64_t>(data);
+        }
+        else if (typeid(int) == ti)
+        {
+            auto data = std::any_cast<int>(*m_data2);
+            result = static_cast<uint64_t>(data);
+        }
+        else if (typeid(long) == ti)
+        {
+            auto data = std::any_cast<long>(*m_data2);
+            result = static_cast<uint64_t>(data);
+        }
+        else if (typeid(long long) == ti)
+        {
+            auto data = std::any_cast<long long>(*m_data2);
+            result = static_cast<uint64_t>(data);
+        }
+        else if (typeid(unsigned char) == ti)
+        {
+            auto data = std::any_cast<unsigned char>(*m_data2);
+            result = static_cast<uint64_t>(data);
+        }
+        else if (typeid(unsigned short) == ti)
+        {
+            auto data = std::any_cast<unsigned short>(*m_data2);
+            result = static_cast<uint64_t>(data);
+        }
+        else if (typeid(unsigned int) == ti)
+        {
+            auto data = std::any_cast<unsigned int>(*m_data2);
+            result = static_cast<uint64_t>(data);
+        }
+        else if (typeid(unsigned long) == ti)
+        {
+            auto data = std::any_cast<unsigned long>(*m_data2);
+            result = static_cast<uint64_t>(data);
+        }
+        else if (typeid(unsigned long long) == ti)
+        {
+            auto data = std::any_cast<unsigned long long>(*m_data2);
+            auto data_copy = static_cast<uint64_t>(data);
+            result = data_copy;
+        }
+        else if (typeid(int64_t) == ti)
+        {
+            result = static_cast<uint64_t>(std::any_cast<int64_t>(*m_data2));
+        }
+        else if (typeid(int32_t) == ti)
+        {
+            auto data = std::any_cast<int32_t>(*m_data2);
+            result = static_cast<uint64_t>(data);
+        }
+        else if (typeid(size_t) == ti)
+        {
+            auto data = std::any_cast<size_t>(*m_data2);
+            result = static_cast<uint64_t>(data);
+        }
+        else if (typeid(char) == ti)
+        {
+            auto data = std::any_cast<char>(*m_data2);
+            result = static_cast<uint64_t>(data);
+        }
+        else if (typeid(wchar_t) == ti)
+        {
+            auto data = std::any_cast<wchar_t>(*m_data2);
+            result = static_cast<uint64_t>(data);
         }
     }
     catch (...)
@@ -1539,13 +1640,13 @@ std::optional<uint32_t> hmc_util::anyCast::get_uint32()
         return result;
     try
     {
-        auto data = get_int64();
+        auto data = get_uint64();
         if (!data.has_value())
         {
             return result;
         }
 
-        if (INT32_MAX > data.value() && 0 <= data.value())
+        if (std::numeric_limits<uint32_t>::max() > data.value() && 0 <= data.value())
         {
             return static_cast<uint32_t>(data.value());
         }
@@ -1572,6 +1673,7 @@ std::optional<bool> hmc_util::anyCast::get_bool()
     catch (...)
     {
     }
+    return result;
 }
 
 std::optional<std::wstring> hmc_util::anyCast::get_wstring()
@@ -1666,7 +1768,7 @@ std::optional<std::vector<std::uint8_t>> hmc_util::anyCast::get_buffer()
             {
                 temp2.push_back(static_cast<std::uint8_t>(i));
             }
-            return result;
+            return temp2;
         }
 
         if (typeid(std::vector<byte>) == ti)
@@ -1680,7 +1782,7 @@ std::optional<std::vector<std::uint8_t>> hmc_util::anyCast::get_buffer()
             {
                 temp2.push_back(static_cast<std::uint8_t>(i));
             }
-            return result;
+            return temp2;
         }
 
         if (typeid(std::vector<char>) == ti)
@@ -1693,7 +1795,7 @@ std::optional<std::vector<std::uint8_t>> hmc_util::anyCast::get_buffer()
             {
                 temp2.push_back(static_cast<std::uint8_t>(i));
             }
-            return result;
+            return temp2;
         }
 
         if (typeid(std::vector<u_char>) == ti)
@@ -1707,7 +1809,7 @@ std::optional<std::vector<std::uint8_t>> hmc_util::anyCast::get_buffer()
                 temp2.push_back(static_cast<std::uint8_t>(i));
             }
 
-            return result;
+            return temp2;
         }
     }
     catch (...)
@@ -1798,8 +1900,10 @@ std::optional<long double> hmc_util::anyCast::get_float()
     return result;
 }
 
-hmc_util::anyCast hmc_util::anyCastList::at(size_t index){
-    if(exists(index,true)){
+hmc_util::anyCast hmc_util::anyCastList::at(size_t index)
+{
+    if (exists(index, true))
+    {
         return hmc_util::anyCast(&m_data2->at(index));
     }
     return hmc_util::anyCast(nullptr);
