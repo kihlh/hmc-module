@@ -67,7 +67,7 @@ namespace hmc_string_util
 	 * @return std::wstring
 	 */
 	extern std::wstring getPathBaseName(const std::wstring &path);
-
+	
 	/**
 	 * @brief 获取路径的文件名
 	 *

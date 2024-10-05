@@ -99,9 +99,14 @@
 #define HMC_CATCH_ALL catch (...){};
 #endif // HMC_FreeAnyAuto
 
+
+#ifndef HMC_GC_CPP_BASIC_PTR
+#define HMC_GC_CPP_BASIC_PTR(obj)if (obj != NULL){delete obj;}
+#endif // HMC_GC_CPP_BASIC_PTR
+
+
 namespace hmc_util
 {
-
     /**
      * @brief 删除指定的字符
      *

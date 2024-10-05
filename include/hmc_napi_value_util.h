@@ -103,20 +103,53 @@ typedef enum
 	js_date = 95271,
 	js_error = 95272,
 	js_buffer = 95273,
-	js_point = 95277,
+	// js_point = 95277,
 	// js_array_string = 95279,
 	// js_array_number = 95281,
 	// js_array_boolean = 95282,
 	// js_array_bigint = 95283,
 	js_promise = 95285,
 	js_promise_function = 95286,
-	js_rect = 95288,
+	// js_rect = 95288,
 	js_unknown = 955666,
 	// js_array_any = 95290,
 } js_valuetype;
 
+typedef std::variant<
+	std::monostate,
+	std::wstring,
+	std::string,
+	bool,
+	std::vector<std::wstring>,
+	std::vector<std::string>,
+	std::vector<int64_t>,
+	int,
+	long long,
+	unsigned long long,
+	std::vector<uint8_t>,
+	long double>
+	js_variant_value;
+
 namespace hmc_napi_get_value
 {
+	/**
+	 * @brief 仅能取值支持以下值
+	 * @param type `vector<wstring>` `vector<int64_t>` `int64_t` `wstring` `vector<uint8_t>` `bool` `Array<wstring>`
+	 *
+	 * @param env
+	 * @param nodeValue
+	 * @return js_variant_value
+	 */
+	extern js_variant_value get_variant(napi_env env, napi_value nodeValue);
+
+	extern std::map<std::wstring,js_variant_value> get_object_variant_utf16(napi_env env, napi_value nodeValue);
+	
+	extern std::map<std::string,js_variant_value> get_object_variant_utf8(napi_env env, napi_value nodeValue);
+
+	extern std::vector<js_variant_value> get_array_variant(napi_env env, napi_value nodeValue);
+
+
+
 	/**
 	 * @brief 数字转int
 	 *
@@ -215,6 +248,16 @@ namespace hmc_napi_get_value
 	 * @return vector<string>
 	 */
 	extern std::vector<std::wstring> array_string_utf16(napi_env env, napi_value nodeValue);
+
+	extern std::vector<napi_value> get_array_value_list(napi_env env, napi_value nodeValue);
+
+	extern std::vector<std::pair<std::wstring, napi_value>> get_object_value_list_utf16(napi_env env, napi_value nodeValue);
+	extern std::vector<std::pair<std::string, napi_value>> get_object_value_list_utf8(napi_env env, napi_value nodeValue);
+
+	extern std::vector<std::wstring> get_object_keys_utf16(napi_env env, napi_value nodeValue);
+	extern std::vector<std::string> get_object_keys_utf8(napi_env env, napi_value nodeValue);
+	extern std::vector<napi_value> get_object_keys(napi_env env, napi_value nodeValue);
+
 	/**
 	 * @brief 获取数字数组
 	 *
@@ -666,7 +709,7 @@ namespace hmc_napi_type
 	 * @return true
 	 * @return false
 	 */
-	bool isPoint(napi_env env, napi_value value);
+	extern bool isPoint(napi_env env, napi_value value);
 	/**
 	 * @brief 是 Promise
 	 *
@@ -675,7 +718,7 @@ namespace hmc_napi_type
 	 * @return true
 	 * @return false
 	 */
-	bool isPromise(napi_env env, napi_value value);
+	extern bool isPromise(napi_env env, napi_value value);
 	/**
 	 * @brief 是 C Rect
 	 *
@@ -684,11 +727,13 @@ namespace hmc_napi_type
 	 * @return true
 	 * @return false
 	 */
-	bool isRect(napi_env env, napi_value value);
+	extern bool isRect(napi_env env, napi_value value);
 }
 
 namespace hmc_napi_create_value
 {
+
+	extern napi_value Variant(napi_env env, js_variant_value var);
 
 	/**
 	 * @brief Buffer 的释放函数
@@ -697,7 +742,7 @@ namespace hmc_napi_create_value
 	 * @param data
 	 * @param hint
 	 */
-	void BufferFinalizer(napi_env env, void *data, void *hint);
+	extern void BufferFinalizer(napi_env env, void *data, void *hint);
 
 	/**
 	 * @brief 创建一个函数
@@ -707,7 +752,7 @@ namespace hmc_napi_create_value
 	 * @param cb 函数
 	 * @return napi_value
 	 */
-	napi_value ExFunction(napi_env env, std::string name, napi_callback cb);
+	extern napi_value ExFunction(napi_env env, std::string name, napi_callback cb);
 
 	/**
 	 * @brief 创建一个错误
@@ -717,7 +762,7 @@ namespace hmc_napi_create_value
 	 * @param fn_name 函数名
 	 * @return napi_value
 	 */
-	napi_value Error(napi_env env, std::string error, std::string fn_name = "", std::string ErrorCode = "HMC_NAPI_ERROR");
+	extern napi_value Error(napi_env env, std::string error, std::string fn_name = "", std::string ErrorCode = "HMC_NAPI_ERROR");
 	/**
 	 * @brief 立即报错 并返回null 给node
 	 *
@@ -726,7 +771,7 @@ namespace hmc_napi_create_value
 	 * @param fn_name 函数名
 	 * @return napi_value
 	 */
-	napi_value Error(napi_env env, std::wstring error, std::wstring fn_name = L"", std::wstring ErrorCode = L"HMC_NAPI_ERROR");
+	extern napi_value Error(napi_env env, std::wstring error, std::wstring fn_name = L"", std::wstring ErrorCode = L"HMC_NAPI_ERROR");
 	/**
 	 * @brief 立即报错 并返回null 给node 只能是utf8文本
 	 *
@@ -736,7 +781,7 @@ namespace hmc_napi_create_value
 	 * @param fn_name 函数名
 	 * @return napi_value
 	 */
-	napi_value ErrorBreak(napi_env env, std::string error, std::string fn_name = "", std::string ErrorCode = "HMC_NAPI_ERROR");
+	extern napi_value ErrorBreak(napi_env env, std::string error, std::string fn_name = "", std::string ErrorCode = "HMC_NAPI_ERROR");
 	/**
 	 * @brief 立即报错 并返回null 给node 只能是A文本
 	 *
@@ -746,7 +791,7 @@ namespace hmc_napi_create_value
 	 * @param fn_name 函数名
 	 * @return napi_value
 	 */
-	napi_value ErrorBreakA(napi_env env, std::string error, std::string fn_name = "", std::string ErrorCode = "HMC_NAPI_ERROR");
+	extern napi_value ErrorBreakA(napi_env env, std::string error, std::string fn_name = "", std::string ErrorCode = "HMC_NAPI_ERROR");
 	/**
 	 * @brief 立即报错 并返回null 给node 只能是utf16文本
 	 *
@@ -756,22 +801,22 @@ namespace hmc_napi_create_value
 	 * @param fn_name 函数名
 	 * @return napi_value
 	 */
-	napi_value ErrorBreak(napi_env env, std::wstring error, std::wstring fn_name = L"", std::wstring ErrorCode = L"HMC_NAPI_ERROR");
+	extern napi_value ErrorBreak(napi_env env, std::wstring error, std::wstring fn_name = L"", std::wstring ErrorCode = L"HMC_NAPI_ERROR");
 
 	// 创建一个布尔型
-	napi_value Boolean(napi_env env, bool value = false);
+	extern napi_value Boolean(napi_env env, bool value = false);
 	// 创建一个布尔型
-	napi_value Boolean(napi_env env, int value = 0);
+	extern napi_value Boolean(napi_env env, int value = 0);
 
 	// 返回一个 string utf8 string
-	napi_value String(napi_env env, std::string value, size_t re_size = NAPI_AUTO_LENGTH);
+	extern napi_value String(napi_env env, std::string value, size_t re_size = NAPI_AUTO_LENGTH);
 
 	// 返回一个 string utf8 string
-	napi_value StringA(napi_env env, std::string value, size_t re_size = NAPI_AUTO_LENGTH);
+	extern napi_value StringA(napi_env env, std::string value, size_t re_size = NAPI_AUTO_LENGTH);
 	// 返回一个 string utf16 string
-	napi_value String(napi_env env, std::wstring value, size_t re_size = NAPI_AUTO_LENGTH);
+	extern napi_value String(napi_env env, std::wstring value, size_t re_size = NAPI_AUTO_LENGTH);
 
-	napi_value String(napi_env env);
+	extern napi_value String(napi_env env);
 
 	/**
 	 * @brief 返回一个 number到js
@@ -779,43 +824,43 @@ namespace hmc_napi_create_value
 	 * @param number
 	 * @return napi_value
 	 */
-	napi_value Number(napi_env env, int number = 0);
+	extern napi_value Number(napi_env env, int number = 0);
 	/**
 	 * @brief 返回一个 number到js
 	 *
 	 * @param number
 	 * @return napi_value
 	 */
-	napi_value Number(napi_env env, int64_t number = 0);
+	extern napi_value Number(napi_env env, int64_t number = 0);
 	/**
 	 * @brief 返回一个 number到js
 	 *
 	 * @param number
 	 * @return napi_value
 	 */
-	napi_value Number(napi_env env, double number = 0.0);
+	extern napi_value Number(napi_env env, double number = 0.0);
 	/**
 	 * @brief 返回一个 number到js
 	 *
 	 * @param number
 	 * @return napi_value
 	 */
-	napi_value Number(napi_env env, HWND number);
-	napi_value Number(napi_env env, unsigned long long number);
+	extern napi_value Number(napi_env env, HWND number);
+	extern napi_value Number(napi_env env, unsigned long long number);
 	/**
 	 * @brief 返回一个 number到js
 	 *
 	 * @param bigint
 	 * @return napi_value
 	 */
-	napi_value Bigint(napi_env env, int64_t bigint = 0);
+	extern napi_value Bigint(napi_env env, int64_t bigint = 0);
 	/**
 	 * @brief 返回一个 number到js
 	 *
 	 * @param bigint
 	 * @return napi_value
 	 */
-	napi_value Bigint(napi_env env, unsigned long long bigint = 0);
+	extern napi_value Bigint(napi_env env, unsigned long long bigint = 0);
 	/**
 	 * @brief 返回一个 Buffer到js(返回的是空值 napi 不支持)
 	 *
@@ -824,7 +869,7 @@ namespace hmc_napi_create_value
 	 * @param size
 	 * @return napi_value
 	 */
-	napi_value Buffer(napi_env env, std::vector<unsigned char> &buffer);
+	extern napi_value Buffer(napi_env env, std::vector<unsigned char> &buffer);
 
 	/**
 	 * @brief 返回一个 null
@@ -834,7 +879,7 @@ namespace hmc_napi_create_value
 	 * @param size
 	 * @return napi_value
 	 */
-	napi_value Null(napi_env env);
+	extern napi_value Null(napi_env env);
 	/**
 	 * @brief RECT (位置信息转为Object)
 	 *
@@ -842,8 +887,8 @@ namespace hmc_napi_create_value
 	 * @param rect
 	 * @return napi_value
 	 */
-	napi_value Rect(napi_env env, RECT rect);
-	napi_value Point(napi_env env, POINT point);
+	extern napi_value Rect(napi_env env, RECT rect);
+	extern napi_value Point(napi_env env, POINT point);
 
 	/**
 	 * @brief 返回一个 undefined
@@ -853,7 +898,7 @@ namespace hmc_napi_create_value
 	 * @param size
 	 * @return napi_value
 	 */
-	napi_value Undefined(napi_env env);
+	extern napi_value Undefined(napi_env env);
 	/**
 	 * @brief 自识别类型
 	 *
@@ -861,9 +906,9 @@ namespace hmc_napi_create_value
 	 * @param anyValue
 	 * @return napi_value
 	 */
-	napi_value New(napi_env env, std::any anyValue);
+	extern napi_value New(napi_env env, std::any anyValue);
 
-	napi_value New(napi_env env);
+	extern napi_value New(napi_env env);
 
 	class jsArray
 	{
@@ -1210,6 +1255,31 @@ public:
 	~js_value();
 };
 
+// 快速关闭句柄 (作用域内)
+class open_handle_scope
+{
+private:
+	napi_handle_scope _scope = NULL;
+	napi_env _env = NULL;
+	napi_status _status = napi_ok;
+	bool _is_close = false;
+public:
+	open_handle_scope(napi_env env);
+	bool close();
+	// !
+	bool operator!() const
+	{
+		return _status != napi_ok || _scope == nullptr || _env == nullptr;
+	}
+	// if
+	operator bool() const
+	{
+		return _status == napi_ok && _scope != nullptr || _env != nullptr;
+	}
+	
+	~open_handle_scope();
+};
+
 class hmc_NodeArgsValue
 {
 private:
@@ -1222,6 +1292,9 @@ public:
 	std::vector<napi_value> get_args();
 	napi_value at(size_t index);
 	std::vector<js_value> get_values();
+
+	js_variant_value get_variant(size_t index);
+
 	js_value get_value(size_t index);
 	/**
 	 * @brief 获取数量
@@ -1460,120 +1533,6 @@ public:
 	bool replace(size_t Index, napi_value value);
 };
 
-namespace hmc_PromiseSession
-{
-
-	// 任务id
-	extern size_t ____$hmcPromise_PromiseSessionID;
-	// 已经完结的任务id 当此处存在 将在取出数据后 立即被释放
-	extern std::set<size_t> ____$hmcPromise_PromiseTaskEndStatusList;
-	// 任务数据容器互斥体
-	extern std::shared_mutex ____$hmcPromise_rwMutex;
-	// 任务数据容器
-	extern std::unordered_map<size_t, std::vector<std::any>> ____$hmcPromise_PromiseTaskList;
-	// 任务数据 已读取索引 容器
-	extern std::unordered_map<size_t, size_t> ____$hmcPromise_promise_task_id_send_index_list;
-	extern long ___$Sleep_time;
-	/**
-	 * @brief 判断此任务id是否已经完成 调用了end()
-	 *
-	 * @param SessionId
-	 * @return true
-	 * @return false
-	 */
-	extern bool isClosed(size_t SessionId);
-	/**
-	 * @brief 提交数据push进容器
-	 *
-	 * @param SessionId 任务id
-	 * @param data 数据
-	 * @return true
-	 * @return false
-	 */
-	extern bool send(size_t SessionId, std::any data = std::any());
-	/**
-	 * @brief 提交数据push进容器
-	 *
-	 * @param SessionId 任务id
-	 * @param data_list 数据
-	 */
-	extern void send(size_t SessionId, std::vector<std::any> data_list);
-	/**
-	 * @brief 提交此ID已经完成 并在 getAll/get 后释放掉容器
-	 *
-	 * @param SessionId
-	 * @param data
-	 */
-	extern void end(size_t SessionId, std::any data = std::any());
-	/**
-	 * @brief 判断此id是否未结束
-	 *
-	 * @param PromiseID 任务id
-	 * @param index 如果被赋值则在 容器中判断此索引是否存在
-	 * @return true
-	 * @return false
-	 */
-	extern bool exists(size_t PromiseID, size_t index = -1);
-
-	/**
-	 * @brief 取出内容并释放掉这部分的any容器 但不移除 并重定向到新的index提供下次获取
-	 *
-	 * @param PromiseID
-	 * @return any
-	 */
-	extern napi_value getAll(napi_env env, size_t PromiseID, size_t size = 999);
-
-	extern size_t data_size(size_t PromiseID);
-
-	/**
-	 * @brief 取出内容并释放掉这部分的any容器 但不移除  如果任务已经结束时候则释放所有关联容器
-	 *
-	 * @param PromiseID
-	 * @return vector<any>
-	 */
-	extern std::vector<std::any> getAll(size_t PromiseID, size_t size = 999);
-	extern int64_t get_next_index(size_t PromiseID);
-
-	extern size_t ___get_open_id();
-	/**
-	 * @brief 在新的线程 启动一个函数 并传入一个vector<any>指针 以及监听此函数的运行结束的回调
-	 *
-	 * @param func
-	 * @return size_t
-	 */
-	extern size_t open(std::function<void(std::vector<std::any> *data_list)> func);
-	/**
-	 * @brief 创建一个新的任务id 并为其开辟容器 但不为其创建 变化管理线程
-	 *
-	 * @return size_t
-	 */
-	extern size_t open();
-	/**
-	 * @brief 在新的线程 启动一个函数 以及监听此函数的运行结束的回调 数据必须由此函数返回
-	 *
-	 * @param func
-	 * @return size_t
-	 */
-	extern size_t open(std::function<std::any()> func);
-	/**
-	 * @brief 在新的线程 启动一个函数 以及监听此函数的运行结束的回调
-	 *
-	 * @param func
-	 * @return size_t
-	 */
-	extern size_t open(std::function<void()> func);
-
-	template <class _Fn, class... _Args>
-	extern size_t open2(_Fn &&_Fx, _Args &&..._Ax);
-
-	extern size_t max_id();
-	extern std::vector<int> allTasks();
-	extern std::vector<int> ongoingTasks();
-	extern std::vector<int> completeTasks();
-	extern size_t get_sleep_time();
-};
-
-
 class PromiseFunctionUtil
 {
 public:
@@ -1619,15 +1578,6 @@ namespace HMC_PromiseStore
 	extern std::map<size_t, chFormatArgFun> PromiseFormatEventListenerFunList;
 	extern std::map<size_t, chExecuteWorkFun> PromiseWorkEventListenerFunList;
 	extern std::map<size_t, chExecuteResultFormatFun> PromiseResultFormatEventListenerFunList;
-
-	enum HMC_PROMISEEVAL_TASK_TYPE
-	{
-		getClipboardFilePaths2 = 1,
-		captureBmp2 = 2,
-		closeWindow2 = 3,
-		getClipboardText2 = 5,
-		getThumbnailPng2 = 6,
-	};
 
 }
 
