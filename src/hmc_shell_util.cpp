@@ -62,6 +62,37 @@ public:
 namespace hmc_shell_util
 {
 
+    typedef struct ch_copy_REPARSE_DATA_BUFFER
+    {
+        ULONG ReparseTag;
+        USHORT ReparseDataLength;
+        USHORT Reserved;
+        union
+        {
+            struct
+            {
+                USHORT SubstituteNameOffset;
+                USHORT SubstituteNameLength;
+                USHORT PrintNameOffset;
+                USHORT PrintNameLength;
+                ULONG Flags;
+                WCHAR PathBuffer[1];
+            } SymbolicLinkReparseBuffer;
+            struct
+            {
+                USHORT SubstituteNameOffset;
+                USHORT SubstituteNameLength;
+                USHORT PrintNameOffset;
+                USHORT PrintNameLength;
+                WCHAR PathBuffer[1];
+            } MountPointReparseBuffer;
+            struct
+            {
+                UCHAR DataBuffer[MAXIMUM_REPARSE_DATA_BUFFER_SIZE];
+            } GenericReparseBuffer;
+        };
+    } ch_copy_REPARSE_DATA_BUFFER, *ch_copy_PREPARSE_DATA_BUFFER;
+
     // bool SelectFolderV1(const std::wstring &Title, const std::wstring &SelectFolderPath);
     // bool SelectFolder(std::wstring &folderPath);
     // bool SelectFolders(std::vector<std::wstring> &folderPaths);
@@ -1075,8 +1106,17 @@ std::vector<std::wstring> hmc_shell_util::Symlink::getHardLinkList(const std::ws
                                               { ::FindClose(hFind); });
 
     std::wstring driveLetter = std::wstring();
-    driveLetter.push_back(filePath[0]);
-    driveLetter.push_back(filePath[1]);
+    // \\\\?\\  前缀
+    if (filePath[0] == '\\' && filePath.size() > 6)
+    {
+        driveLetter.push_back(filePath[4]);
+        driveLetter.push_back(filePath[5]);
+    }
+    else
+    {
+        driveLetter.push_back(filePath[0]);
+        driveLetter.push_back(filePath[1]);
+    }
 
     do
     {
@@ -1149,7 +1189,7 @@ std::wstring hmc_shell_util::Symlink::getSymbolicLinkTarget(const std::wstring &
     }
 
     wchar_t *targetPath = new wchar_t[MAX_PATH + 1];
-    DWORD pathSize = ::GetFinalPathNameByHandleW(hFile, targetPath, MAX_PATH, 0);
+    DWORD pathSize = ::GetFinalPathNameByHandleW(hFile, targetPath, MAX_PATH, VOLUME_NAME_DOS);
     if (pathSize == 0)
     {
         ::CloseHandle(hFile);
@@ -1173,6 +1213,91 @@ std::wstring hmc_shell_util::Symlink::getSymbolicLinkTarget(const std::wstring &
 bool hmc_shell_util::Symlink::createDirSymlink(const std::wstring &targetPath, const std::wstring &sourcePath)
 {
     return CreateSymbolicLinkW(targetPath.c_str(), sourcePath.c_str(), 0x1);
+}
+
+hmc_shell_util::Symlink::LINK_TYPE hmc_shell_util::Symlink::getLinkType(const std::wstring &path)
+{
+    DWORD attributes = ::GetFileAttributesW(path.c_str());
+
+    if (attributes == INVALID_FILE_ATTRIBUTES)
+    {
+        return LINK_TYPE::UNKNOWN;
+    }
+
+    // 检查是否是符号链接或目录连接点
+    if (attributes & FILE_ATTRIBUTE_REPARSE_POINT)
+    {
+
+        HANDLE fileHandle = ::CreateFileW(
+            path.c_str(),
+            GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+            NULL);
+
+        std::shared_ptr<void> _shared_close_Handle_(nullptr, [&](void *)
+                                                    {
+            if (fileHandle != INVALID_HANDLE_VALUE) {
+                ::CloseHandle(fileHandle);
+            } });
+
+        if (fileHandle != INVALID_HANDLE_VALUE)
+        {
+            // IOCTL重解析
+            BYTE reparseBuffer[MAXIMUM_REPARSE_DATA_BUFFER_SIZE];
+            DWORD bytesReturned;
+
+            if (::DeviceIoControl(fileHandle, FSCTL_GET_REPARSE_POINT, NULL, 0,
+                                  reparseBuffer, MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &bytesReturned, NULL))
+            {
+                ch_copy_REPARSE_DATA_BUFFER *reparseData = (ch_copy_REPARSE_DATA_BUFFER *)reparseBuffer;
+
+                if (reparseData->ReparseTag == IO_REPARSE_TAG_SYMLINK)
+                {
+                    // 符号链接
+                    return (attributes & FILE_ATTRIBUTE_DIRECTORY) ? LINK_TYPE::SOFT_LINK_DIR : LINK_TYPE::SOFT_LINK_FILE;
+                }
+                else if (reparseData->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
+                {
+                    // 目录连接点
+                    return LINK_TYPE::SYMBOLIC_LINK_DIR;
+                }
+            }
+        }
+    }
+
+    // 判断是否是硬链接
+    HANDLE fileHandle = ::CreateFileW(
+        path.c_str(),
+        0,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        NULL,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS,
+        NULL);
+
+    std::shared_ptr<void> _shared_close_Handle_(nullptr, [&](void *)
+                                                {
+        if (fileHandle != INVALID_HANDLE_VALUE) {
+            ::CloseHandle(fileHandle);
+        } });
+
+    if (fileHandle != INVALID_HANDLE_VALUE)
+    {
+        BY_HANDLE_FILE_INFORMATION fileInfo;
+        if (::GetFileInformationByHandle(fileHandle, &fileInfo))
+        {
+            if (fileInfo.nNumberOfLinks > 1)
+            {
+                // 硬链接
+                return LINK_TYPE::HARD_LINK_FILE;
+            }
+        }
+    }
+
+    return LINK_TYPE::UNKNOWN;
 }
 
 bool hmc_shell_util::Symlink::createSymlink(const std::wstring &targetPath, const std::wstring &sourcePath)
@@ -1556,538 +1681,664 @@ bool hmc_shell_util::Startup::hasOnce(const std::string &key)
     return result;
 }
 
-
- const wchar_t hmc_shell_util::Startup::WIN32_RunOnceW[50] = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnce";
- const wchar_t hmc_shell_util::Startup::WIN32_RunW[46] = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
- const char hmc_shell_util::Startup::WIN32_RunOnceA[50] = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnce";
- const char hmc_shell_util::Startup::WIN32_RunA[46] = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
-
- bool hmc_shell_util::Dialog::SelectFolder(std::vector<std::wstring>& folderPaths, const std::wstring& initRootDir, const std::wstring& initSelectName, const std::wstring& title, const std::wstring& confirmLabel, bool multSelect, bool dontAddToRecent)
- {
-     bool result = false;
-
-     try
-     {
-         HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-         if (FAILED(hr))
-         {
-             return false;
-         }
-
-         IFileOpenDialog* pOpenFolderDialog;
-         IShellItemArray* pItemArray;
-         HWND owner = NULL;
-
-         hr = ::CoCreateInstance(CLSID_FileOpenDialog,
-             NULL,
-             CLSCTX_INPROC_SERVER,
-             IID_PPV_ARGS(&pOpenFolderDialog));
-
-         if (!pOpenFolderDialog)
-         {
-             return false;
-         }
-
-         if (SUCCEEDED(hr))
-         {
-
-             DWORD dwOptions;
-             hr = pOpenFolderDialog->GetOptions(&dwOptions);
-             if (SUCCEEDED(hr))
-             {
-
-                 dwOptions |= FOS_PICKFOLDERS;
-
-                 if (dontAddToRecent)
-                 {
-                     dwOptions |= FOS_DONTADDTORECENT;
-                 }
-
-                 if (multSelect)
-                 {
-                     dwOptions |= FOS_ALLOWMULTISELECT;
-                 }
-
-                 hr = pOpenFolderDialog->SetOptions(dwOptions);
-             }
-
-             // 初始化文件夹
-             if (!initRootDir.empty())
-             {
-                 IShellItem* pInitFolder = nullptr;
-                 hr = ::SHCreateItemFromParsingName(initRootDir.c_str(), NULL, IID_PPV_ARGS(&pInitFolder));
-
-                 if (SUCCEEDED(hr))
-                 {
-                     pOpenFolderDialog->SetFolder(pInitFolder);
-                     pInitFolder->Release();
-                 }
-             }
-
-             // 预选文件名
-             if (!initSelectName.empty())
-             {
-                 pOpenFolderDialog->SetFileName(initSelectName.c_str());
-             }
-
-             // 标题
-             if (!title.empty())
-             {
-                 pOpenFolderDialog->SetTitle(title.c_str());
-             }
-
-             // 确认按钮的名字
-             if (!confirmLabel.empty())
-             {
-                 pOpenFolderDialog->SetOkButtonLabel(confirmLabel.c_str());
-             }
-
-             // 启动
-             hr = pOpenFolderDialog->Show(owner);
-
-             if (SUCCEEDED(hr))
-             {
-                 hr = pOpenFolderDialog->GetResults(&pItemArray);
-
-                 if (SUCCEEDED(hr))
-                 {
-                     DWORD itemCount;
-                     hr = pItemArray->GetCount(&itemCount);
-
-                     if (SUCCEEDED(hr))
-                     {
-                         for (DWORD i = 0; i < itemCount; i++)
-                         {
-                             IShellItem* pItem;
-                             hr = pItemArray->GetItemAt(i, &pItem);
-
-                             if (SUCCEEDED(hr))
-                             {
-                                 PWSTR pszFolderPath;
-                                 hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFolderPath);
-
-                                 if (SUCCEEDED(hr))
-                                 {
-                                     folderPaths.push_back(pszFolderPath);
-                                     ::CoTaskMemFree(pszFolderPath);
-                                     if (!multSelect)
-                                     {
-                                         break;
-                                     }
-                                 }
-
-                                 pItem->Release();
-                             }
-                         }
-
-                         if (itemCount > 0)
-                         {
-                             result = true;
-                         }
-                     }
-
-                     pItemArray->Release();
-                 }
-             }
-
-             pOpenFolderDialog->Release();
-         }
-     }
-     catch (...)
-     {
-     };
-     return result;
- }
-
- bool hmc_shell_util::Dialog::SelectFolder(std::wstring& folderPath, const std::wstring& initRootDir, const std::wstring& initSelectName, const std::wstring& title, const std::wstring& confirmLabel, bool dontAddToRecent)
- {
-     std::vector<std::wstring> FileList;
-     bool result = SelectFolder(FileList, initRootDir, initSelectName, title, confirmLabel, false, dontAddToRecent);
-     if (!FileList.empty())
-     {
-         folderPath.append(FileList.at(0));
-     }
-     return result;
- }
-
- bool hmc_shell_util::Dialog::SelectFile(std::vector<std::wstring>& FilePaths, const std::wstring& initRootDir, const std::wstring& initSelectName, const std::wstring& title, const std::wstring& confirmLabel, const std::vector<std::pair<std::wstring, std::wstring>>& filters, bool dontAddToRecent, bool multSelect)
- {
-     bool result = false;
-
-     try
-     {
-         HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-         if (FAILED(hr))
-         {
-             return false;
-         }
-
-         IFileOpenDialog* pFileOpenDialog;
-         IShellItemArray* pItemArray;
-         HWND owner = NULL;
-
-         // 创建文件选择对话框
-         hr = ::CoCreateInstance(CLSID_FileOpenDialog,
-             NULL,
-             CLSCTX_INPROC_SERVER,
-             IID_PPV_ARGS(&pFileOpenDialog));
-
-         if (!pFileOpenDialog )
-         {
-             return false;
-         }
-
-         if (SUCCEEDED(hr))
-         {
-             // 设置对话框选项
-             DWORD dwOptions;
-             hr = pFileOpenDialog->GetOptions(&dwOptions);
-             if (SUCCEEDED(hr))
-             {
-
-                 if (dontAddToRecent)
-                 {
-                     dwOptions |= FOS_DONTADDTORECENT; // 不添加到最近的文档
-                 }
-                 if (multSelect)
-                 {
-
-                     dwOptions |= FOS_ALLOWMULTISELECT; // 允许多选
-                 }
-
-                 dwOptions |= FOS_FORCEFILESYSTEM; // 仅允许文件系统对象
-
-                 hr = pFileOpenDialog->SetOptions(dwOptions);
-             }
-
-             // 设置初始目录
-             if (!initRootDir.empty())
-             {
-                 IShellItem* pFolder;
-                 hr = ::SHCreateItemFromParsingName(initRootDir.c_str(), NULL, IID_PPV_ARGS(&pFolder));
-                 if (SUCCEEDED(hr))
-                 {
-                     pFileOpenDialog->SetFolder(pFolder);
-                     pFolder->Release();
-                 }
-             }
-
-             // 设置初始选择名称
-             if (!initSelectName.empty())
-             {
-                 pFileOpenDialog->SetFileName(initSelectName.c_str());
-             }
-
-             // 设置对话框标题
-             if (!title.empty())
-             {
-                 pFileOpenDialog->SetTitle(title.c_str());
-             }
-
-             // 设置确认按钮的自定义标签
-             if (!confirmLabel.empty())
-             {
-                 pFileOpenDialog->SetOkButtonLabel(confirmLabel.c_str());
-             }
-
-             // 设置文件类型过滤器
-             if (!filters.empty())
-             {
-                 std::vector<COMDLG_FILTERSPEC> fileTypes;
-                 for (const auto& filter : filters)
-                 {
-                     COMDLG_FILTERSPEC spec = { filter.first.c_str(), filter.second.c_str() };
-                     fileTypes.push_back(spec);
-                 }
-                 pFileOpenDialog->SetFileTypes(static_cast<UINT>(fileTypes.size()), fileTypes.data());
-             }
-
-             // 显示文件选择对话框
-             hr = pFileOpenDialog->Show(owner);
-             if (SUCCEEDED(hr))
-             {
-                 hr = pFileOpenDialog->GetResults(&pItemArray);
-
-                 if (SUCCEEDED(hr))
-                 {
-                     DWORD itemCount;
-                     hr = pItemArray->GetCount(&itemCount);
-
-                     if (SUCCEEDED(hr))
-                     {
-                         for (DWORD i = 0; i < itemCount; i++)
-                         {
-                             IShellItem* pItem;
-                             hr = pItemArray->GetItemAt(i, &pItem);
-
-                             if (SUCCEEDED(hr))
-                             {
-                                 PWSTR pszFolderPath;
-                                 hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFolderPath);
-
-                                 if (SUCCEEDED(hr))
-                                 {
-                                     FilePaths.push_back(pszFolderPath);
-                                     ::CoTaskMemFree(pszFolderPath);
-                                 }
-
-                                 pItem->Release();
-                             }
-                         }
-
-                         if (itemCount > 0)
-                         {
-                             result = true;
-                         }
-                     }
-
-                     pItemArray->Release();
-                 }
-             }
-
-             pFileOpenDialog->Release();
-         }
-     }
-     catch (...)
-     {
-     }
-
-     return result;
- }
-
- bool hmc_shell_util::Dialog::SelectFile(std::wstring& FilePath, const std::wstring& initRootDir, const std::wstring& initSelectName, const std::wstring& title, const std::wstring& confirmLabel, const std::vector<std::pair<std::wstring, std::wstring>>& filters, bool dontAddToRecent)
- {
-     std::vector<std::wstring> FileList;
-     bool result = SelectFile(FileList, initRootDir, initSelectName, title, confirmLabel, filters, false, dontAddToRecent);
-     if (!FileList.empty())
-     {
-         FilePath.append(FileList.at(0));
-     }
-     return result;
- }
-
- std::vector<std::wstring> hmc_shell_util::Dialog::SelectFile(const std::vector<std::pair<std::wstring, std::wstring>>& filters, bool multSelect)
- {
-     std::vector<std::wstring> FileList;
-     SelectFile(FileList, L"", L"", L"", L"", filters, false, multSelect);
-     return FileList;
- }
-
- std::vector<std::wstring> hmc_shell_util::Dialog::SelectFolder(bool multSelect)
- {
-     std::vector<std::wstring> FolderList;
-     SelectFolder(FolderList, L"", L"", L"", L"", false, multSelect);
-     return FolderList;
- }
- 
- bool hmc_shell_util::Dialog::SelectSaveFile(std::wstring& filePath, std::wstring& selectExt, const std::wstring& initFolder, const std::wstring& defaultName, const std::wstring& title, const std::wstring& confirmLabel, const std::vector<std::pair<std::wstring, std::wstring>>& extensionList)
- {
-     HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-     if (FAILED(hr))
-     {
-         return false;
-     }
-
-     IFileSaveDialog* pFileSaveDialog;
-     hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_ALL, IID_IFileSaveDialog, reinterpret_cast<void**>(&pFileSaveDialog));
-
-     if (pFileSaveDialog != NULL && SUCCEEDED(hr))
-     {
-         // 设置初始目录
-         if (!initFolder.empty())
-         {
-             IShellItem* psiFolder = NULL;
-             hr = SHCreateItemFromParsingName(initFolder.c_str(), NULL, IID_PPV_ARGS(&psiFolder));
-             if (SUCCEEDED(hr))
-             {
-                 pFileSaveDialog->SetFolder(psiFolder);
-                 psiFolder->Release();
-             }
-         }
-
-         // 设置默认文件名
-         if (!defaultName.empty())
-         {
-             pFileSaveDialog->SetFileName(defaultName.c_str());
-         }
-
-         // 设置对话框标题
-         if (!title.empty())
-         {
-             pFileSaveDialog->SetTitle(title.c_str());
-         }
-
-         // 设置确认按钮的自定义标签
-         if (!confirmLabel.empty())
-         {
-             pFileSaveDialog->SetOkButtonLabel(confirmLabel.c_str());
-         }
-
-         // 设置文件类型过滤器
-         if (!extensionList.empty())
-         {
-             std::vector<COMDLG_FILTERSPEC> fileTypes;
-             for (const auto& filter : extensionList)
-             {
-                 COMDLG_FILTERSPEC spec = { filter.first.c_str(), filter.second.c_str() };
-                 fileTypes.push_back(spec);
-             }
-
-             pFileSaveDialog->SetFileTypes(static_cast<UINT>(fileTypes.size()), fileTypes.data());
-         }
-
-         // 显示对话框
-         hr = pFileSaveDialog->Show(NULL);
-         if (SUCCEEDED(hr))
-         {
-             IShellItem* pItem;
-             hr = pFileSaveDialog->GetResult(&pItem);
-             if (SUCCEEDED(hr))
-             {
-
-                 if (!extensionList.empty())
-                 {
-                     UINT fileTypeIndex = 0;
-                     HRESULT hr = pFileSaveDialog->GetFileTypeIndex(&fileTypeIndex);
-
-                     // 检查 fileTypeIndex 是否有效
-                     if (SUCCEEDED(hr) && fileTypeIndex > 0 && fileTypeIndex <= extensionList.size())
-                     {
-
-                         std::wstring selectedExtension = extensionList.at(fileTypeIndex - 1).second;
-                         selectExt.append(selectedExtension);
-                     }
-                 }
-
-                 PWSTR pszFilePath = NULL;
-                 pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
-                 if (pszFilePath)
-                 {
-                     filePath.clear();
-                     filePath.append(pszFilePath);
-                     ::CoTaskMemFree(pszFilePath);
-                 }
-                 pItem->Release();
-             }
-         }
-         pFileSaveDialog->Release();
-     }
-
-     ::CoUninitialize();
-     return SUCCEEDED(hr);
- }
-
- bool hmc_shell_util::Dialog::SelectSaveFolder(std::wstring& folderPath, const std::wstring& initFolder, const std::wstring& defaultName, const std::wstring& title, const std::wstring& confirmLabel) {
-     HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-     if (FAILED(hr))
-     {
-         return false;
-     }
-
-     IFileSaveDialog* pFileSaveDialog;
-     hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_ALL, IID_IFileSaveDialog, reinterpret_cast<void**>(&pFileSaveDialog));
-
-     if (pFileSaveDialog != NULL && SUCCEEDED(hr))
-     {
-
-
-         DWORD dwOptions;
-         hr = pFileSaveDialog->GetOptions(&dwOptions);
-
-         if (SUCCEEDED(hr))
-         {
-
-             dwOptions |= FOS_PICKFOLDERS;
-             hr = pFileSaveDialog->SetOptions(dwOptions);
-         }
-
-
-         // 设置初始目录
-         if (!initFolder.empty())
-         {
-             IShellItem* psiFolder = NULL;
-             hr = SHCreateItemFromParsingName(initFolder.c_str(), NULL, IID_PPV_ARGS(&psiFolder));
-             if (SUCCEEDED(hr))
-             {
-                 pFileSaveDialog->SetFolder(psiFolder);
-                 psiFolder->Release();
-             }
-         }
-
-         // 设置默认文件名
-         if (!defaultName.empty())
-         {
-             pFileSaveDialog->SetFileName(defaultName.c_str());
-         }
-
-         // 设置对话框标题
-         if (!title.empty())
-         {
-             pFileSaveDialog->SetTitle(title.c_str());
-         }
-
-         // 设置确认按钮的自定义标签
-         if (!confirmLabel.empty())
-         {
-             pFileSaveDialog->SetOkButtonLabel(confirmLabel.c_str());
-         }
-
-         // 显示对话框
-         hr = pFileSaveDialog->Show(NULL);
-         if (SUCCEEDED(hr))
-         {
-             IShellItem* pItem;
-             hr = pFileSaveDialog->GetResult(&pItem);
-             if (SUCCEEDED(hr))
-             {
-
-                 PWSTR pszFilePath = NULL;
-                 pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
-                 if (pszFilePath)
-                 {
-                     folderPath.clear();
-                     folderPath.append(pszFilePath);
-
-                     ::CoTaskMemFree(pszFilePath);
-                 }
-                 pItem->Release();
-             }
-         }
-         pFileSaveDialog->Release();
-     }
-
-     ::CoUninitialize();
-     return SUCCEEDED(hr);
- }
-
- bool hmc_shell_util::Dialog::SelectFolderOld(std::wstring& folderPath, const std::wstring& title)
- {
-
-     try
-     {
-         BROWSEINFO bi = { 0 };
-         bi.lpszTitle = title.empty() ? NULL : title.c_str();
-         bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
-         bi.hwndOwner = NULL;
-
-         LPITEMIDLIST pidl = ::SHBrowseForFolder(&bi);
-         if (pidl != NULL)
-         {
-             wchar_t folderPathTemp[MAX_PATH];
-
-             if (::SHGetPathFromIDList(pidl, folderPathTemp))
-             {
-                 ::CoTaskMemFree(pidl);
-                 folderPath.clear();
-                 folderPath.append(folderPathTemp);
-                 return true;
-             }
-             ::CoTaskMemFree(pidl);
-         }
-     }
-     catch (...)
-     {
-     }
-     return false;
- }
-
+const wchar_t hmc_shell_util::Startup::WIN32_RunOnceW[50] = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnce";
+const wchar_t hmc_shell_util::Startup::WIN32_RunW[46] = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
+const char hmc_shell_util::Startup::WIN32_RunOnceA[50] = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnce";
+const char hmc_shell_util::Startup::WIN32_RunA[46] = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
+
+bool hmc_shell_util::Dialog::SelectFolder(std::vector<std::wstring> &folderPaths, const std::wstring &initRootDir, const std::wstring &initSelectName, const std::wstring &title, const std::wstring &confirmLabel, bool multSelect, bool dontAddToRecent)
+{
+    bool result = false;
+
+    try
+    {
+        HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+        if (FAILED(hr))
+        {
+            return false;
+        }
+
+        IFileOpenDialog *pOpenFolderDialog;
+        IShellItemArray *pItemArray;
+        HWND owner = NULL;
+
+        hr = ::CoCreateInstance(CLSID_FileOpenDialog,
+                                NULL,
+                                CLSCTX_INPROC_SERVER,
+                                IID_PPV_ARGS(&pOpenFolderDialog));
+
+        if (!pOpenFolderDialog)
+        {
+            return false;
+        }
+
+        if (SUCCEEDED(hr))
+        {
+
+            DWORD dwOptions;
+            hr = pOpenFolderDialog->GetOptions(&dwOptions);
+            if (SUCCEEDED(hr))
+            {
+
+                dwOptions |= FOS_PICKFOLDERS;
+
+                if (dontAddToRecent)
+                {
+                    dwOptions |= FOS_DONTADDTORECENT;
+                }
+
+                if (multSelect)
+                {
+                    dwOptions |= FOS_ALLOWMULTISELECT;
+                }
+
+                hr = pOpenFolderDialog->SetOptions(dwOptions);
+            }
+
+            // 初始化文件夹
+            if (!initRootDir.empty())
+            {
+                IShellItem *pInitFolder = nullptr;
+                hr = ::SHCreateItemFromParsingName(initRootDir.c_str(), NULL, IID_PPV_ARGS(&pInitFolder));
+
+                if (SUCCEEDED(hr))
+                {
+                    pOpenFolderDialog->SetFolder(pInitFolder);
+                    pInitFolder->Release();
+                }
+            }
+
+            // 预选文件名
+            if (!initSelectName.empty())
+            {
+                pOpenFolderDialog->SetFileName(initSelectName.c_str());
+            }
+
+            // 标题
+            if (!title.empty())
+            {
+                pOpenFolderDialog->SetTitle(title.c_str());
+            }
+
+            // 确认按钮的名字
+            if (!confirmLabel.empty())
+            {
+                pOpenFolderDialog->SetOkButtonLabel(confirmLabel.c_str());
+            }
+
+            // 启动
+            hr = pOpenFolderDialog->Show(owner);
+
+            if (SUCCEEDED(hr))
+            {
+                hr = pOpenFolderDialog->GetResults(&pItemArray);
+
+                if (SUCCEEDED(hr))
+                {
+                    DWORD itemCount;
+                    hr = pItemArray->GetCount(&itemCount);
+
+                    if (SUCCEEDED(hr))
+                    {
+                        for (DWORD i = 0; i < itemCount; i++)
+                        {
+                            IShellItem *pItem;
+                            hr = pItemArray->GetItemAt(i, &pItem);
+
+                            if (SUCCEEDED(hr))
+                            {
+                                PWSTR pszFolderPath;
+                                hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFolderPath);
+
+                                if (SUCCEEDED(hr))
+                                {
+                                    folderPaths.push_back(pszFolderPath);
+                                    ::CoTaskMemFree(pszFolderPath);
+                                    if (!multSelect)
+                                    {
+                                        break;
+                                    }
+                                }
+
+                                pItem->Release();
+                            }
+                        }
+
+                        if (itemCount > 0)
+                        {
+                            result = true;
+                        }
+                    }
+
+                    pItemArray->Release();
+                }
+            }
+
+            pOpenFolderDialog->Release();
+        }
+    }
+    catch (...)
+    {
+    };
+    return result;
+}
+
+bool hmc_shell_util::Dialog::SelectFolder(std::wstring &folderPath, const std::wstring &initRootDir, const std::wstring &initSelectName, const std::wstring &title, const std::wstring &confirmLabel, bool dontAddToRecent)
+{
+    std::vector<std::wstring> FileList;
+    bool result = SelectFolder(FileList, initRootDir, initSelectName, title, confirmLabel, false, dontAddToRecent);
+    if (!FileList.empty())
+    {
+        folderPath.append(FileList.at(0));
+    }
+    return result;
+}
+
+bool hmc_shell_util::Dialog::SelectFile(std::vector<std::wstring> &FilePaths, const std::wstring &initRootDir, const std::wstring &initSelectName, const std::wstring &title, const std::wstring &confirmLabel, const std::vector<std::pair<std::wstring, std::wstring>> &filters, bool dontAddToRecent, bool multSelect)
+{
+    bool result = false;
+
+    try
+    {
+        HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+        if (FAILED(hr))
+        {
+            return false;
+        }
+
+        IFileOpenDialog *pFileOpenDialog;
+        IShellItemArray *pItemArray;
+        HWND owner = NULL;
+
+        // 创建文件选择对话框
+        hr = ::CoCreateInstance(CLSID_FileOpenDialog,
+                                NULL,
+                                CLSCTX_INPROC_SERVER,
+                                IID_PPV_ARGS(&pFileOpenDialog));
+
+        if (!pFileOpenDialog)
+        {
+            return false;
+        }
+
+        if (SUCCEEDED(hr))
+        {
+            // 设置对话框选项
+            DWORD dwOptions;
+            hr = pFileOpenDialog->GetOptions(&dwOptions);
+            if (SUCCEEDED(hr))
+            {
+
+                if (dontAddToRecent)
+                {
+                    dwOptions |= FOS_DONTADDTORECENT; // 不添加到最近的文档
+                }
+                if (multSelect)
+                {
+
+                    dwOptions |= FOS_ALLOWMULTISELECT; // 允许多选
+                }
+
+                dwOptions |= FOS_FORCEFILESYSTEM; // 仅允许文件系统对象
+
+                hr = pFileOpenDialog->SetOptions(dwOptions);
+            }
+
+            // 设置初始目录
+            if (!initRootDir.empty())
+            {
+                IShellItem *pFolder;
+                hr = ::SHCreateItemFromParsingName(initRootDir.c_str(), NULL, IID_PPV_ARGS(&pFolder));
+                if (SUCCEEDED(hr))
+                {
+                    pFileOpenDialog->SetFolder(pFolder);
+                    pFolder->Release();
+                }
+            }
+
+            // 设置初始选择名称
+            if (!initSelectName.empty())
+            {
+                pFileOpenDialog->SetFileName(initSelectName.c_str());
+            }
+
+            // 设置对话框标题
+            if (!title.empty())
+            {
+                pFileOpenDialog->SetTitle(title.c_str());
+            }
+
+            // 设置确认按钮的自定义标签
+            if (!confirmLabel.empty())
+            {
+                pFileOpenDialog->SetOkButtonLabel(confirmLabel.c_str());
+            }
+
+            // 设置文件类型过滤器
+            if (!filters.empty())
+            {
+                std::vector<COMDLG_FILTERSPEC> fileTypes;
+                for (const auto &filter : filters)
+                {
+                    COMDLG_FILTERSPEC spec = {filter.first.c_str(), filter.second.c_str()};
+                    fileTypes.push_back(spec);
+                }
+                pFileOpenDialog->SetFileTypes(static_cast<UINT>(fileTypes.size()), fileTypes.data());
+            }
+
+            // 显示文件选择对话框
+            hr = pFileOpenDialog->Show(owner);
+            if (SUCCEEDED(hr))
+            {
+                hr = pFileOpenDialog->GetResults(&pItemArray);
+
+                if (SUCCEEDED(hr))
+                {
+                    DWORD itemCount;
+                    hr = pItemArray->GetCount(&itemCount);
+
+                    if (SUCCEEDED(hr))
+                    {
+                        for (DWORD i = 0; i < itemCount; i++)
+                        {
+                            IShellItem *pItem;
+                            hr = pItemArray->GetItemAt(i, &pItem);
+
+                            if (SUCCEEDED(hr))
+                            {
+                                PWSTR pszFolderPath;
+                                hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFolderPath);
+
+                                if (SUCCEEDED(hr))
+                                {
+                                    FilePaths.push_back(pszFolderPath);
+                                    ::CoTaskMemFree(pszFolderPath);
+                                }
+
+                                pItem->Release();
+                            }
+                        }
+
+                        if (itemCount > 0)
+                        {
+                            result = true;
+                        }
+                    }
+
+                    pItemArray->Release();
+                }
+            }
+
+            pFileOpenDialog->Release();
+        }
+    }
+    catch (...)
+    {
+    }
+
+    return result;
+}
+
+bool hmc_shell_util::Dialog::SelectFile(std::wstring &FilePath, const std::wstring &initRootDir, const std::wstring &initSelectName, const std::wstring &title, const std::wstring &confirmLabel, const std::vector<std::pair<std::wstring, std::wstring>> &filters, bool dontAddToRecent)
+{
+    std::vector<std::wstring> FileList;
+    bool result = SelectFile(FileList, initRootDir, initSelectName, title, confirmLabel, filters, false, dontAddToRecent);
+    if (!FileList.empty())
+    {
+        FilePath.append(FileList.at(0));
+    }
+    return result;
+}
+
+std::vector<std::wstring> hmc_shell_util::Dialog::SelectFile(const std::vector<std::pair<std::wstring, std::wstring>> &filters, bool multSelect)
+{
+    std::vector<std::wstring> FileList;
+    SelectFile(FileList, L"", L"", L"", L"", filters, false, multSelect);
+    return FileList;
+}
+
+std::vector<std::wstring> hmc_shell_util::Dialog::SelectFolder(bool multSelect)
+{
+    std::vector<std::wstring> FolderList;
+    SelectFolder(FolderList, L"", L"", L"", L"", false, multSelect);
+    return FolderList;
+}
+
+bool hmc_shell_util::Dialog::SelectSaveFile(std::wstring &filePath, std::wstring &selectExt, const std::wstring &initFolder, const std::wstring &defaultName, const std::wstring &title, const std::wstring &confirmLabel, const std::vector<std::pair<std::wstring, std::wstring>> &extensionList)
+{
+    HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    if (FAILED(hr))
+    {
+        return false;
+    }
+
+    IFileSaveDialog *pFileSaveDialog;
+    hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_ALL, IID_IFileSaveDialog, reinterpret_cast<void **>(&pFileSaveDialog));
+
+    if (pFileSaveDialog != NULL && SUCCEEDED(hr))
+    {
+        // 设置初始目录
+        if (!initFolder.empty())
+        {
+            IShellItem *psiFolder = NULL;
+            hr = SHCreateItemFromParsingName(initFolder.c_str(), NULL, IID_PPV_ARGS(&psiFolder));
+            if (SUCCEEDED(hr))
+            {
+                pFileSaveDialog->SetFolder(psiFolder);
+                psiFolder->Release();
+            }
+        }
+
+        // 设置默认文件名
+        if (!defaultName.empty())
+        {
+            pFileSaveDialog->SetFileName(defaultName.c_str());
+        }
+
+        // 设置对话框标题
+        if (!title.empty())
+        {
+            pFileSaveDialog->SetTitle(title.c_str());
+        }
+
+        // 设置确认按钮的自定义标签
+        if (!confirmLabel.empty())
+        {
+            pFileSaveDialog->SetOkButtonLabel(confirmLabel.c_str());
+        }
+
+        // 设置文件类型过滤器
+        if (!extensionList.empty())
+        {
+            std::vector<COMDLG_FILTERSPEC> fileTypes;
+            for (const auto &filter : extensionList)
+            {
+                COMDLG_FILTERSPEC spec = {filter.first.c_str(), filter.second.c_str()};
+                fileTypes.push_back(spec);
+            }
+
+            pFileSaveDialog->SetFileTypes(static_cast<UINT>(fileTypes.size()), fileTypes.data());
+        }
+
+        // 显示对话框
+        hr = pFileSaveDialog->Show(NULL);
+        if (SUCCEEDED(hr))
+        {
+            IShellItem *pItem;
+            hr = pFileSaveDialog->GetResult(&pItem);
+            if (SUCCEEDED(hr))
+            {
+
+                if (!extensionList.empty())
+                {
+                    UINT fileTypeIndex = 0;
+                    HRESULT hr = pFileSaveDialog->GetFileTypeIndex(&fileTypeIndex);
+
+                    // 检查 fileTypeIndex 是否有效
+                    if (SUCCEEDED(hr) && fileTypeIndex > 0 && fileTypeIndex <= extensionList.size())
+                    {
+
+                        std::wstring selectedExtension = extensionList.at(fileTypeIndex - 1).second;
+                        selectExt.append(selectedExtension);
+                    }
+                }
+
+                PWSTR pszFilePath = NULL;
+                pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+                if (pszFilePath)
+                {
+                    filePath.clear();
+                    filePath.append(pszFilePath);
+                    ::CoTaskMemFree(pszFilePath);
+                }
+                pItem->Release();
+            }
+        }
+        pFileSaveDialog->Release();
+    }
+
+    ::CoUninitialize();
+    return SUCCEEDED(hr);
+}
+
+bool hmc_shell_util::Dialog::SelectSaveFolder(std::wstring &folderPath, const std::wstring &initFolder, const std::wstring &defaultName, const std::wstring &title, const std::wstring &confirmLabel)
+{
+    HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    if (FAILED(hr))
+    {
+        return false;
+    }
+
+    IFileSaveDialog *pFileSaveDialog;
+    hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_ALL, IID_IFileSaveDialog, reinterpret_cast<void **>(&pFileSaveDialog));
+
+    if (pFileSaveDialog != NULL && SUCCEEDED(hr))
+    {
+
+        DWORD dwOptions;
+        hr = pFileSaveDialog->GetOptions(&dwOptions);
+
+        if (SUCCEEDED(hr))
+        {
+
+            dwOptions |= FOS_PICKFOLDERS;
+            hr = pFileSaveDialog->SetOptions(dwOptions);
+        }
+
+        // 设置初始目录
+        if (!initFolder.empty())
+        {
+            IShellItem *psiFolder = NULL;
+            hr = SHCreateItemFromParsingName(initFolder.c_str(), NULL, IID_PPV_ARGS(&psiFolder));
+            if (SUCCEEDED(hr))
+            {
+                pFileSaveDialog->SetFolder(psiFolder);
+                psiFolder->Release();
+            }
+        }
+
+        // 设置默认文件名
+        if (!defaultName.empty())
+        {
+            pFileSaveDialog->SetFileName(defaultName.c_str());
+        }
+
+        // 设置对话框标题
+        if (!title.empty())
+        {
+            pFileSaveDialog->SetTitle(title.c_str());
+        }
+
+        // 设置确认按钮的自定义标签
+        if (!confirmLabel.empty())
+        {
+            pFileSaveDialog->SetOkButtonLabel(confirmLabel.c_str());
+        }
+
+        // 显示对话框
+        hr = pFileSaveDialog->Show(NULL);
+        if (SUCCEEDED(hr))
+        {
+            IShellItem *pItem;
+            hr = pFileSaveDialog->GetResult(&pItem);
+            if (SUCCEEDED(hr))
+            {
+
+                PWSTR pszFilePath = NULL;
+                pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+                if (pszFilePath)
+                {
+                    folderPath.clear();
+                    folderPath.append(pszFilePath);
+
+                    ::CoTaskMemFree(pszFilePath);
+                }
+                pItem->Release();
+            }
+        }
+        pFileSaveDialog->Release();
+    }
+
+    ::CoUninitialize();
+    return SUCCEEDED(hr);
+}
+
+bool hmc_shell_util::Dialog::SelectFolderOld(std::wstring &folderPath, const std::wstring &title)
+{
+
+    try
+    {
+        BROWSEINFO bi = {0};
+        bi.lpszTitle = title.empty() ? NULL : title.c_str();
+        bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
+        bi.hwndOwner = NULL;
+
+        LPITEMIDLIST pidl = ::SHBrowseForFolder(&bi);
+        if (pidl != NULL)
+        {
+            wchar_t folderPathTemp[MAX_PATH];
+
+            if (::SHGetPathFromIDList(pidl, folderPathTemp))
+            {
+                ::CoTaskMemFree(pidl);
+                folderPath.clear();
+                folderPath.append(folderPathTemp);
+                return true;
+            }
+            ::CoTaskMemFree(pidl);
+        }
+    }
+    catch (...)
+    {
+    }
+    return false;
+}
+
+DWORD hmc_shell_util::getFileAttributesInfo(const std::wstring &path)
+{
+
+    DWORD result = 0x0;
+
+    DWORD dwFileAttributes = ::GetFileAttributesW(path.c_str());
+
+    if (dwFileAttributes != INVALID_FILE_ATTRIBUTES)
+    {
+        result = dwFileAttributes;
+        return result;
+    }
+
+    return result;
+}
+
+std::vector<DWORD> hmc_shell_util::getFileAttributesInfoList(const std::wstring &path)
+{
+
+    std::vector<DWORD> result;
+
+    const DWORD FILE_ATTRIBUTE_INFO_LIST[20] = {
+        FILE_ATTRIBUTE_READONLY,            // 0x00000001 // 文件是只读的
+        FILE_ATTRIBUTE_HIDDEN,              // 0x00000002 // 文件是隐藏的
+        FILE_ATTRIBUTE_SYSTEM,              // 0x00000004 // 文件是系统文件
+        FILE_ATTRIBUTE_DIRECTORY,           // 0x00000010 // 文件是一个目录
+        FILE_ATTRIBUTE_ARCHIVE,             // 0x00000020 // 文件将被备份或归档
+        FILE_ATTRIBUTE_DEVICE,              // 0x00000040 // 保留，不用于文件
+        FILE_ATTRIBUTE_NORMAL,              // 0x00000080 // 文件没有其他属性集
+        FILE_ATTRIBUTE_TEMPORARY,           // 0x00000100 // 文件用于临时存储，尽快删除
+        FILE_ATTRIBUTE_SPARSE_FILE,         // 0x00000200 // 文件是稀疏文件，节省磁盘空间
+        FILE_ATTRIBUTE_REPARSE_POINT,       // 0x00000400 // 文件或目录具有重解析点
+        FILE_ATTRIBUTE_COMPRESSED,          // 0x00000800 // 文件或目录是压缩的
+        FILE_ATTRIBUTE_OFFLINE,             // 0x00001000 // 文件的数据没有立即可用
+        FILE_ATTRIBUTE_NOT_CONTENT_INDEXED, // 0x00002000 // 文件或目录不被内容索引
+        FILE_ATTRIBUTE_ENCRYPTED,           // 0x00004000 // 文件或目录是加密的
+        FILE_ATTRIBUTE_VIRTUAL,             // 0x00010000 // 保留，供未来使用
+        FILE_ATTRIBUTE_INTEGRITY_STREAM,    // 0x00008000 // 文件包含完整性流
+        FILE_ATTRIBUTE_NO_SCRUB_DATA,       // 0x00020000 // 文件禁止自动数据擦除功能
+        FILE_ATTRIBUTE_EA,                  // 0x00040000 // 文件包含扩展属性 (EA)
+        FILE_ATTRIBUTE_PINNED,              // 0x00080000 // 文件为固定文件
+        FILE_ATTRIBUTE_UNPINNED             // 0x00100000 // 文件为未固定文件
+    };
+
+    DWORD dwFileAttributes = ::GetFileAttributesW(path.c_str());
+
+    if (dwFileAttributes != INVALID_FILE_ATTRIBUTES)
+    {
+        result.push_back(dwFileAttributes);
+        for (int i = 0; i < sizeof(FILE_ATTRIBUTE_INFO_LIST) / sizeof(FILE_ATTRIBUTE_INFO_LIST[0]); i++)
+        {
+            if (dwFileAttributes & FILE_ATTRIBUTE_INFO_LIST[i])
+            {
+                result.push_back(FILE_ATTRIBUTE_INFO_LIST[i]);
+            }
+        }
+    }
+
+    return result;
+}
+
+DWORD hmc_shell_util::getFileAttributesInfo(const std::string &path)
+{
+
+    DWORD result = 0x0;
+
+    DWORD dwFileAttributes = ::GetFileAttributesA(path.c_str());
+
+    if (dwFileAttributes != INVALID_FILE_ATTRIBUTES)
+    {
+        result = dwFileAttributes;
+        return result;
+    }
+
+    return result;
+}
+
+std::vector<DWORD> hmc_shell_util::getFileAttributesInfoList(const std::string &path)
+{
+
+    std::vector<DWORD> result;
+
+    const DWORD FILE_ATTRIBUTE_INFO_LIST[20] = {
+        FILE_ATTRIBUTE_READONLY,            // 0x00000001 // 文件是只读的
+        FILE_ATTRIBUTE_HIDDEN,              // 0x00000002 // 文件是隐藏的
+        FILE_ATTRIBUTE_SYSTEM,              // 0x00000004 // 文件是系统文件
+        FILE_ATTRIBUTE_DIRECTORY,           // 0x00000010 // 文件是一个目录
+        FILE_ATTRIBUTE_ARCHIVE,             // 0x00000020 // 文件将被备份或归档
+        FILE_ATTRIBUTE_DEVICE,              // 0x00000040 // 保留，不用于文件
+        FILE_ATTRIBUTE_NORMAL,              // 0x00000080 // 文件没有其他属性集
+        FILE_ATTRIBUTE_TEMPORARY,           // 0x00000100 // 文件用于临时存储，尽快删除
+        FILE_ATTRIBUTE_SPARSE_FILE,         // 0x00000200 // 文件是稀疏文件，节省磁盘空间
+        FILE_ATTRIBUTE_REPARSE_POINT,       // 0x00000400 // 文件或目录具有重解析点
+        FILE_ATTRIBUTE_COMPRESSED,          // 0x00000800 // 文件或目录是压缩的
+        FILE_ATTRIBUTE_OFFLINE,             // 0x00001000 // 文件的数据没有立即可用
+        FILE_ATTRIBUTE_NOT_CONTENT_INDEXED, // 0x00002000 // 文件或目录不被内容索引
+        FILE_ATTRIBUTE_ENCRYPTED,           // 0x00004000 // 文件或目录是加密的
+        FILE_ATTRIBUTE_VIRTUAL,             // 0x00010000 // 保留，供未来使用
+        FILE_ATTRIBUTE_INTEGRITY_STREAM,    // 0x00008000 // 文件包含完整性流
+        FILE_ATTRIBUTE_NO_SCRUB_DATA,       // 0x00020000 // 文件禁止自动数据擦除功能
+        FILE_ATTRIBUTE_EA,                  // 0x00040000 // 文件包含扩展属性 (EA)
+        FILE_ATTRIBUTE_PINNED,              // 0x00080000 // 文件为固定文件
+        FILE_ATTRIBUTE_UNPINNED             // 0x00100000 // 文件为未固定文件
+    };
+
+    DWORD dwFileAttributes = ::GetFileAttributesA(path.c_str());
+
+    if (dwFileAttributes != INVALID_FILE_ATTRIBUTES)
+    {
+        result.push_back(dwFileAttributes);
+        for (int i = 0; i < sizeof(FILE_ATTRIBUTE_INFO_LIST) / sizeof(FILE_ATTRIBUTE_INFO_LIST[0]); i++)
+        {
+            auto ofFileAttributes = FILE_ATTRIBUTE_INFO_LIST[i];
+
+            if (dwFileAttributes == ofFileAttributes)
+            {
+                continue;
+            }
+
+            if (dwFileAttributes & ofFileAttributes)
+            {
+                result.push_back(ofFileAttributes);
+            }
+        }
+    }
+
+    return result;
+}

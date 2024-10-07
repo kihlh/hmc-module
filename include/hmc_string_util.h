@@ -113,6 +113,40 @@ namespace hmc_string_util
 	// ----------------------------------------------------------------
 	extern std::string ansi_to_utf8(const std::string ansi);
 
+	/**
+	 * @brief 先检查 utf8 还是 ascii 编码 还是 ansi 再转为utf8
+	 * 
+	 * @param ansi 
+	 * @return std::string 
+	 */
+	extern std::string aou8_to_utf8(const std::string input);
+	/**
+	 * @brief 先检查 utf8 还是 ascii 编码 还是 ansi 再转为utf16
+	 * 
+	 * @param ansi 
+	 * @return std::wstring 
+	 */
+	extern std::wstring aou8_to_utf16(const std::string input);
+	/**
+	 * @brief 判断编码长度是否是在ascii编码之内
+	 * 
+	 * @param ansi 
+	 * @return true 
+	 * @return false 
+	 */
+	extern bool is_ascii(const std::string input);
+	/**
+	 * @brief 判断编码长度是否是在ascii编码之内
+	 * 
+	 * @param ansi 
+	 * @return true 
+	 * @return false 
+	 */
+	extern bool is_ascii(const std::wstring input);
+	extern inline bool is_letter(char Input);
+	extern inline bool is_ascii(char Input);
+	extern inline bool is_letter(wchar_t Input);
+	extern inline bool is_ascii(wchar_t Input);
 	// ----------------------------------------------------------------
 	// U82A
 	// utf8 to Local CP_ACP ( Ansi [A] ) encoding
@@ -158,6 +192,8 @@ namespace hmc_string_util
 	extern std::map<std::string, std::string> utf16_to_ansi(std::map<std::wstring, std::wstring> item_list);
 	// 判断此文本是否符合utf8特征
 	extern bool is_utf8(const std::string input);
+	// 判断字符是否全是 字母
+	extern inline bool isLetter(char Input);
 	// 文本中是否有数字 并且是否是安全的 int32
 	extern bool is_int_str(const std::string Value);
 	// 文本中是否有数字 并且是否是安全的 long
@@ -328,6 +364,7 @@ namespace hmc_string_util
 	extern std::string vec_to_array_json(const std::vector<short> data_list);
 	extern std::string vec_to_array_json(const std::vector<long> data_list);
 	extern std::string vec_to_array_json(const std::vector<int> data_list);
+	extern std::string vec_to_array_json(const std::vector<long long> data_list);
 	extern std::string vec_to_array_json(const std::vector<unsigned long long> data_list);
 	extern std::string vec_to_array_json(const std::vector<unsigned int> data_list);
 	extern std::string vec_to_array_json(const std::vector<unsigned char> data_list);

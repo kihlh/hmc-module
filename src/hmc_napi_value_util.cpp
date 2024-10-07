@@ -100,6 +100,36 @@ std::string hmc_napi_type::typeName(js_valuetype valuetype)
     return getTypeName;
 }
 
+std::vector<js_valuetype> hmc_napi_type::getType(napi_env env, std::vector<napi_value> valuetype)
+{
+    std::vector<js_valuetype> result;
+    for (auto &value : valuetype)
+    {
+        result.push_back(getType(env, value));
+    }
+    return result;
+}
+
+bool hmc_napi_type::diff(js_valuetype valuetype, std::vector<js_valuetype> valuetype2)
+{
+    bool result = false;
+    if (valuetype2.empty())
+    {
+        return result;
+    }
+
+    for (auto &value : valuetype2)
+    {
+        if (value == valuetype)
+        {
+            result = true;
+            return result;
+        }
+    }
+
+    return result;
+}
+
 js_valuetype hmc_napi_type::getType(napi_env env, napi_value value_input)
 {
     js_valuetype result = js_valuetype::js_unknown;
@@ -2304,7 +2334,7 @@ js_variant_value hmc_napi_get_value::get_variant(napi_env env, napi_value nodeVa
         return result;
     }
 
-    const int type = hmc_napi_type::getType(env, nodeValue);
+    const js_valuetype type = hmc_napi_type::getType(env, nodeValue);
 
     switch (type)
     {
@@ -2344,7 +2374,6 @@ js_variant_value hmc_napi_get_value::get_variant(napi_env env, napi_value nodeVa
 
         result = hmc_napi_get_value::buffer_vector(env, nodeValue);
         return result;
-        break;
     }
 
     case napi_external:
@@ -2371,19 +2400,104 @@ js_variant_value hmc_napi_get_value::get_variant(napi_env env, napi_value nodeVa
             return result;
         }
 
-        if (type_0 == js_string)
+        auto type_list = hmc_napi_type::getType(env, value_list);
+
+        if (hmc_napi_type::diff(js_string, type_list))
         {
             result = hmc_napi_get_value::array_string_utf16(env, nodeValue);
             return result;
         }
 
-        if (type_0 == js_number || type_0 == js_bigint)
+        if (hmc_napi_type::diff(js_number, type_list) || hmc_napi_type::diff(js_bigint, type_list))
         {
             std::vector<int64_t> temp = hmc_napi_get_value::array_int64(env, nodeValue);
             result = temp;
             return result;
         }
+
+        auto temp = std::any(hmc_napi_get_value::get_array_variant(env, value_list));
+        result = std::pair<js_valuetype, std::any>(type, temp);
+        return result;
     }
+
+    if (js_valuetype::js_object == type)
+    {
+        auto temp = std::any(hmc_napi_get_value::get_object_value_list_utf16(env, nodeValue));
+        result = std::pair<js_valuetype, std::any>(type, temp);
+        return result;
+    }
+
+    return result;
+}
+
+std::vector<js_variant_value> hmc_NodeArgsValue::getArrayVariant(size_t index)
+{
+    std::vector<js_variant_value> result;
+    if (!this->exists(index))
+    {
+        return result;
+    }
+
+    napi_value at = this->at(index);
+
+    if (at == NULL)
+    {
+        return result;
+    }
+
+    result = hmc_napi_get_value::get_array_variant(env, at);
+
+    return result;
+}
+
+std::map<std::string, js_variant_value> hmc_NodeArgsValue::getObjecVariant_utf8(size_t index)
+{
+    std::map<std::string, js_variant_value> result;
+    if (!this->exists(index))
+    {
+        return result;
+    }
+
+    napi_value at = this->at(index);
+
+    if (at == NULL)
+    {
+        return result;
+    }
+    result = hmc_napi_get_value::get_object_variant_utf8(env, at);
+    return result;
+}
+
+std::map<std::wstring, js_variant_value> hmc_NodeArgsValue::getObjecVariant_utf16(size_t index)
+{
+    std::map<std::wstring, js_variant_value> result;
+    if (!this->exists(index))
+    {
+        return result;
+    }
+
+    napi_value at = this->at(index);
+
+    if (at == NULL)
+    {
+        return result;
+    }
+
+    result = hmc_napi_get_value::get_object_variant_utf16(env, at);
+    return result;
+}
+
+js_variant_value hmc_NodeArgsValue::get_variant(size_t index, hmc_NodeArgsValue::callback_type CallBack)
+{
+    auto result = js_variant_value();
+
+    if (!this->exists(index))
+    {
+        return result;
+    }
+
+    auto value = this->at(index);
+    result = CallBack(env, value, this, index);
     return result;
 }
 
@@ -2546,7 +2660,7 @@ std::vector<int> hmc_NodeArgsValue::getArrayInt(size_t index, std::vector<int> d
 bool hmc_NodeArgsValue::exists(size_t index)
 {
     bool results = false;
-    if (!args.size())
+    if (!args.size() || args.size() <= index)
         return results;
 
     if (args.size() > index)
@@ -2554,7 +2668,7 @@ bool hmc_NodeArgsValue::exists(size_t index)
         results = true;
     }
 
-    return results && args[index] != NULL;
+    return results && args.at(index) != NULL;
 }
 
 bool hmc_NodeArgsValue::eq(size_t index, js_valuetype type, bool throw_error)
@@ -3378,6 +3492,11 @@ void hmc_napi_create_value::jsArray::putBigint(int64_t Object)
     napi_value_list.push_back(hmc_napi_create_value::Bigint(node_env, Object));
 }
 
+void hmc_napi_create_value::jsArray::putBigint(unsigned long long Object)
+{
+    napi_value_list.push_back(hmc_napi_create_value::Bigint(node_env, Object));
+}
+
 void hmc_napi_create_value::jsArray::putNumber(int64_t Object)
 {
     napi_value_list.push_back(hmc_napi_create_value::Number(node_env, Object));
@@ -3842,15 +3961,21 @@ napi_value HMC_PromiseEval::StartAsyncTask(napi_env env, napi_callback_info info
         }
     }
 
-    if (HMC_PromiseStore::PromiseWorkEventListenerFunList.find(workData->TASK_TYPE) == HMC_PromiseStore::PromiseWorkEventListenerFunList.end())
+    if (workData != NULL&&HMC_PromiseStore::PromiseWorkEventListenerFunList.find(workData->TASK_TYPE) == HMC_PromiseStore::PromiseWorkEventListenerFunList.end())
     {
         napi_throw_type_error(env, NULL, hmc_string_util::string_to_lpstr("This task ID was not found. It may not be supported or the environment is missing"));
         return NULL;
     }
 
-    napi_create_promise(env, &workData->deferred, &promise);
-    napi_create_async_work(env, nullptr, resourceName, ExecuteAsyncWork, ResolveWork, workData, &workData->work);
-    napi_queue_async_work(env, workData->work);
+    if (workData != NULL) {
+        napi_create_promise(env, &workData->deferred, &promise);
+        napi_create_async_work(env, nullptr, resourceName, ExecuteAsyncWork, ResolveWork, workData, &workData->work);
+        napi_queue_async_work(env, workData->work);
+    }
+    else {
+        promise = NULL;
+    }
+
     return promise;
 }
 
@@ -4002,6 +4127,44 @@ void HMC_PromiseEval::append(size_t ID, std::optional<HMC_PromiseStore::chFormat
     }
 }
 
+napi_value hmc_napi_create_value::Variant(napi_env env, std::vector<js_variant_value> var)
+{
+    jsArray result = hmc_napi_create_value::jsArray(env);
+
+    for (auto &&js_variant : var)
+    {
+        result.putValue(hmc_napi_create_value::Variant(env, js_variant));
+    }
+
+    return result.toValue();
+}
+
+napi_value hmc_napi_create_value::Variant(napi_env env, std::map<std::string, js_variant_value> var)
+{
+    jsObject result = hmc_napi_create_value::jsObject(env);
+
+    for (auto &&js_variant : var)
+    {
+        auto temp = hmc_napi_create_value::Variant(env, js_variant.second);
+        result.putValue(js_variant.first, temp);
+    }
+
+    return result.toValue();
+}
+
+napi_value hmc_napi_create_value::Variant(napi_env env, std::map<std::wstring, js_variant_value> var)
+{
+    jsObject result = hmc_napi_create_value::jsObject(env);
+
+    for (auto &&js_variant : var)
+    {
+        auto temp = hmc_napi_create_value::Variant(env, js_variant.second);
+        result.putValue(js_variant.first, temp);
+    }
+
+    return result.toValue();
+}
+
 inline napi_value hmc_napi_create_value::Variant(napi_env env, js_variant_value var)
 {
     napi_value result = hmc_napi_create_value::Undefined(env);
@@ -4112,14 +4275,57 @@ inline napi_value hmc_napi_create_value::Variant(napi_env env, js_variant_value 
         return result;
     }
 
+    if (std::holds_alternative<std::vector<int64_t>>(var))
+    {
+        auto temp = std::get<std::vector<int64_t>>(var);
+
+        auto result = hmc_napi_create_value::jsArray(env);
+        for (size_t i = 0; i < temp.size(); i++)
+        {
+            auto &at = temp.at(i);
+            result.putNumber(at);
+        }
+
+        return result.toValue();
+    }
+
+    if (std::holds_alternative<std::vector<int>>(var))
+    {
+        auto temp = std::get<std::vector<int>>(var);
+
+        auto result = hmc_napi_create_value::jsArray(env);
+        for (size_t i = 0; i < temp.size(); i++)
+        {
+            auto &at = temp.at(i);
+            result.putNumber(static_cast<int64_t>(at));
+        }
+
+        return result.toValue();
+    }
+
+    if (std::holds_alternative<std::vector<unsigned long long>>(var))
+    {
+        auto temp = std::get<std::vector<unsigned long long>>(var);
+
+        auto result = hmc_napi_create_value::jsArray(env);
+        for (size_t i = 0; i < temp.size(); i++)
+        {
+            auto &at = temp.at(i);
+            result.putBigint(at);
+        }
+
+        return result.toValue();
+    }
+
     return result;
 }
 
 std::vector<napi_value> hmc_napi_get_value::get_array_value_list(napi_env env, napi_value nodeValue)
 {
     std::vector<napi_value> result;
-        
-    if(!hmc_napi_type::isArray(env,nodeValue)){
+
+    if (!hmc_napi_type::isArray(env, nodeValue))
+    {
         return result;
     }
 
@@ -4151,8 +4357,9 @@ std::vector<napi_value> hmc_napi_get_value::get_object_keys(napi_env env, napi_v
 {
     std::vector<napi_value> result;
     napi_value keys;
-    
-    if(!hmc_napi_type::isObject(env,nodeValue)){
+
+    if (!hmc_napi_type::isObject(env, nodeValue))
+    {
         return result;
     }
 
@@ -4178,7 +4385,8 @@ std::vector<std::wstring> hmc_napi_get_value::get_object_keys_utf16(napi_env env
     std::vector<std::wstring> result;
     napi_value keys;
 
-    if(!hmc_napi_type::isObject(env,nodeValue)){
+    if (!hmc_napi_type::isObject(env, nodeValue))
+    {
         return result;
     }
 
@@ -4209,7 +4417,8 @@ std::vector<std::string> hmc_napi_get_value::get_object_keys_utf8(napi_env env, 
 {
     std::vector<std::string> result;
 
-    if(!hmc_napi_type::isObject(env,nodeValue)){
+    if (!hmc_napi_type::isObject(env, nodeValue))
+    {
         return result;
     }
 
@@ -4288,9 +4497,9 @@ std::vector<std::pair<std::string, napi_value>> hmc_napi_get_value::get_object_v
 std::map<std::wstring, js_variant_value> hmc_napi_get_value::get_object_variant_utf16(napi_env env, napi_value nodeValue)
 {
     std::map<std::wstring, js_variant_value> result;
-    open_handle_scope scope (env);
+    open_handle_scope scope(env);
 
-    auto object_value_list  = hmc_napi_get_value::get_object_value_list_utf16(env,nodeValue);
+    auto object_value_list = hmc_napi_get_value::get_object_value_list_utf16(env, nodeValue);
 
     for (size_t i = 0; i < object_value_list.size(); i++)
     {
@@ -4298,16 +4507,16 @@ std::map<std::wstring, js_variant_value> hmc_napi_get_value::get_object_variant_
 
         result.insert(std::make_pair(value.first, get_variant(env, value.second)));
     }
-    
+
     return result;
 }
 
 std::map<std::string, js_variant_value> hmc_napi_get_value::get_object_variant_utf8(napi_env env, napi_value nodeValue)
 {
     std::map<std::string, js_variant_value> result;
-    open_handle_scope scope (env);
+    open_handle_scope scope(env);
 
-    auto object_value_list  = hmc_napi_get_value::get_object_value_list_utf8(env,nodeValue);
+    auto object_value_list = hmc_napi_get_value::get_object_value_list_utf8(env, nodeValue);
 
     for (size_t i = 0; i < object_value_list.size(); i++)
     {
@@ -4315,17 +4524,17 @@ std::map<std::string, js_variant_value> hmc_napi_get_value::get_object_variant_u
 
         result.insert(std::make_pair(value.first, get_variant(env, value.second)));
     }
-    
+
     return result;
 }
 
 std::vector<js_variant_value> hmc_napi_get_value::get_array_variant(napi_env env, napi_value nodeValue)
 {
     std::vector<js_variant_value> result;
-    
-    open_handle_scope scope (env);
 
-    std::vector<napi_value> array_value_list = get_array_value_list(env,nodeValue);
+    open_handle_scope scope(env);
+
+    std::vector<napi_value> array_value_list = get_array_value_list(env, nodeValue);
 
     for (auto &value : array_value_list)
     {
@@ -4334,7 +4543,19 @@ std::vector<js_variant_value> hmc_napi_get_value::get_array_variant(napi_env env
 
     return result;
 }
+std::vector<js_variant_value> hmc_napi_get_value::get_array_variant(napi_env env, const std::vector<napi_value> nodeValueList)
+{
+    std::vector<js_variant_value> result;
 
+    open_handle_scope scope(env);
+
+    for (auto &value : nodeValueList)
+    {
+        result.push_back(get_variant(env, value));
+    }
+
+    return result;
+}
 open_handle_scope::open_handle_scope(napi_env env)
 {
     _env = env;
@@ -4359,4 +4580,600 @@ bool open_handle_scope::close()
 open_handle_scope::~open_handle_scope()
 {
     close();
+}
+
+size_t getVariantEstimateSize(js_variant_value js_variant)
+{
+    size_t result = 0;
+
+    if (std::holds_alternative<std::monostate>(js_variant))
+    {
+        result = 4;
+        return result;
+    }
+
+    if (std::holds_alternative<bool>(js_variant))
+    {
+        result = 4;
+        return result;
+    }
+
+    if (
+        std::holds_alternative<unsigned long long>(js_variant) ||
+        std::holds_alternative<int>(js_variant) ||
+        std::holds_alternative<long long>(js_variant) ||
+        std::holds_alternative<long double>(js_variant))
+    {
+        result = 20;
+        return result;
+    }
+
+    if (std::holds_alternative<std::string>(js_variant) || std::holds_alternative<std::wstring>(js_variant))
+    {
+        if (auto *str = std::get_if<std::string>(&js_variant))
+        {
+            result = str->size();
+            return result;
+        }
+
+        if (auto *str = std::get_if<std::wstring>(&js_variant))
+        {
+            result = str->size();
+            return result;
+        }
+    }
+
+    if (std::holds_alternative<std::vector<uint8_t>>(js_variant))
+    {
+        if (auto *buff = std::get_if<std::vector<uint8_t>>(&js_variant))
+        {
+            result = buff->size() * 3;
+            return result;
+        }
+    }
+
+    if (std::holds_alternative<std::vector<std::wstring>>(js_variant))
+    {
+        auto strList = std::get<std::vector<std::wstring>>(js_variant);
+        result = hmc_string_util::size(strList);
+        return result;
+    }
+
+    if (std::holds_alternative<std::vector<std::string>>(js_variant))
+    {
+        auto strList = std::get<std::vector<std::string>>(js_variant);
+        result = hmc_string_util::size(strList);
+        return result;
+    }
+
+    return result;
+}
+
+std::wstring formatVariantJSONStr_utf16(js_variant_value js_variant)
+{
+    std::wstring result;
+    if (std::holds_alternative<std::monostate>(js_variant))
+    {
+        result = L"null";
+        return result;
+    }
+
+    if (std::holds_alternative<bool>(js_variant))
+    {
+        result = std::get<bool>(js_variant) ? L"true" : L"false";
+        return result;
+    }
+
+    if (std::holds_alternative<unsigned long long>(js_variant))
+    {
+        result = std::to_wstring(std::get<unsigned long long>(js_variant));
+        return result;
+    }
+
+    if (std::holds_alternative<int>(js_variant))
+    {
+        result = std::to_wstring(std::get<int>(js_variant));
+        return result;
+    }
+
+    if (std::holds_alternative<long long>(js_variant))
+    {
+        result = std::to_wstring(std::get<long long>(js_variant));
+        return result;
+    }
+
+    if (std::holds_alternative<long double>(js_variant))
+    {
+        result = std::to_wstring(std::get<long double>(js_variant));
+        return result;
+    }
+
+    if (std::holds_alternative<std::wstring>(js_variant))
+    {
+        auto temp = std::get<std::wstring>(js_variant);
+        auto escapeJson = hmc_string_util::escapeJsonString(temp, true);
+        result = escapeJson;
+        return result;
+    }
+
+    if (std::holds_alternative<std::string>(js_variant))
+    {
+        auto temp = std::get<std::string>(js_variant);
+
+        auto escapeJson = hmc_string_util::escapeJsonString(temp, true);
+        if (hmc_string_util::is_utf8(escapeJson))
+        {
+            result = hmc_string_util::utf8_to_utf16(escapeJson);
+        }
+        else
+        {
+            result = hmc_string_util::ansi_to_utf16(escapeJson);
+        }
+        return result;
+    }
+
+    if (std::holds_alternative<std::vector<std::wstring>>(js_variant))
+    {
+        auto temp = std::get<std::vector<std::wstring>>(js_variant);
+        size_t size = hmc_string_util::size(temp);
+        result.reserve(size + (temp.size() * 3) + MAX_PATH);
+        result.push_back('[');
+        if (!temp.empty())
+        {
+            for (size_t i = 0; i < temp.size(); i++)
+            {
+                auto at = temp.at(i);
+                auto escapeJson = hmc_string_util::escapeJsonString(at, true);
+                result.append(escapeJson);
+                if (i + 1 < temp.size())
+                {
+                    result.push_back(',');
+                }
+            }
+        }
+        result.push_back(']');
+        return result;
+    }
+
+    if (std::holds_alternative<std::vector<std::string>>(js_variant))
+    {
+        auto temp = std::get<std::vector<std::string>>(js_variant);
+
+        size_t size = hmc_string_util::size(temp);
+        result.reserve(size + (temp.size() * 3) + MAX_PATH);
+        result.push_back('[');
+
+        if (!temp.empty())
+        {
+            for (size_t i = 0; i < temp.size(); i++)
+            {
+                auto at = temp.at(i);
+                auto escapeJson = hmc_string_util::escapeJsonString(at, true);
+                if (hmc_string_util::is_utf8(escapeJson))
+                {
+                    result.append(hmc_string_util::utf8_to_utf16(escapeJson));
+                }
+                else
+                {
+                    result.append(hmc_string_util::ansi_to_utf16(escapeJson));
+                }
+
+                if (i + 1 < temp.size())
+                {
+                    result.push_back(',');
+                }
+            }
+        }
+        result.push_back(']');
+        return result;
+    }
+
+    if (std::holds_alternative<std::vector<uint8_t>>(js_variant))
+    {
+        auto temp = std::get<std::vector<uint8_t>>(js_variant);
+        auto json_data = hmc_string_util::vec_to_array_json(temp);
+        result.clear();
+        result.append(hmc_string_util::asciiConvers(json_data));
+        return result;
+    }
+
+    if (std::holds_alternative<std::vector<int>>(js_variant))
+    {
+        auto temp = std::get<std::vector<int>>(js_variant);
+        auto json_data = hmc_string_util::vec_to_array_json(temp);
+        result.clear();
+        result.append(hmc_string_util::asciiConvers(json_data));
+        return result;
+    }
+
+    if (std::holds_alternative<std::vector<unsigned long long>>(js_variant))
+    {
+        auto temp = std::get<std::vector<unsigned long long>>(js_variant);
+        auto json_data = hmc_string_util::vec_to_array_json(temp);
+        result.clear();
+        result.append(hmc_string_util::asciiConvers(json_data));
+        return result;
+    }
+
+    if (std::holds_alternative<std::vector<int64_t>>(js_variant))
+    {
+        auto temp = std::get<std::vector<int64_t>>(js_variant);
+        auto json_data = hmc_string_util::vec_to_array_json(temp);
+        result.clear();
+        result.append(hmc_string_util::asciiConvers(json_data));
+        return result;
+    }
+
+    return result;
+}
+
+std::wstring formatVariantJSONStr_utf16(std::map<std::string, js_variant_value> js_variant)
+{
+    std::wstring result;
+    result.push_back('{');
+
+    size_t reserve_size = 0;
+
+    for (auto &&at : js_variant)
+    {
+        const size_t value_size = getVariantEstimateSize(at.second);
+        const size_t key_size = at.first.size();
+        const size_t standard_size = 15 /* 标准分隔符号可能会用到的大小 */;
+        reserve_size = reserve_size + standard_size + key_size + value_size;
+    }
+
+    result.reserve(reserve_size + MAX_PATH);
+
+    for (auto &&at : js_variant)
+    {
+        auto key = at.first;
+        auto value = at.second;
+        result.push_back('"');
+        result.append(hmc_string_util::asciiConvers(key));
+        result.push_back('"');
+        result.push_back(':');
+        result.append(formatVariantJSONStr_utf16(value));
+        result.push_back(',');
+    }
+
+    if (result.size() > 1)
+    {
+        result.pop_back();
+    }
+
+    result.push_back('}');
+    return result;
+}
+
+std::wstring formatVariantJSONStr_utf16(std::map<std::wstring, js_variant_value> js_variant)
+{
+    std::wstring result;
+    result.push_back('{');
+
+    size_t reserve_size = 0;
+
+    for (auto &&at : js_variant)
+    {
+        const size_t value_size = getVariantEstimateSize(at.second);
+        const size_t key_size = at.first.size();
+        const size_t standard_size = 15 /* 标准分隔符号可能会用到的大小 */;
+        reserve_size = reserve_size + standard_size + key_size + value_size;
+    }
+
+    result.reserve(reserve_size + MAX_PATH);
+
+    for (auto &&at : js_variant)
+    {
+        auto key = at.first;
+        auto value = at.second;
+        result.push_back('"');
+        result.append(key);
+        result.push_back('"');
+        result.push_back(':');
+        result.append(formatVariantJSONStr_utf16(value));
+        result.push_back(',');
+    }
+
+    if (result.size() > 1)
+    {
+        result.pop_back();
+    }
+
+    result.push_back('}');
+    return result;
+}
+
+std::wstring formatVariantJSONStr_utf16(std::vector<js_variant_value> js_variant)
+{
+    std::wstring result;
+    result.push_back('[');
+
+    size_t reserve_size = 0;
+
+    for (auto &&at : js_variant)
+    {
+        const size_t value_size = getVariantEstimateSize(at);
+        const size_t standard_size = 15 /* 标准分隔符号可能会用到的大小 */;
+        reserve_size = reserve_size + standard_size + value_size;
+    }
+
+    result.reserve(reserve_size + MAX_PATH);
+
+    for (auto &&at : js_variant)
+    {
+        result.append(formatVariantJSONStr_utf16(at));
+        result.push_back(',');
+    }
+
+    if (result.size() > 1)
+    {
+        result.pop_back();
+    }
+
+    result.push_back(']');
+    return result;
+}
+
+std::string formatVariantJSONStr_utf8(std::map<std::string, js_variant_value> js_variant)
+{
+    std::string result;
+    result.push_back('{');
+
+    size_t reserve_size = 0;
+
+    for (auto &&at : js_variant)
+    {
+        const size_t value_size = getVariantEstimateSize(at.second);
+        const size_t key_size = at.first.size();
+        const size_t standard_size = 15 /* 标准分隔符号可能会用到的大小 */;
+        reserve_size = reserve_size + standard_size + key_size + value_size;
+    }
+
+    result.reserve(reserve_size + MAX_PATH);
+
+    for (auto &&at : js_variant)
+    {
+        auto key = at.first;
+        auto value = at.second;
+        result.push_back('"');
+        result.append(key);
+        result.push_back('"');
+        result.push_back(':');
+        result.append(formatVariantJSONStr_utf8(value));
+        result.push_back(',');
+    }
+
+    if (result.size() > 1)
+    {
+        result.pop_back();
+    }
+
+    result.push_back('}');
+    return result;
+}
+std::string formatVariantJSONStr_utf8(std::map<std::wstring, js_variant_value> js_variant)
+{
+    std::string result;
+    result.push_back('{');
+
+    size_t reserve_size = 0;
+
+    for (auto &&at : js_variant)
+    {
+        const size_t value_size = getVariantEstimateSize(at.second);
+        const size_t key_size = at.first.size();
+        const size_t standard_size = 15 /* 标准分隔符号可能会用到的大小 */;
+        reserve_size = reserve_size + standard_size + key_size + value_size;
+    }
+
+    result.reserve(reserve_size + MAX_PATH);
+
+    for (auto &&at : js_variant)
+    {
+        auto key = at.first;
+        auto value = at.second;
+        result.push_back('"');
+        result.append(hmc_string_util::utf16_to_utf8(key));
+        result.push_back('"');
+        result.push_back(':');
+        result.append(formatVariantJSONStr_utf8(value));
+        result.push_back(',');
+    }
+
+    if (result.size() > 1)
+    {
+        result.pop_back();
+    }
+
+    result.push_back('}');
+    return result;
+}
+
+std::string formatVariantJSONStr_utf8(js_variant_value js_variant)
+{
+    std::string result;
+    if (std::holds_alternative<std::monostate>(js_variant))
+    {
+        result = "null";
+        return result;
+    }
+
+    if (std::holds_alternative<bool>(js_variant))
+    {
+        result = std::get<bool>(js_variant) ? "true" : "false";
+        return result;
+    }
+
+    if (std::holds_alternative<unsigned long long>(js_variant))
+    {
+        result = std::to_string(std::get<unsigned long long>(js_variant));
+        return result;
+    }
+
+    if (std::holds_alternative<int>(js_variant))
+    {
+        result = std::to_string(std::get<int>(js_variant));
+        return result;
+    }
+
+    if (std::holds_alternative<long long>(js_variant))
+    {
+        result = std::to_string(std::get<long long>(js_variant));
+        return result;
+    }
+
+    if (std::holds_alternative<long double>(js_variant))
+    {
+        result = std::to_string(std::get<long double>(js_variant));
+        return result;
+    }
+
+    if (std::holds_alternative<std::wstring>(js_variant))
+    {
+        auto temp = std::get<std::wstring>(js_variant);
+        auto escapeJson = hmc_string_util::escapeJsonString(temp, true);
+        result = hmc_string_util::utf16_to_utf8(escapeJson);
+        return result;
+    }
+
+    if (std::holds_alternative<std::string>(js_variant))
+    {
+        auto temp = std::get<std::string>(js_variant);
+
+        auto escapeJson = hmc_string_util::escapeJsonString(temp, true);
+        if (hmc_string_util::is_utf8(escapeJson))
+        {
+            result = escapeJson;
+        }
+        else
+        {
+            result = hmc_string_util::ansi_to_utf8(escapeJson);
+        }
+        return result;
+    }
+
+    if (std::holds_alternative<std::vector<std::wstring>>(js_variant))
+    {
+        auto temp = std::get<std::vector<std::wstring>>(js_variant);
+        size_t size = hmc_string_util::size(temp);
+        result.reserve(size + (temp.size() * 3) + MAX_PATH);
+        result.push_back('[');
+        if (!temp.empty())
+        {
+            for (size_t i = 0; i < temp.size(); i++)
+            {
+                auto at = temp.at(i);
+                auto escapeJson = hmc_string_util::escapeJsonString(at, true);
+                result.append(hmc_string_util::utf16_to_utf8(escapeJson));
+                if (i + 1 < temp.size())
+                {
+                    result.push_back(',');
+                }
+            }
+        }
+        result.push_back(']');
+        return result;
+    }
+
+    if (std::holds_alternative<std::vector<std::string>>(js_variant))
+    {
+        auto temp = std::get<std::vector<std::string>>(js_variant);
+
+        size_t size = hmc_string_util::size(temp);
+        result.reserve(size + (temp.size() * 3) + MAX_PATH);
+        result.push_back('[');
+
+        if (!temp.empty())
+        {
+            for (size_t i = 0; i < temp.size(); i++)
+            {
+                auto at = temp.at(i);
+                auto escapeJson = hmc_string_util::escapeJsonString(at, true);
+                if (hmc_string_util::is_utf8(escapeJson))
+                {
+                    result.append(escapeJson);
+                }
+                else
+                {
+                    result.append(hmc_string_util::ansi_to_utf8(escapeJson));
+                }
+
+                if (i + 1 < temp.size())
+                {
+                    result.push_back(',');
+                }
+            }
+        }
+        result.push_back(']');
+        return result;
+    }
+
+    if (std::holds_alternative<std::vector<uint8_t>>(js_variant))
+    {
+        auto temp = std::get<std::vector<uint8_t>>(js_variant);
+        auto json_data = hmc_string_util::vec_to_array_json(temp);
+        result.clear();
+        result.append(json_data);
+        return result;
+    }
+
+    if (std::holds_alternative<std::vector<int>>(js_variant))
+    {
+        auto temp = std::get<std::vector<int>>(js_variant);
+        auto json_data = hmc_string_util::vec_to_array_json(temp);
+        result.clear();
+        result.append(json_data.begin(), json_data.end());
+        return result;
+    }
+
+    if (std::holds_alternative<std::vector<unsigned long long>>(js_variant))
+    {
+        auto temp = std::get<std::vector<unsigned long long>>(js_variant);
+        auto json_data = hmc_string_util::vec_to_array_json(temp);
+        result.clear();
+        result.append(json_data.begin(), json_data.end());
+        return result;
+    }
+
+    if (std::holds_alternative<std::vector<int64_t>>(js_variant))
+    {
+        auto temp = std::get<std::vector<int64_t>>(js_variant);
+        auto json_data = hmc_string_util::vec_to_array_json(temp);
+        result.clear();
+        result.append(json_data.begin(), json_data.end());
+        return result;
+    }
+
+    return result;
+}
+
+std::string formatVariantJSONStr_utf8(std::vector<js_variant_value> js_variant)
+{
+    std::string result;
+    result.push_back('[');
+
+    size_t reserve_size = 0;
+
+    for (auto &&at : js_variant)
+    {
+        const size_t value_size = getVariantEstimateSize(at);
+        const size_t standard_size = 15 /* 标准分隔符号可能会用到的大小 */;
+        reserve_size = reserve_size + standard_size + value_size;
+    }
+
+    result.reserve(reserve_size + MAX_PATH);
+
+    for (auto &&at : js_variant)
+    {
+        result.append(formatVariantJSONStr_utf8(at));
+        result.push_back(',');
+    }
+
+    if (result.size() > 1)
+    {
+        result.pop_back();
+    }
+
+    result.push_back(']');
+    return result;
 }

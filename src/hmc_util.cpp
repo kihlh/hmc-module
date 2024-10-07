@@ -1113,7 +1113,7 @@ bool hmc_util::anyCast::is_buffer()
 
     if (typeid(std::vector<byte>) == ti ||
         typeid(std::vector<char>) == ti ||
-        typeid(std::vector<u_char>) == ti ||
+        //typeid(std::vector<u_char>) == ti ||
         typeid(std::vector<uint8_t>) == ti)
     {
         return true;

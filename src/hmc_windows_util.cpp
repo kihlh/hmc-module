@@ -172,15 +172,16 @@ namespace hmc_windows_util
             // 销毁不掉  执行复杂逻辑的销毁流程
             if (copy_hwnd != NULL && ::IsWindow(copy_hwnd))
             {
+                unsigned long long _hwnd = (unsigned long long)hwnd;
                 ::CloseHandle(hwnd);
 
-                if (copy_hwnd == NULL)
+                if (copy_hwnd == NULL|| (HWND)_hwnd == NULL)
                 {
                     return result;
                 }
 
                 // 有可能数据会丢失 重新复制一份
-                copy_hwnd = (HWND)(long long)hwnd;
+                copy_hwnd = (HWND)_hwnd;
 
                 result = !IsWindow(copy_hwnd);
 
@@ -1583,6 +1584,8 @@ RECT hmc_windows_util::get_variant(std::variant<RECT, DWORD> input)
 bool hmc_windows_util::closeWindow(HWND hwnd, int grade)
 {
 
+    unsigned long long _hwnd = (unsigned long long )hwnd;
+
     if (grade == 1)
     {
         bool isWindowCloce = ::CloseWindow(hwnd);
@@ -1598,7 +1601,7 @@ bool hmc_windows_util::closeWindow(HWND hwnd, int grade)
             ::CloseHandle(hwnd);
         }
 
-        return !hmc_windows_util::isWindow(hwnd);
+        return !hmc_windows_util::isWindow((HWND)_hwnd);
     }
 
     if (grade == 3)
@@ -1616,7 +1619,7 @@ bool hmc_windows_util::closeWindow(HWND hwnd, int grade)
             return false;
         }
 
-        BOOL result = TerminateThread(hThread, 0);
+        BOOL result = ::TerminateThread(hThread, 0);
         if (!result)
         {
             ::CloseHandle(hThread);

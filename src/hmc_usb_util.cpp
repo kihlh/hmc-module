@@ -18,7 +18,7 @@ namespace hmc_usb_util
 
     namespace hmc_define_util
     {
-        std::wstring hmc_usb_util_escapeJsonString(const std::wstring& input, bool is_to_value);
+        std::wstring hmc_usb_util_escapeJsonString(const std::wstring &input, bool is_to_value);
     }
 }
 
@@ -26,20 +26,23 @@ std::wstring hmc_usb_util::formatVolumeName(std::wstring VolumeName)
 {
     DWORD VolumePathNamesLeng = MAX_PATH + 1;
     std::wstring VolumePathNames = L"";
+    HMC_EvalAuto({ hmc_util::removeAllCharPtr(VolumePathNames, L'\0'); });
 
     VolumePathNames.resize(VolumePathNamesLeng);
 
     if (::GetVolumePathNamesForVolumeNameW(VolumeName.c_str(), &VolumePathNames[0], MAX_PATH, &VolumePathNamesLeng))
     {
-
-        VolumePathNames.resize(VolumePathNamesLeng);
+        if (VolumePathNamesLeng >= 0)
+        {
+            VolumePathNames.resize(VolumePathNamesLeng);
+        }
     }
     else
     {
         VolumePathNames.clear();
-        VolumePathNames.resize(0);
     }
 
+    hmc_util::removeAllCharPtr(VolumePathNames, L'\0');
     return VolumePathNames;
 }
 
@@ -47,19 +50,24 @@ std::wstring hmc_usb_util::formatVolumeNtName(std::wstring VolumeName)
 {
     DWORD VolumePathNamesLeng = MAX_PATH + 1;
     std::wstring VolumePathNames = L"";
+    HMC_EvalAuto({ hmc_util::removeAllCharPtr(VolumePathNames, L'\0'); });
 
     VolumePathNames.resize(VolumePathNamesLeng);
 
     if (::GetVolumePathNameW(VolumeName.c_str(), &VolumePathNames[0], VolumePathNamesLeng))
     {
 
-        VolumePathNames.resize(VolumePathNamesLeng);
+        if (VolumePathNamesLeng >= 0)
+        {
+            VolumePathNames.resize(VolumePathNamesLeng);
+        }
     }
     else
     {
         VolumePathNames.clear();
-        VolumePathNames.resize(0);
     }
+
+    hmc_util::removeAllCharPtr(VolumePathNames, L'\0');
 
     return VolumePathNames;
 }
@@ -435,6 +443,33 @@ std::wstring hmc_usb_util::formatVolumePath(std::wstring VolumePath)
     std::wstring result(VolumePath.begin(), VolumePath.begin() + VolumePath.size());
     hmc_util::removeAllCharPtr(result, L'\0');
 
+    HMC_EvalAuto({ hmc_util::removeAllCharPtr(result, L'\0'); });
+
+    bool IS_UNC_PRE_FIX = false;
+
+    if (result.size() > 4)
+    {
+        IS_UNC_PRE_FIX = result[0] == L'\\' && result[1] == L'\\' && result[2] == L'?' && result[3] == L'\\';
+    }
+
+    // '\\\\?\\F:\\00000000\\'
+
+    if (IS_UNC_PRE_FIX && result.size() > 5)
+    {
+        const wchar_t AT = result[4];
+
+        if (
+            result[5]==':' && (
+                (AT >= L'A' && AT <= L'Z') ||
+                (AT >= L'a' && AT <= L'z')
+              )
+            )
+        {
+            result.erase(0, 4);
+            return result;
+        }
+    }
+
     auto volumeList = getVolumeList();
     size_t length = volumeList.size();
 
@@ -585,6 +620,47 @@ std::wstring hmc_usb_util::chVolume::to_json()
     hmc_util::replace(result, L"{name}", hmc_json_util::toJsonValueW(name, true));
     hmc_util::replace(result, L"{path}", hmc_json_util::toJsonValueW(path, true));
     hmc_util::replace(result, L"{device}", hmc_json_util::toJsonValueW(device, true));
+
+    return result;
+}
+
+std::wstring hmc_usb_util::chVolume::to_json(chVolume Volume)
+{
+    return Volume.to_json();
+}
+
+std::wstring hmc_usb_util::chVolume::to_json(std::vector<chVolume> volumeList)
+{
+    std::wstring result;
+
+    size_t volumeListSizeMax = 0;
+
+    for (size_t i = 0; i < volumeList.size(); i++)
+    {
+        auto &at = volumeList.at(i);
+
+        volumeListSizeMax = volumeListSizeMax + at.device.size();
+        volumeListSizeMax = volumeListSizeMax + at.name.size();
+        volumeListSizeMax = volumeListSizeMax + at.path.size();
+        volumeListSizeMax = volumeListSizeMax + MAX_PATH;
+    }
+
+    result.reserve(volumeListSizeMax);
+
+    result.push_back('[');
+
+    for (size_t i = 0; i < volumeList.size(); i++)
+    {
+        auto at = volumeList.at(i);
+        result.append(at.to_json());
+
+        if (volumeList.size() > i + 1)
+        {
+            result.push_back(',');
+        }
+    }
+
+    result.push_back(']');
 
     return result;
 }

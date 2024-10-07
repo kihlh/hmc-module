@@ -127,7 +127,11 @@ typedef std::variant<
 	long long,
 	unsigned long long,
 	std::vector<uint8_t>,
-	long double>
+	long double,
+	std::vector<int>,
+	std::vector<unsigned long long>,
+	// any 只允许存放 std::vector<js_variant_value>  std::map<std::string,js_variant_value>   std::map<std::wstring,js_variant_value>
+	std::pair<js_valuetype, std::any>>
 	js_variant_value;
 
 namespace hmc_napi_get_value
@@ -142,13 +146,13 @@ namespace hmc_napi_get_value
 	 */
 	extern js_variant_value get_variant(napi_env env, napi_value nodeValue);
 
-	extern std::map<std::wstring,js_variant_value> get_object_variant_utf16(napi_env env, napi_value nodeValue);
-	
-	extern std::map<std::string,js_variant_value> get_object_variant_utf8(napi_env env, napi_value nodeValue);
+	extern std::map<std::wstring, js_variant_value> get_object_variant_utf16(napi_env env, napi_value nodeValue);
+
+	extern std::map<std::string, js_variant_value> get_object_variant_utf8(napi_env env, napi_value nodeValue);
 
 	extern std::vector<js_variant_value> get_array_variant(napi_env env, napi_value nodeValue);
 
-
+	extern std::vector<js_variant_value> get_array_variant(napi_env env, const std::vector<napi_value> nodeValueList);
 
 	/**
 	 * @brief 数字转int
@@ -499,6 +503,8 @@ namespace hmc_napi_type
 	 */
 	extern js_valuetype getType(napi_env env, napi_value valuetype);
 
+	extern std::vector<js_valuetype> getType(napi_env env, std::vector<napi_value> valuetype);
+
 	/**
 	 * @brief 对比两个变量类型是否相等
 	 *
@@ -507,6 +513,9 @@ namespace hmc_napi_type
 	 * @return BOOL
 	 */
 	extern bool diff(napi_valuetype valuetype, napi_valuetype valuetype2);
+
+	extern bool diff(js_valuetype valuetype, std::vector<js_valuetype> valuetype2);
+
 	/**
 	 * @brief 判断值与多种类型是否一致
 	 *
@@ -734,6 +743,9 @@ namespace hmc_napi_create_value
 {
 
 	extern napi_value Variant(napi_env env, js_variant_value var);
+	extern napi_value Variant(napi_env env, std::vector<js_variant_value> var);
+	extern napi_value Variant(napi_env env, std::map<std::string, js_variant_value> var);
+	extern napi_value Variant(napi_env env, std::map<std::wstring, js_variant_value> var);
 
 	/**
 	 * @brief Buffer 的释放函数
@@ -925,6 +937,7 @@ namespace hmc_napi_create_value
 		jsArray(napi_env env);
 		void putValue(napi_value Object);
 		void putBigint(int64_t Object);
+		void putBigint(unsigned long long Object);
 		void putNumber(int64_t Object);
 		void putNumber(double Object);
 		void putNull();
@@ -1263,6 +1276,7 @@ private:
 	napi_env _env = NULL;
 	napi_status _status = napi_ok;
 	bool _is_close = false;
+
 public:
 	open_handle_scope(napi_env env);
 	bool close();
@@ -1276,7 +1290,7 @@ public:
 	{
 		return _status == napi_ok && _scope != nullptr || _env != nullptr;
 	}
-	
+
 	~open_handle_scope();
 };
 
@@ -1284,6 +1298,7 @@ class hmc_NodeArgsValue
 {
 private:
 	std::vector<napi_value> args;
+	//std::vector<js_valuetype> type_args;
 	napi_env env;
 
 public:
@@ -1293,8 +1308,51 @@ public:
 	napi_value at(size_t index);
 	std::vector<js_value> get_values();
 
+	/**
+	 * @brief 取值并进行基础型转换
+	 *
+	 * @param index
+	 * @return js_variant_value
+	 */
 	js_variant_value get_variant(size_t index);
 
+	using callback_type = std::function<js_variant_value(napi_env env, napi_value value, hmc_NodeArgsValue *input, size_t index)>;
+
+	/**
+	 * @brief 使用自定义函数格式化napi_value 到variant
+	 *
+	 * @param index
+	 * @param CallBack
+	 * @return js_variant_value
+	 */
+	js_variant_value get_variant(size_t index, callback_type CallBack);
+	/**
+	 * @brief 获取为数组
+	 *
+	 * @param index
+	 * @return std::vector<js_variant_value>
+	 */
+	std::vector<js_variant_value> getArrayVariant(size_t index);
+	/**
+	 * @brief 获取为对象
+	 *
+	 * @param index
+	 * @return std::map<std::wstring, js_variant_value>
+	 */
+	std::map<std::wstring, js_variant_value> getObjecVariant_utf16(size_t index);
+	/**
+	 * @brief 获取为对象
+	 *
+	 * @param index
+	 * @return std::map<std::string, js_variant_value>
+	 */
+	std::map<std::string, js_variant_value> getObjecVariant_utf8(size_t index);
+	/**
+	 * @brief 获取值为js_value
+	 *
+	 * @param index
+	 * @return js_value
+	 */
 	js_value get_value(size_t index);
 	/**
 	 * @brief 获取数量
@@ -1591,5 +1649,18 @@ public:
 	static napi_value ExecuteSync(napi_env env, napi_callback_info info);
 	static void append(size_t ID, std::optional<HMC_PromiseStore::chFormatArgFun> FormatFun, HMC_PromiseStore::chExecuteWorkFun WorkFun, std::optional<HMC_PromiseStore::chExecuteResultFormatFun> ResultFormatFun);
 };
+
+extern size_t getVariantEstimateSize(js_variant_value js_variant);
+extern std::string formatVariantJSONStr_utf8(std::map<std::string, js_variant_value> js_variant);
+extern std::string formatVariantJSONStr_utf8(std::map<std::wstring, js_variant_value> js_variant);
+extern std::string formatVariantJSONStr_utf8(js_variant_value js_variant);
+extern std::string formatVariantJSONStr_utf8(std::vector<js_variant_value> js_variant);
+
+
+extern std::wstring formatVariantJSONStr_utf16(std::map<std::string, js_variant_value> js_variant);
+extern std::wstring formatVariantJSONStr_utf16(std::map<std::wstring, js_variant_value> js_variant);
+extern std::wstring formatVariantJSONStr_utf16(js_variant_value js_variant);
+extern std::wstring formatVariantJSONStr_utf16(std::vector<js_variant_value> js_variant);
+
 
 #endif // MODE_INTERNAL_INCLUDE_HMC_NAPI_VALUE_UTIL_HPP

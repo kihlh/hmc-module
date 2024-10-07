@@ -40,6 +40,9 @@ namespace hmc_usb_util
         std::wstring device;
 
         std::wstring to_json();
+
+        static std::wstring to_json(chVolume Volume);
+        static std::wstring to_json(std::vector<chVolume> Volume);
     };
 
     struct chUsbDevsInfo
@@ -144,7 +147,7 @@ namespace hmc_usb_util
      * @return std::vector<chVolume>
      */
     std::vector<chVolume> getVolumeList();
-
+    
     /**
      * @brief USB设备名称(id)列表 （如U盘，加密狗，可移动硬盘，等）
      *

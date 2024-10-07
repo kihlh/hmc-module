@@ -19,7 +19,6 @@
 #include <thread>
 #include <windows.h>
 
-
 // 自动释放dll
 #ifndef HMC_FreeLibraryAuto
 #define HMC_FreeLibraryAuto(hModule) \
@@ -92,6 +91,15 @@
        code;\
     }\
     catch(...){} });
+
+#define HMC_EvalAuto(code) \
+    std::shared_ptr<void> HMC_CONCAT(_Shared_close_Library, __LINE__)(nullptr, [&](void *) {\
+    try\
+    {\
+       code;\
+    }\
+    catch(...){} });
+
 #endif // HMC_FreeAnyAuto
 
 // 自动释放 自定义释放
@@ -99,11 +107,13 @@
 #define HMC_CATCH_ALL catch (...){};
 #endif // HMC_FreeAnyAuto
 
-
 #ifndef HMC_GC_CPP_BASIC_PTR
-#define HMC_GC_CPP_BASIC_PTR(obj)if (obj != NULL){delete obj;}
+#define HMC_GC_CPP_BASIC_PTR(obj) \
+    if (obj != NULL)              \
+    {                             \
+        delete obj;               \
+    }
 #endif // HMC_GC_CPP_BASIC_PTR
-
 
 namespace hmc_util
 {
@@ -264,7 +274,7 @@ namespace hmc_util
         uint64_t get_uint64(uint64_t orData);
         uint32_t get_uint32(uint32_t orData);
         bool get_bool(bool orData);
-        std::wstring get_wstring(std::wstring orData );
+        std::wstring get_wstring(std::wstring orData);
         std::string get_string(std::string orData);
         std::vector<std::uint8_t> get_buffer(std::vector<std::uint8_t> orData);
         long double get_float(long double orData);
@@ -312,7 +322,7 @@ namespace hmc_util
          * @return std::any
          */
         std::any get(size_t index);
-        
+
         anyCast at(size_t index);
 
         /**

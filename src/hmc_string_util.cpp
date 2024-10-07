@@ -283,12 +283,12 @@ std::string hmc_string_util::utf8_to_gbk(const std::string u8str)
     WCHAR *pTempwstr;
 
     int strSizeTempVar = ::MultiByteToWideChar(CP_UTF8, 0, u8str.c_str(), -1, NULL, 0);
-    pTempwstr = new WCHAR[strSizeTempVar + 1];
+    pTempwstr = new WCHAR[static_cast<long long>(strSizeTempVar) + 1];
 
     ::MultiByteToWideChar(CP_UTF8, 0, u8str.c_str(), -1, pTempwstr, strSizeTempVar);
     strSizeTempVar = ::WideCharToMultiByte(CP_ACP, 0, pTempwstr, -1, NULL, 0, NULL, NULL);
 
-    pTempTstr = new TCHAR[strSizeTempVar + 1];
+    pTempTstr = new TCHAR[static_cast<long long>(strSizeTempVar) + 1];
 
     ::WideCharToMultiByte(CP_ACP, 0, pTempwstr, -1, (char *)pTempTstr, strSizeTempVar, NULL, NULL);
     Result = (char *)pTempTstr;
@@ -1340,12 +1340,15 @@ std::wstring hmc_string_util::lpstr_to_string(wchar_t *input, int nBufSize, bool
     result.resize(nBufSize);
     for (size_t i = 0; i < (size_t)nBufSize; i++)
     {
-        wchar_t data = static_cast<wchar_t>(input[i]);
-        if (earlyTruncation && data == L'\0')
-        {
-            break;
+        if (input != NULL) {
+            wchar_t data = static_cast<wchar_t>(input[i]);
+            if (earlyTruncation && data == L'\0')
+            {
+                break;
+            }
+            result[i] = data;
         }
-        result[i] = data;
+
     }
     // result[result.size() - 1] = L'\0';
     return result;
@@ -1619,7 +1622,7 @@ namespace hmc_string_util
             size_t length = input.size();
             size_t end_index = length;
 
-            for (size_t i = length - 1; i >= 0; i--)
+            for (size_t i = (length>0?length - 1:0); i >= 0; i--)
             {
                 wchar_t it = input[i];
                 if (i != 0 && it != match_char)
@@ -1677,7 +1680,7 @@ namespace hmc_string_util
             // 计算出结尾
             if (input.front() == match_char)
             {
-                for (size_t i = length - 1; i >= 0; i--)
+                for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
                 {
                     wchar_t it = input[i];
                     if (it != match_char)
@@ -1783,7 +1786,7 @@ namespace hmc_string_util
             size_t length = input.size();
             size_t end_index = length;
 
-            for (size_t i = length - 1; i >= 0; i--)
+            for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
             {
                 wchar_t it = input[i];
                 if (i != 0 && it != match_char)
@@ -1841,7 +1844,7 @@ namespace hmc_string_util
             // 计算出结尾
             if (input.front() == match_char)
             {
-                for (size_t i = length - 1; i >= 0; i--)
+                for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
                 {
                     wchar_t it = input[i];
                     if (it != match_char)
@@ -1945,7 +1948,7 @@ namespace hmc_string_util
             size_t length = input.size();
             size_t end_index = length;
 
-            for (size_t i = length - 1; i >= 0; i--)
+            for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
             {
                 char it = input[i];
                 if (i != 0 && it != match_char)
@@ -2003,7 +2006,7 @@ namespace hmc_string_util
             // 计算出结尾
             if (input.front() == match_char)
             {
-                for (size_t i = length - 1; i >= 0; i--)
+                for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
                 {
                     char it = input[i];
                     if (it != match_char)
@@ -2109,7 +2112,7 @@ namespace hmc_string_util
             size_t length = input.size();
             size_t end_index = length;
 
-            for (size_t i = length - 1; i >= 0; i--)
+            for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
             {
                 char it = input[i];
                 if (i != 0 && it != match_char)
@@ -2167,7 +2170,7 @@ namespace hmc_string_util
             // 计算出结尾
             if (input.front() == match_char)
             {
-                for (size_t i = length - 1; i >= 0; i--)
+                for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
                 {
                     char it = input[i];
                     if (it != match_char)
@@ -2918,70 +2921,70 @@ bool hmc_string_util::is_map_json(std::any input)
         ___hmc_string_util_eqt(typeid(std::map<char *, std::string>)) ||
         ___hmc_string_util_eqt(typeid(std::map<const char *, std::string>)) ||
         ___hmc_string_util_eqt(typeid(std::map<int, std::string>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<int64_t, std::string>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<int64_t, std::string>)) ||
         ___hmc_string_util_eqt(typeid(std::map<long long, std::string>)) ||
         ___hmc_string_util_eqt(typeid(std::map<int32_t, std::string>)) ||
         ___hmc_string_util_eqt(typeid(std::map<size_t, std::string>)) ||
         ___hmc_string_util_eqt(typeid(std::map<unsigned long, std::string>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<long, std::string>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<long, std::string>)) ||
         ___hmc_string_util_eqt(typeid(std::map<long int, std::string>)) ||
         ___hmc_string_util_eqt(typeid(std::map<char, char>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<int64_t, char>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<int64_t, char>)) ||
         ___hmc_string_util_eqt(typeid(std::map<long long, char>)) ||
         ___hmc_string_util_eqt(typeid(std::map<int32_t, char>)) ||
         ___hmc_string_util_eqt(typeid(std::map<size_t, char>)) ||
         ___hmc_string_util_eqt(typeid(std::map<unsigned long, char>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<long, char>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<long, char>)) ||
         ___hmc_string_util_eqt(typeid(std::map<long int, char>)) ||
         ___hmc_string_util_eqt(typeid(std::map<char, char *>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<int64_t, char *>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<int64_t, char *>)) ||
         ___hmc_string_util_eqt(typeid(std::map<long long, char *>)) ||
         ___hmc_string_util_eqt(typeid(std::map<int32_t, char *>)) ||
         ___hmc_string_util_eqt(typeid(std::map<size_t, char *>)) ||
         ___hmc_string_util_eqt(typeid(std::map<unsigned long, char *>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<long, char *>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<long, char *>)) ||
         ___hmc_string_util_eqt(typeid(std::map<long int, char *>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<int64_t, const char *>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<int64_t, const char *>)) ||
         ___hmc_string_util_eqt(typeid(std::map<long long, const char *>)) ||
         ___hmc_string_util_eqt(typeid(std::map<int32_t, const char *>)) ||
         ___hmc_string_util_eqt(typeid(std::map<size_t, const char *>)) ||
         ___hmc_string_util_eqt(typeid(std::map<unsigned long, const char *>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<long, const char *>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<long, const char *>)) ||
         ___hmc_string_util_eqt(typeid(std::map<long int, const char *>)) ||
         ___hmc_string_util_eqt(typeid(std::map<std::string, std::string>)) ||
         ___hmc_string_util_eqt(typeid(std::map<std::string, char>)) ||
         ___hmc_string_util_eqt(typeid(std::map<std::string, char *>)) ||
         ___hmc_string_util_eqt(typeid(std::map<std::string, const char *>)) ||
         ___hmc_string_util_eqt(typeid(std::map<std::string, int>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<std::string, int64_t>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<std::string, int64_t>)) ||
         ___hmc_string_util_eqt(typeid(std::map<std::string, long long>)) ||
         ___hmc_string_util_eqt(typeid(std::map<std::string, int32_t>)) ||
         ___hmc_string_util_eqt(typeid(std::map<std::string, size_t>)) ||
         ___hmc_string_util_eqt(typeid(std::map<std::string, unsigned long>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<std::string, long>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<std::string, long>)) ||
         ___hmc_string_util_eqt(typeid(std::map<std::string, long int>)) ||
         ___hmc_string_util_eqt(typeid(std::map<char, char>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<char, int64_t>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<char, int64_t>)) ||
         ___hmc_string_util_eqt(typeid(std::map<char, long long>)) ||
         ___hmc_string_util_eqt(typeid(std::map<char, int32_t>)) ||
         ___hmc_string_util_eqt(typeid(std::map<char, size_t>)) ||
         ___hmc_string_util_eqt(typeid(std::map<char, unsigned long>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<char, long>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<char, long>)) ||
         ___hmc_string_util_eqt(typeid(std::map<char, long int>)) ||
         ___hmc_string_util_eqt(typeid(std::map<char *, char>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<char *, int64_t>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<char *, int64_t>)) ||
         ___hmc_string_util_eqt(typeid(std::map<char *, long long>)) ||
         ___hmc_string_util_eqt(typeid(std::map<char *, int32_t>)) ||
         ___hmc_string_util_eqt(typeid(std::map<char *, size_t>)) ||
         ___hmc_string_util_eqt(typeid(std::map<char *, unsigned long>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<char *, long>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<char *, long>)) ||
         ___hmc_string_util_eqt(typeid(std::map<char *, long int>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<const char *, int64_t>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<const char *, int64_t>)) ||
         ___hmc_string_util_eqt(typeid(std::map<const char *, long long>)) ||
         ___hmc_string_util_eqt(typeid(std::map<const char *, int32_t>)) ||
         ___hmc_string_util_eqt(typeid(std::map<const char *, size_t>)) ||
         ___hmc_string_util_eqt(typeid(std::map<const char *, unsigned long>)) ||
-        ___hmc_string_util_eqt(typeid(std::map<const char *, long>)) ||
+        //___hmc_string_util_eqt(typeid(std::map<const char *, long>)) ||
         ___hmc_string_util_eqt(typeid(std::map<const char *, long int>)))
     {
         return true;
@@ -3021,7 +3024,7 @@ bool hmc_string_util::is_vec_json(std::any input)
         ___hmc_string_util_eq(std::vector<char *>) ||
         ___hmc_string_util_eq(std::vector<std::uint8_t>) ||
         ___hmc_string_util_eq(std::vector<unsigned int>) ||
-        ___hmc_string_util_eq(std::vector<unsigned long>) ||
+        //___hmc_string_util_eq(std::vector<unsigned long>) ||
         ___hmc_string_util_eq(std::vector<unsigned long>) ||
         ___hmc_string_util_eq(std::vector<unsigned long long>) ||
         ___hmc_string_util_eq(std::vector<int>) ||
@@ -3295,6 +3298,11 @@ std::string hmc_string_util::vec_to_array_json(const std::vector<int> data_list)
 std::string hmc_string_util::vec_to_array_json(const std::vector<unsigned long long> data_list)
 {
     return vec_to_array_json_any(std::any_cast<std::vector<unsigned long long>>(data_list));
+}
+
+std::string hmc_string_util::vec_to_array_json(const std::vector<long long> data_list)
+{
+    return vec_to_array_json_any(std::any_cast<std::vector<long long>>(data_list));
 }
 
 std::string hmc_string_util::vec_to_array_json(const std::vector<unsigned int> data_list)
@@ -3576,7 +3584,7 @@ inline std::string hmc_string_util::slice(const std::string &str, int start, int
     int a_temp = (end > length) ? end : length;
     end = (start > a_temp) ? start : a_temp;
 
-    return str.substr(start, end - start);
+    return str.substr(start, static_cast<long long >(end) - start);
 }
 
 inline std::wstring hmc_string_util::slice(const std::wstring &str, int start, int end)
@@ -3598,7 +3606,7 @@ inline std::wstring hmc_string_util::slice(const std::wstring &str, int start, i
     int a_temp = (end > length) ? end : length;
     end = (start > a_temp) ? start : a_temp;
 
-    return str.substr(start, end - start);
+    return str.substr(start, static_cast<long long>(end) - start);
 }
 
 long long hmc_string_util::search(const std::string &str, const std::string &pattern)
@@ -3960,6 +3968,22 @@ inline size_t hmc_string_util::removeAllCharPtr(std::wstring &input, wchar_t mat
     return replacementFrequency;
 }
 
+inline bool hmc_string_util::is_letter(char Input){
+    return (Input >= L'A' && Input <= L'Z') || (Input >= L'a' && Input <= L'z');
+}
+
+inline bool hmc_string_util::is_ascii(char Input){
+    return Input>=0&& Input<=127;
+}
+
+inline bool hmc_string_util::is_letter(wchar_t Input) {
+    return (Input >= L'A' && Input <= L'Z') || (Input >= L'a' && Input <= L'z');
+}
+
+inline bool hmc_string_util::is_ascii(wchar_t Input) {
+    return Input >= 0 && Input <= 127;
+}
+
 inline size_t hmc_string_util::removeAllCharPtr(std::string &input, char matching)
 {
     size_t replacementFrequency = 0;
@@ -4039,5 +4063,68 @@ std::vector<std::string> hmc_string_util::convertMultiStringArray(const std::str
         result.push_back(std::move(temp));
     }
 
+    return result;
+}
+
+std::string hmc_string_util::aou8_to_utf8(const std::string input)
+{
+    std::string result;
+    if(
+        hmc_string_util::is_ascii(static_cast<const std::string>(input))||
+        hmc_string_util::is_utf8(static_cast<const std::string>(input))
+        ){
+        result.append(input.begin(), input.end());
+        return result;
+    }
+    result = std::move(hmc_string_util::ansi_to_utf8(input));
+    return result;
+}
+
+std::wstring hmc_string_util::aou8_to_utf16(const std::string input)
+{
+    std::wstring result;
+
+    if (hmc_string_util::is_ascii(static_cast<const std::string>(input))) {
+        result = std::move(hmc_string_util::asciiConvers(input));
+        return result;
+    }
+
+    if (hmc_string_util::is_utf8(static_cast<const std::string>(input))) {
+        result = std::move(hmc_string_util::utf8_to_utf16(input));
+        return result;
+    }
+
+    result = std::move(hmc_string_util::ansi_to_utf16(input));
+
+    return result;
+}
+
+bool hmc_string_util::is_ascii(const std::string input)
+{
+    bool result = false;
+
+    for (auto &&item : input)
+    {
+        if (item > 127)
+        {
+            return result;
+        }
+    }
+    result = true;
+    return result;
+}
+
+bool hmc_string_util::is_ascii(const std::wstring input)
+{
+    bool result = false;
+
+    for (auto &&item : input)
+    {
+        if (item > 127)
+        {
+            return result;
+        }
+    }
+    result = true;
     return result;
 }
