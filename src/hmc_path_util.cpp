@@ -115,10 +115,8 @@ namespace ____O_O____
                 }
             }
         }
-
         return result;
     }
-
     template <typename chVolumeParse__T, typename T>
     // using chVolumeParse__T = hmc_path_util::chVolumeParseW;
     // using T = std::wstring;
@@ -440,7 +438,6 @@ namespace ____O_O____
                 result.insert(0, 1, it);
             }
         }
-
         return result;
     }
 

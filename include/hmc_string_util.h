@@ -20,6 +20,7 @@
 #include <map>
 #include <tuple>
 #include <regex>
+#include <functional>
 
 #if _HAS_CXX17
 #include <any>
@@ -46,19 +47,26 @@ typedef UNICODE_STRING HMC_UNICODE_STRING;
 namespace hmc_string_util
 {
 
-	enum IGNORE_NULL_CHAR_TYPE
-	{
-		// 不忽略出现的指定字符
-		NOT_IGNORE = 0,
-		// 任意地方出现的此字符直接忽略
-		ALL_IGNORE = 0xa,
-		// 开头是此字符时候请忽略
-		START_IGNORE = 1,
-		// 结尾是此字符时候请忽略他的存在
-		END_IGNORE = 2,
-		// 只忽略中间出现的此字符 如果他在开头结尾出现请继续执行而不是忽略
-		MIDDLE_IGNORE = 3
-	};
+	// 删除匹配条件的字符
+	extern size_t removeMatchChar(std::wstring *StrInput, wchar_t filter);
+	// 删除匹配条件的字符
+	extern size_t removeMatchChar(std::wstring *StrInput, std::vector<wchar_t> filter);
+	// 删除匹配条件的字符
+	extern size_t removeMatchChar(std::wstring *StrInput, std::function<bool(wchar_t at, size_t index, std::wstring *input)> filter);
+	// 删除匹配条件的字符
+	extern size_t removeMatchChar(std::wstring *StrInput, std::function<bool(wchar_t at, size_t index)> filter);
+	// 删除匹配条件的字符
+	extern size_t removeMatchChar(std::wstring *StrInput, std::function<bool(wchar_t at)> filter);
+	// 删除匹配条件的字符
+	extern size_t removeMatchChar(std::string *StrInput, char filter);
+	// 删除匹配条件的字符
+	extern size_t removeMatchChar(std::string *StrInput, std::vector<char> filter);
+	// 删除匹配条件的字符
+	extern size_t removeMatchChar(std::string *StrInput, std::function<bool(char at, size_t index, std::string *input)> filter);
+	// 删除匹配条件的字符
+	extern size_t removeMatchChar(std::string *StrInput, std::function<bool(char at, size_t index)> filter);
+	// 删除匹配条件的字符
+	extern size_t removeMatchChar(std::string *StrInput, std::function<bool(char at)> filter);
 
 	/**
 	 * @brief 获取路径的文件名
@@ -76,50 +84,50 @@ namespace hmc_string_util
 	extern std::string getPathBaseName(const std::string &path);
 	/**
 	 * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
-	 * 
-	 * @param path 
-	 * @param filterList 
-	 * @return std::string 
+	 *
+	 * @param path
+	 * @param filterList
+	 * @return std::string
 	 */
 	extern std::string getAsciiPrefix(const std::string &path);
 	/**
 	 * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
-	 * 
-	 * @param path 
-	 * @param filterList 
-	 * @return std::string 
+	 *
+	 * @param path
+	 * @param filterList
+	 * @return std::string
 	 */
-	extern std::string getAsciiPrefix(const std::string &path , char filter);
+	extern std::string getAsciiPrefix(const std::string &path, char filter);
 	/**
 	 * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
-	 * 
-	 * @param path 
-	 * @param filterList 
-	 * @return std::string 
+	 *
+	 * @param path
+	 * @param filterList
+	 * @return std::string
 	 */
 	extern std::string getAsciiPrefix(const std::string &path, std::vector<char> filterList);
 	/**
 	 * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
-	 * 
-	 * @param path 
-	 * @param filterList 
-	 * @return std::string 
+	 *
+	 * @param path
+	 * @param filterList
+	 * @return std::string
 	 */
 	extern std::wstring getAsciiPrefix(const std::wstring &path);
 	/**
 	 * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
-	 * 
-	 * @param path 
-	 * @param filterList 
-	 * @return std::string 
+	 *
+	 * @param path
+	 * @param filterList
+	 * @return std::string
 	 */
-	extern std::wstring getAsciiPrefix(const std::wstring &path , char filter);
+	extern std::wstring getAsciiPrefix(const std::wstring &path, char filter);
 	/**
 	 * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
-	 * 
-	 * @param path 
-	 * @param filterList 
-	 * @return std::string 
+	 *
+	 * @param path
+	 * @param filterList
+	 * @return std::string
 	 */
 	extern std::wstring getAsciiPrefix(const std::wstring &path, std::vector<char> filterList);
 	// ----------------------------------------------------------------
@@ -254,34 +262,17 @@ namespace hmc_string_util
 	extern std::string join(std::vector<std::string> &item_list);
 	extern std::string join(std::vector<std::string> &item_list, std::string splitter);
 	extern void join(std::vector<std::string> &item_list, std::string splitter, std::string outputPtr);
-	/**
-	 * @brief 仅拼接文本
-	 *
-	 * @tparam Arguments
-	 * @param input
-	 * @param firstInput
-	 * @param data_list
-	 * @return string
-	 */
-	template <class... Arguments>
-	extern std::string string_join(const std::string &input, const std::string &firstInput, std::vector<Arguments...> data_list);
-	/**
-	 * @brief 仅拼接文本
-	 *
-	 * @tparam Arguments
-	 * @param input
-	 * @param firstInput
-	 * @param data_list
-	 * @return wstring
-	 */
-	template <class... Arguments>
-	extern std::wstring string_join(const std::wstring &input, const std::wstring &firstInput, std::vector<Arguments...> data_list);
 
 	// 分割文本
-	extern std::vector<std::wstring> split(std::wstring &sourcePtr, wchar_t splitter);
-	extern void split(std::wstring &sourcePtr, wchar_t splitter, std::vector<std::wstring> &item_list);
-	extern std::vector<std::string> split(std::string &sourcePtr, char splitter);
-	extern void split(std::string &sourcePtr, char splitter, std::vector<std::string> &item_list);
+	extern std::vector<std::wstring> split(const std::wstring &sourcePtr, wchar_t splitter);
+	extern void split(const std::wstring &sourcePtr, wchar_t splitter, std::vector<std::wstring> &item_list);
+	extern std::vector<std::string> split(const std::string &sourcePtr, char splitter);
+	extern void split(const std::string &sourcePtr, char splitter, std::vector<std::string> &item_list);
+
+	extern std::vector<std::wstring> split(const std::wstring &sourcePtr, std::vector<wchar_t> splitter);
+	extern void split(const std::wstring &sourcePtr, std::vector<wchar_t> splitter, std::vector<std::wstring> &item_list);
+	extern std::vector<std::string> split(const std::string &sourcePtr, std::vector<char> splitter);
+	extern void split(const std::string &sourcePtr, std::vector<char> splitter, std::vector<std::string> &item_list);
 
 	/**
 	 * @brief 转义json文本
@@ -546,131 +537,11 @@ namespace hmc_string_util
 	 */
 	extern std::string lpstr_to_string(char *input);
 
-	/**
-	 * @brief 删除 string 容器内部的开头与结尾 或全部 的 \0
-	 *
-	 * @param str
-	 * @return std::string
-	 */
-	extern std::string removeNullCharacters(std::string str, bool start = true, bool tail = true, bool all = false);
-
-	/**
-	 * @brief 删除 string 容器内部的开头与结尾 或全部 的 \0
-	 *
-	 * @param str
-	 * @return std::wstring
-	 */
-	extern std::wstring removeNullCharacters(std::wstring str, bool start = true, bool tail = true, bool all = false);
-
-	/**
-	 * @brief 删除 string 容器内部的全部 的 \0
-	 *
-	 * @param str
-	 * @return std::string
-	 */
-	extern std::string removeNullCharactersAll(std::string str);
-
-	/**
-	 * @brief 删除 string 容器内部全部 的 \0
-	 *
-	 * @param str
-	 * @return std::wstring
-	 */
-	extern std::wstring removeNullCharactersAll(std::wstring str);
-
-	// extern std::wstring unicodeStringToWString(UNICODE_STRING unicodeString);
-
 	// 删除空白字符  \t\r\n
 	extern std::string StripSpaces(const std::string &str);
 
 	// 删除空白字符  \t\r\n
 	extern std::wstring StripSpaces(const std::wstring &str);
-
-	/**
-	 * @brief 删除匹配到的字符 但是不复制内存
-	 *
-	 * @param input 需要处理的文本指针
-	 * @param match_char 需要匹配的字符
-	 * @param Ignore 忽略类型 [默认全部忽略]
-	 * - 10 / nullopt / None / all_ignore  全部忽略  无论他出现在哪里都不视为是需要对比的文本
-	 * - 2 / start_ignore 只忽略开头的空白字符
-	 * - 2 / end_ignore 只忽略尾部的空白字符
-	 * - 3 / middle_ignore 只忽略中间出现的空白字符 如果开头出现的则不管
-	 * @return
-	 */
-	extern bool removeMatchCharPtr(std::wstring &input, const wchar_t match_char, IGNORE_NULL_CHAR_TYPE Ignore);
-
-	/**
-	 * @brief 删除匹配到的字符 但复制新的文本
-	 *
-	 * @param input 需要处理的文本
-	 * @param match_char 需要匹配的字符
-	 * @param Ignore 忽略类型 [默认全部忽略]
-	 * - 10 / nullopt / None / all_ignore  全部忽略  无论他出现在哪里都不视为是需要对比的文本
-	 * - 2 / start_ignore 只忽略开头的空白字符
-	 * - 2 / end_ignore 只忽略尾部的空白字符
-	 * - 3 / middle_ignore 只忽略中间出现的空白字符 如果开头出现的则不管
-	 * @return
-	 */
-	extern std::wstring removeMatchChar(const std::wstring &Input_, const wchar_t match_char, IGNORE_NULL_CHAR_TYPE Ignore);
-
-	/**
-	 * @brief 删除匹配到的字符 但是不复制内存
-	 *
-	 * @param input 需要处理的文本指针
-	 * @param match_char 需要匹配的字符
-	 * @param Ignore 忽略类型 [默认全部忽略]
-	 * - 10 / nullopt / None / all_ignore  全部忽略  无论他出现在哪里都不视为是需要对比的文本
-	 * - 2 / start_ignore 只忽略开头的空白字符
-	 * - 2 / end_ignore 只忽略尾部的空白字符
-	 * - 3 / middle_ignore 只忽略中间出现的空白字符 如果开头出现的则不管
-	 * @return
-	 */
-	extern bool removeMatchCharPtr(std::string &input, const char match_char, IGNORE_NULL_CHAR_TYPE Ignore);
-
-	/**
-	 * @brief 删除匹配到的字符 但复制新的文本
-	 *
-	 * @param input 需要处理的文本指针
-	 * @param match_char 需要匹配的字符
-	 * @param Ignore 忽略类型 [默认全部忽略]
-	 * - 10 / nullopt / None / all_ignore  全部忽略  无论他出现在哪里都不视为是需要对比的文本
-	 * - 2 / start_ignore 只忽略开头的空白字符
-	 * - 2 / end_ignore 只忽略尾部的空白字符
-	 * - 3 / middle_ignore 只忽略中间出现的空白字符 如果开头出现的则不管
-	 * @return
-	 */
-	extern std::string removeMatchChar(const std::string &Input_, const char match_char, IGNORE_NULL_CHAR_TYPE Ignore);
-
-	/**
-	 * @brief 对比文本 但是忽略指定字符
-	 *
-	 * @param str1 文本1
-	 * @param str2 文本2
-	 * @param Ignore 忽略类型 [默认全部忽略]
-	 * - 10 / nullopt / None / all_ignore  全部忽略  无论他出现在哪里都不视为是需要对比的文本
-	 * - 2 / start_ignore 只忽略开头的空白字符
-	 * - 2 / end_ignore 只忽略尾部的空白字符
-	 * - 3 / middle_ignore 只忽略中间出现的空白字符 如果开头出现的则不管
-	 * @return true
-	 * @return false
-	 */
-	extern bool diffNullCharacters(const std::wstring str1, const std::wstring str2, IGNORE_NULL_CHAR_TYPE Ignore);
-
-	/**
-	 * @brief 对比文本 但是忽略指定字符
-	 *
-	 * @param str1 文本1
-	 * @param str2 文本2
-	 * @param Ignore 忽略类型 [默认全部忽略]
-	 * - 10 / nullopt / None / all_ignore  全部忽略  无论他出现在哪里都不视为是需要对比的文本
-	 * - 2 / start_ignore 只忽略开头的空白字符
-	 * - 2 / end_ignore 只忽略尾部的空白字符
-	 * - 3 / middle_ignore 只忽略中间出现的空白字符 如果开头出现的则不管
-	 * @return true
-	 * @return false
-	 */
-	extern bool diffNullCharacters(const std::string str1, const std::string str2, IGNORE_NULL_CHAR_TYPE Ignore);
 
 	/**
 	 * @brief 判断文本存在
@@ -881,7 +752,6 @@ namespace hmc_string_util
 	 * @return std::wstring
 	 */
 	extern std::wstring asciiConvers(std::string input);
-
 	/**
 	 * @brief 宽窄文本转码 但是仅限于ascii
 	 *
@@ -889,7 +759,6 @@ namespace hmc_string_util
 	 * @return std::wstring
 	 */
 	extern std::string asciiConvers(std::wstring input);
-
 	/**
 	 * @brief 删除指定的字符
 	 *
@@ -898,7 +767,6 @@ namespace hmc_string_util
 	 * @return size_t
 	 */
 	extern size_t removeAllCharPtr(std::wstring &input, wchar_t matching);
-
 	/**
 	 * @brief 删除指定的字符
 	 *
@@ -920,12 +788,13 @@ namespace hmc_string_util
 	 * @param input
 	 * @return std::string
 	 */
-	extern std::string convertMultiStringArray(const std::vector<std::string> input); /**
-																					   * @brief 纯文本数组 \0 截断单个string  \0\0结束
-																					   *
-																					   * @param input
-																					   * @return std::vector<std::string>
-																					   */
+	extern std::string convertMultiStringArray(const std::vector<std::string> input); 
+	/**
+     * @brief 纯文本数组 \0 截断单个string  \0\0结束
+     *
+     * @param input
+     * @return std::vector<std::string>
+     */
 	extern std::vector<std::wstring> convertMultiStringArray(const std::wstring input);
 	/**
 	 * @brief 纯文本数组 \0 截断单个string  \0\0结束

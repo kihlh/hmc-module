@@ -134,9 +134,7 @@ typedef std::variant<
 	std::vector<int>,
 	std::vector<unsigned long long>,
 	// any 只允许存放 std::vector<js_variant_value>  std::map<std::string,js_variant_value>   std::map<std::wstring,js_variant_value>
-	std::pair<js_valuetype, std::any>,
-	// 这里的 string 格式化为接送的时候不会被esjson格式化
-	// std::pair<std::monostate, STR_VARIANT_VALUE>>
+	std::pair<js_valuetype, std::any>
 	>
 	js_variant_value;
 

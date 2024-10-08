@@ -73,6 +73,217 @@ namespace hmc_string_util
 
     }
 
+};
+
+namespace HMC_TEMPLATE_FUNC
+{
+
+    // using T = std::wstring;
+    // using FILTER_T = std::function<bool(wchar_t at, size_t index, T *input)>;
+
+    template <typename T, typename T2>
+    /**
+     * @brief 数组/ 字符对字符 容器中包含此字符？
+     *
+     * @param _Vec 数组/string
+     * @param _Char 字符/字符集
+     * @return true
+     * @return false
+     */
+    static bool VecContainChar(T _Vec, T2 _Char)
+    {
+        bool result = false;
+
+        static_assert(
+            std::is_same_v<T, std::wstring> || std::is_same_v<T, std::string> ||
+                std::is_same_v<T, std::vector<char>> || std::is_same_v<T, std::vector<wchar_t>> ||
+                std::is_same_v<T, wchar_t> || std::is_same_v<T, char>,
+            "Unsupported type preset escape (不支持的类型预设转义)");
+
+        static_assert(
+            std::is_same_v<T2, wchar_t> ||
+                std::is_same_v<T2, char> ||
+                std::is_same_v<T2, std::vector<char>> ||
+                std::is_same_v<T2, std::vector<wchar_t>>,
+            "Unsupported type preset escape (不支持的类型预设转义)");
+
+        if constexpr (std::is_same_v<T, wchar_t> || std::is_same_v<T, char>)
+        {
+            const auto at = _Vec;
+
+            if constexpr (std::is_same_v<T2, wchar_t> || std::is_same_v<T2, char>)
+            {
+
+                if (at == _Char)
+                {
+                    return true;
+                }
+            }
+
+            if constexpr (std::is_same_v<T2, std::vector<char>> || std::is_same_v<T2, std::vector<wchar_t>>)
+            {
+
+                for (auto &&_filter : _Char)
+                {
+
+                    if (at == _filter)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        if constexpr (std::is_same_v<T, std::wstring> || std::is_same_v<T, std::string> ||
+                      std::is_same_v<T, std::vector<char>> || std::is_same_v<T, std::vector<wchar_t>>)
+        {
+            for (size_t i = 0; i < _Vec.size(); i++)
+            {
+                auto &at = _Vec.at(i);
+
+                if constexpr (std::is_same_v<T2, wchar_t> || std::is_same_v<T2, char>)
+                {
+
+                    if (at == _Char)
+                    {
+                        return true;
+                    }
+                }
+
+                if constexpr (std::is_same_v<T2, std::vector<char>> || std::is_same_v<T2, std::vector<wchar_t>>)
+                {
+
+                    for (auto &&_filter : _Char)
+                    {
+
+                        if (at == _filter)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    template <typename T, typename FILTER_T>
+    static size_t removeMatchChar(T *StrInput, FILTER_T filter)
+    {
+
+        size_t result = 0;
+        static_assert(std::is_same_v<T, std::wstring> || std::is_same_v<T, std::string>, "Unsupported type preset escape (不支持的类型预设转义)");
+        static_assert(
+            std::is_same_v<FILTER_T, std::function<bool(wchar_t at, size_t index, T * input)>> ||
+                std::is_same_v<FILTER_T, std::function<bool(wchar_t at, size_t index)>> ||
+                std::is_same_v<FILTER_T, std::function<bool(wchar_t at)>> ||
+                std::is_same_v<FILTER_T, std::function<bool(char at, size_t index, T *input)>> ||
+                std::is_same_v<FILTER_T, std::function<bool(char at, size_t index)>> ||
+                std::is_same_v<FILTER_T, std::function<bool(char at)>> ||
+                std::is_same_v<FILTER_T, wchar_t> ||
+                std::is_same_v<FILTER_T, char> ||
+                std::is_same_v<FILTER_T, std::vector<char>> ||
+                std::is_same_v<FILTER_T, std::vector<wchar_t>>,
+            "Unsupported type preset escape (不支持的类型预设转义)");
+
+        if (StrInput == nullptr || StrInput->empty())
+            return result;
+
+        size_t the_size = StrInput->size();
+
+        if constexpr (std::is_same_v<FILTER_T, wchar_t>)
+        {
+            StrInput->erase(std::remove(StrInput->begin(), StrInput->end(), filter),
+                            StrInput->end());
+            result = the_size - StrInput->size();
+        }
+
+        if constexpr (std::is_same_v<FILTER_T, char>)
+        {
+            StrInput->erase(std::remove(StrInput->begin(), StrInput->end(), filter),
+                            StrInput->end());
+            result = the_size - StrInput->size();
+        }
+
+        if constexpr (std::is_same_v<FILTER_T, std::vector<char>> || std::is_same_v<FILTER_T, std::vector<wchar_t>>)
+        {
+            size_t filter_index = StrInput->size();
+
+            for (auto it = StrInput->rbegin(); it != StrInput->rend(); it++)
+            {
+                filter_index--;
+                auto at = *it;
+                bool is_Contain = false;
+
+                if constexpr (std::is_same_v<FILTER_T, std::vector<char>>)
+                {
+                    is_Contain = VecContainChar<FILTER_T, char>(filter, at);
+                }
+
+                if constexpr (std::is_same_v<FILTER_T, std::vector<wchar_t>>)
+                {
+                    is_Contain = VecContainChar<FILTER_T, wchar_t>(filter, at);
+                }
+
+                if (is_Contain)
+                {
+                    if (filter_index < StrInput->size())
+                    {
+                        StrInput->erase(filter_index, 1);
+                    }
+                }
+            }
+        }
+
+        if constexpr (
+            std::is_same_v<FILTER_T, std::function<bool(wchar_t at, size_t index, T * input)>> ||
+            std::is_same_v<FILTER_T, std::function<bool(wchar_t at, size_t index)>> ||
+            std::is_same_v<FILTER_T, std::function<bool(wchar_t at)>>)
+        {
+            size_t filter_index = StrInput->size();
+
+            for (auto it = StrInput->rbegin(); it != StrInput->rend(); it++)
+            {
+                filter_index--;
+                auto at = *it;
+                bool is_Contain = false;
+
+                if constexpr (std::is_same_v<FILTER_T, std::function<bool(wchar_t at, size_t index, T * input)>>)
+                {
+                    if (filter == nullptr)
+                        continue;
+                    is_Contain = filter(at, filter_index, StrInput);
+                }
+
+                if constexpr (std::is_same_v<FILTER_T, std::function<bool(wchar_t at, size_t index)>>)
+                {
+                    if (filter == nullptr)
+                        continue;
+                    is_Contain = filter(at, filter_index);
+                }
+
+                if constexpr (std::is_same_v<FILTER_T, std::function<bool(wchar_t at)>>)
+                {
+                    if (filter == nullptr)
+                        continue;
+                    is_Contain = filter(at);
+                }
+
+                if (is_Contain)
+                {
+                    if (filter_index < StrInput->size())
+                    {
+                        StrInput->erase(filter_index, 1);
+                    }
+                }
+            }
+        }
+
+        result = the_size - StrInput->size();
+        return result;
+    }
+
     template <typename T, typename T2>
     static T GetAsciiPrefix(const T input, T2 filter)
     {
@@ -131,83 +342,157 @@ namespace hmc_string_util
         return result;
     }
 
-};
-
-std::string hmc_string_util::getAsciiPrefix(const std::string& path, char filter)
-{
-    return GetAsciiPrefix<std::string, char>(path, filter);
-}
-
-std::string hmc_string_util::getAsciiPrefix(const std::string& path, std::vector<char> filterList)
-{
-    return GetAsciiPrefix<std::string, std::vector<char>>(path, filterList);
-}
-
-std::string hmc_string_util::getAsciiPrefix(const std::string& path)
-{
-    return GetAsciiPrefix<std::string, std::monostate>(path, std::monostate());
-}
-
-std::wstring hmc_string_util::getAsciiPrefix(const std::wstring &path)
-{
-    return GetAsciiPrefix<std::wstring, std::monostate>(path, std::monostate());
-}
-
-std::wstring hmc_string_util::getAsciiPrefix(const std::wstring &path, char filter)
-{
-    return GetAsciiPrefix<std::wstring, char>(path, filter);
-}
-
-std::wstring hmc_string_util::getAsciiPrefix(const std::wstring &path, std::vector<char> filterList)
-{
-    return GetAsciiPrefix<std::wstring, std::vector<char>>(path, filterList);
-}
-
-/**
- * @brief 仅拼接文本
- *
- * @tparam Arguments
- * @param input
- * @param firstInput
- * @param data_list
- * @return string
- */
-template <class... Arguments>
-std::string hmc_string_util::string_join(const std::string &input, const std::string &firstInput, std::vector<Arguments...> data_list)
-{
-    std::string result = "";
-    result.append(input);
-    result.append(firstInput);
-    for (auto data : data_list)
+    template <typename T>
+    static inline T escapeJsonString(const T &input, bool is_to_value)
     {
-        result.append(data);
+        T output;
+
+        if (is_to_value)
+        {
+            output.push_back('"');
+        }
+        for (size_t i = 0; i < input.size(); i++)
+        {
+            auto &ch = input.at(i);
+
+            switch (ch)
+            {
+            case '\0':
+                break;
+            case '"':
+                output.push_back('\\');
+                output.push_back('\"');
+                break;
+            case '\\':
+                output.push_back('\\');
+                output.push_back('\\');
+                break;
+            case '\b':
+                output.push_back('\\');
+                output.push_back('b');
+                break;
+            case '\f':
+                output.push_back('\\');
+                output.push_back('f');
+                break;
+            case '\n':
+                output.push_back('\\');
+                output.push_back('n');
+                break;
+            case '\r':
+                output.push_back('\\');
+                output.push_back('r');
+                break;
+            case '\t':
+                output.push_back('\\');
+                output.push_back('t');
+                break;
+            default:
+                output.push_back(ch);
+                break;
+            }
+        }
+        if (is_to_value)
+        {
+            output.push_back('"');
+        }
+        return output;
     }
 
-    return result;
-}
-
-/**
- * @brief 仅拼接文本
- *
- * @tparam Arguments
- * @param input
- * @param firstInput
- * @param data_list
- * @return wstring
- */
-template <class... Arguments>
-std::wstring hmc_string_util::string_join(const std::wstring &input, const std::wstring &firstInput, std::vector<Arguments...> data_list)
-{
-    std::wstring result = "";
-    result.append(input);
-    result.append(firstInput);
-    for (auto data : data_list)
+    template <typename T, typename MATCH_T>
+    static void split(const T &sourcePtr, MATCH_T splitter, std::vector<T> *item_list)
     {
-        result.append(data);
+
+        static_assert(std::is_same_v<T, std::wstring> || std::is_same_v<T, std::string>, "Unsupported type preset escape (不支持的类型预设转义)");
+        static_assert(
+            std::is_same_v<MATCH_T, wchar_t> ||
+                std::is_same_v<MATCH_T, char> ||
+                std::is_same_v<MATCH_T, std::vector<char>> ||
+                std::is_same_v<MATCH_T, std::vector<wchar_t>>,
+            "Unsupported type preset escape (不支持的类型预设转义)");
+
+        if (item_list == NULL)
+        {
+            return;
+        }
+
+        item_list->clear();
+        if (sourcePtr.empty())
+        {
+            return;
+        }
+
+        T item;
+        item.reserve(sourcePtr.length());
+
+        for (auto &data : sourcePtr)
+        {
+            bool is_Contain = false;
+
+            if constexpr (std::is_same_v<MATCH_T, wchar_t> || std::is_same_v<MATCH_T, char>)
+            {
+                is_Contain = data == splitter;
+            }
+
+            if constexpr (std::is_same_v<MATCH_T, std::vector<char>> || std::is_same_v<MATCH_T, std::vector<wchar_t>>)
+            {
+                is_Contain = VecContainChar<MATCH_T, wchar_t>(splitter, data);
+            }
+
+            if (is_Contain)
+
+            {
+                if (!item.empty())
+                {
+                    item_list->push_back(item);
+                }
+
+                item.clear();
+            }
+            else
+            {
+                item.push_back(data);
+            }
+        }
+
+        // 最后一个元素如果是空文本则不导入
+        if (!item.empty())
+            item_list->push_back(std::move(item));
     }
 
-    return result;
+    template <typename T, typename MATCH_T>
+    static std::vector<T> split(const T &sourcePtr, MATCH_T splitter)
+    {
+        std::vector<T> item_list;
+        if (sourcePtr.empty())
+        {
+            return item_list;
+        }
+
+        split<T, MATCH_T>(sourcePtr, splitter, &item_list);
+        return item_list;
+    }
+
 }
+
+size_t hmc_string_util::removeMatchChar(std::wstring *StrInput, wchar_t filter) { return HMC_TEMPLATE_FUNC::removeMatchChar<std::wstring, wchar_t>(StrInput, filter); }
+size_t hmc_string_util::removeMatchChar(std::wstring *StrInput, std::vector<wchar_t> filter) { return HMC_TEMPLATE_FUNC::removeMatchChar<std::wstring, std::vector<wchar_t>>(StrInput, filter); }
+size_t hmc_string_util::removeMatchChar(std::wstring *StrInput, std::function<bool(wchar_t at, size_t index, std::wstring *input)> filter) { return HMC_TEMPLATE_FUNC::removeMatchChar<std::wstring, std::function<bool(wchar_t at, size_t index, std::wstring * input)>>(StrInput, filter); }
+size_t hmc_string_util::removeMatchChar(std::wstring *StrInput, std::function<bool(wchar_t at, size_t index)> filter) { return HMC_TEMPLATE_FUNC::removeMatchChar<std::wstring, std::function<bool(wchar_t at, size_t index)>>(StrInput, filter); }
+size_t hmc_string_util::removeMatchChar(std::wstring *StrInput, std::function<bool(wchar_t at)> filter) { return HMC_TEMPLATE_FUNC::removeMatchChar<std::wstring, std::function<bool(wchar_t at)>>(StrInput, filter); }
+size_t hmc_string_util::removeMatchChar(std::string *StrInput, char filter) { return HMC_TEMPLATE_FUNC::removeMatchChar<std::string, char>(StrInput, filter); }
+size_t hmc_string_util::removeMatchChar(std::string *StrInput, std::vector<char> filter) { return HMC_TEMPLATE_FUNC::removeMatchChar<std::string, std::vector<char>>(StrInput, filter); }
+size_t hmc_string_util::removeMatchChar(std::string *StrInput, std::function<bool(char at, size_t index, std::string *input)> filter) { return HMC_TEMPLATE_FUNC::removeMatchChar<std::string, std::function<bool(char at, size_t index, std::string *input)>>(StrInput, filter); }
+size_t hmc_string_util::removeMatchChar(std::string *StrInput, std::function<bool(char at, size_t index)> filter) { return HMC_TEMPLATE_FUNC::removeMatchChar<std::string, std::function<bool(char at, size_t index)>>(StrInput, filter); }
+size_t hmc_string_util::removeMatchChar(std::string *StrInput, std::function<bool(char at)> filter) { return HMC_TEMPLATE_FUNC::removeMatchChar<std::string, std::function<bool(char at)>>(StrInput, filter); }
+std::string hmc_string_util::getAsciiPrefix(const std::string &path, char filter) { return HMC_TEMPLATE_FUNC::GetAsciiPrefix<std::string, char>(path, filter); }
+std::string hmc_string_util::getAsciiPrefix(const std::string &path, std::vector<char> filterList) { return HMC_TEMPLATE_FUNC::GetAsciiPrefix<std::string, std::vector<char>>(path, filterList); }
+std::string hmc_string_util::getAsciiPrefix(const std::string &path) { return HMC_TEMPLATE_FUNC::GetAsciiPrefix<std::string, std::monostate>(path, std::monostate()); }
+std::wstring hmc_string_util::getAsciiPrefix(const std::wstring &path) { return HMC_TEMPLATE_FUNC::GetAsciiPrefix<std::wstring, std::monostate>(path, std::monostate()); }
+std::wstring hmc_string_util::getAsciiPrefix(const std::wstring &path, char filter) { return HMC_TEMPLATE_FUNC::GetAsciiPrefix<std::wstring, char>(path, filter); }
+std::wstring hmc_string_util::getAsciiPrefix(const std::wstring &path, std::vector<char> filterList) { return HMC_TEMPLATE_FUNC::GetAsciiPrefix<std::wstring, std::vector<char>>(path, filterList); }
+inline std::string hmc_string_util::escapeJsonString(const std::string &input, bool is_to_value) { return HMC_TEMPLATE_FUNC::escapeJsonString<std::string>(input, is_to_value); }
+inline std::wstring hmc_string_util::escapeJsonString(const std::wstring &input, bool is_to_value) { return HMC_TEMPLATE_FUNC::escapeJsonString<std::wstring>(input, is_to_value); }
 
 // 文本中是否有数字 并且是否是安全的 int32
 bool hmc_string_util::is_int_str(const std::string Value)
@@ -482,6 +767,10 @@ inline void hmc_string_util::replaceAll(std::string &sourcePtr, std::string from
     size_t start_pos = 0;
     while ((start_pos = sourcePtr.find(from, start_pos)) != std::string::npos)
     {
+        if (start_pos >= sourcePtr.size())
+        {
+            return;
+        }
         sourcePtr.replace(start_pos, from.length(), to);
         start_pos += to.length();
     }
@@ -492,6 +781,10 @@ inline void hmc_string_util::replaceAll(std::wstring &sourcePtr, const std::wstr
     size_t start_pos = 0;
     while ((start_pos = sourcePtr.find(from, start_pos)) != std::string::npos)
     {
+        if (start_pos >= sourcePtr.size())
+        {
+            return;
+        }
         sourcePtr.replace(start_pos, from.length(), to);
         start_pos += to.length();
     }
@@ -511,6 +804,10 @@ inline void hmc_string_util::replaceAll(std::string &sourcePtr, std::vector<std:
         size_t start_pos = 0;
         while ((start_pos = sourcePtr.find(from, start_pos)) != std::string::npos)
         {
+            if (start_pos >= sourcePtr.size())
+            {
+                return;
+            }
             sourcePtr.replace(start_pos, from.length(), to);
             start_pos += to.length();
         }
@@ -530,6 +827,10 @@ inline void hmc_string_util::replaceAll(std::wstring &sourcePtr, std::vector<std
         size_t start_pos = 0;
         while ((start_pos = sourcePtr.find(from, start_pos)) != std::wstring::npos)
         {
+            if (start_pos >= sourcePtr.size())
+            {
+                return;
+            }
             sourcePtr.replace(start_pos, from.length(), to);
             start_pos += to.length();
         }
@@ -548,6 +849,10 @@ inline void hmc_string_util::replace(std::string &sourcePtr, std::string from, s
     size_t start_pos = 0;
     if ((start_pos = sourcePtr.find(from, start_pos)) != std::string::npos)
     {
+        if (start_pos >= sourcePtr.size())
+        {
+            return;
+        }
         sourcePtr.replace(start_pos, from.length(), to);
         return;
     }
@@ -558,6 +863,10 @@ inline void hmc_string_util::replace(std::wstring &sourcePtr, const std::wstring
     size_t start_pos = 0;
     if ((start_pos = sourcePtr.find(from, start_pos)) != std::string::npos)
     {
+        if (start_pos >= sourcePtr.size())
+        {
+            return;
+        }
         sourcePtr.replace(start_pos, from.length(), to);
         return;
     }
@@ -582,6 +891,10 @@ inline void hmc_string_util::replace(std::string &sourcePtr, std::vector<std::tu
         size_t start_pos = 0;
         if ((start_pos = sourcePtr.find(from, start_pos)) != std::string::npos)
         {
+            if (start_pos >= sourcePtr.size())
+            {
+                return;
+            }
             sourcePtr.replace(start_pos, from.length(), to);
             continue;
         }
@@ -600,6 +913,10 @@ inline void hmc_string_util::replace(std::wstring &sourcePtr, std::vector<std::t
         size_t start_pos = 0;
         if ((start_pos = sourcePtr.find(from, start_pos)) != std::string::npos)
         {
+            if (start_pos >= sourcePtr.size())
+            {
+                return;
+            }
             sourcePtr.replace(start_pos, from.length(), to);
             continue;
         }
@@ -620,6 +937,10 @@ inline void hmc_string_util::replace(std::string &sourcePtr, std::string from, s
     size_t index = 0;
     if ((start_pos = sourcePtr.find(from, start_pos)) != std::string::npos)
     {
+        if (start_pos >= sourcePtr.size())
+        {
+            return;
+        }
         if (index == bubble_index)
         {
             sourcePtr.replace(start_pos, from.length(), to);
@@ -629,206 +950,21 @@ inline void hmc_string_util::replace(std::string &sourcePtr, std::string from, s
     }
 }
 
-inline std::string hmc_string_util::escapeJsonString(const std::string &input, bool is_to_value)
-{
-    std::string output;
-    if (is_to_value)
-    {
-        output.push_back('"');
-    }
+void hmc_string_util::split(const std::string &sourcePtr, char splitter, std::vector<std::string> &item_list) { return HMC_TEMPLATE_FUNC::split<std::string, char>(sourcePtr, splitter, &item_list); }
 
-    for (char ch : input)
-    {
-        switch (ch)
-        {
+std::vector<std::string> hmc_string_util::split(const std::string &sourcePtr, char splitter) { return HMC_TEMPLATE_FUNC::split<std::string, char>(sourcePtr, splitter); }
 
-        case '\0':
-            break;
-        case '"':
-            output.append("\\\"");
-            break;
-        case '\\':
-            output.append("\\\\");
-            break;
-        case '\b':
-            output.append("\\b");
-            break;
-        case '\f':
-            output.append("\\f");
-            break;
-        case '\n':
-            output.append("\\n");
-            break;
-        case '\r':
-            output.append("\\r");
-            break;
-        case '\t':
-            output.append("\\t");
-            break;
-        default:
-            output.push_back(ch);
-            break;
-        }
-    }
+void hmc_string_util::split(const std::wstring &sourcePtr, wchar_t splitter, std::vector<std::wstring> &item_list) { return HMC_TEMPLATE_FUNC::split<std::wstring, wchar_t>(sourcePtr, splitter, &item_list); }
 
-    if (is_to_value)
-    {
-        output.push_back('"');
-    }
+std::vector<std::wstring> hmc_string_util::split(const std::wstring &sourcePtr, wchar_t splitter) { return HMC_TEMPLATE_FUNC::split<std::wstring, wchar_t>(sourcePtr, splitter); }
 
-    return output;
-}
+void hmc_string_util::split(const std::string &sourcePtr, std::vector<char> splitter, std::vector<std::string> &item_list) { return HMC_TEMPLATE_FUNC::split<std::string, std::vector<char>>(sourcePtr, splitter, &item_list); }
 
-inline std::wstring hmc_string_util::escapeJsonString(const std::wstring &input, bool is_to_value)
-{
-    std::wstring output;
+std::vector<std::string> hmc_string_util::split(const std::string &sourcePtr, std::vector<char> splitter) { return HMC_TEMPLATE_FUNC::split<std::string, std::vector<char>>(sourcePtr, splitter); }
 
-    if (is_to_value)
-    {
-        output.push_back(L'"');
-    }
+void hmc_string_util::split(const std::wstring &sourcePtr, std::vector<wchar_t> splitter, std::vector<std::wstring> &item_list) { return HMC_TEMPLATE_FUNC::split<std::wstring, std::vector<wchar_t>>(sourcePtr, splitter, &item_list); }
 
-    for (wchar_t ch : input)
-    {
-        switch (ch)
-        {
-        case L'\0':
-            break;
-        case L'"':
-            output.append(L"\\\"");
-            break;
-        case L'\\':
-            output.append(L"\\\\");
-            break;
-        case L'\b':
-            output.append(L"\\b");
-            break;
-        case L'\f':
-            output.append(L"\\f");
-            break;
-        case L'\n':
-            output.append(L"\\n");
-            break;
-        case L'\r':
-            output.append(L"\\r");
-            break;
-        case L'\t':
-            output.append(L"\\t");
-            break;
-        default:
-            output.push_back(ch);
-            break;
-        }
-    }
-    if (is_to_value)
-    {
-        output.push_back(L'"');
-    }
-    return output;
-}
-
-/**
- * @brief 切割文本
- *
- * @param sourcePtr
- * @param splitter
- * @param item_list
- */
-void hmc_string_util::split(std::string &sourcePtr, char splitter, std::vector<std::string> &item_list)
-{
-
-    item_list.clear();
-    if (sourcePtr.empty())
-    {
-        return;
-    }
-    std::string item;
-    item.reserve(sourcePtr.length());
-
-    for (auto data : sourcePtr)
-    {
-        if (data == splitter)
-        {
-            if (!item.empty())
-            {
-
-                item_list.push_back(item);
-            }
-            item.clear();
-        }
-        else
-        {
-            item.push_back(data);
-        }
-    }
-
-    // 最后一个元素如果是空文本则不导入
-    if (!item.empty())
-        item_list.push_back(std::move(item));
-}
-
-std::vector<std::string> hmc_string_util::split(std::string &sourcePtr, char splitter)
-{
-    if (sourcePtr.empty())
-    {
-        return std::vector<std::string>();
-    }
-    std::vector<std::string> item_list;
-    split(sourcePtr, splitter, item_list);
-    return item_list;
-}
-
-/**
- * @brief 切割文本
- *
- * @param sourcePtr
- * @param splitter
- * @param item_list
- */
-void hmc_string_util::split(std::wstring &sourcePtr, wchar_t splitter, std::vector<std::wstring> &item_list)
-{
-
-    item_list.clear();
-    if (sourcePtr.empty())
-    {
-        return;
-    }
-
-    std::wstring item;
-    item.reserve(sourcePtr.length());
-
-    for (auto data : sourcePtr)
-    {
-        if (data == splitter)
-        {
-            if (!item.empty())
-            {
-
-                item_list.push_back(item);
-            }
-            item.clear();
-        }
-        else
-        {
-            item.push_back(data);
-        }
-    }
-
-    // 最后一个元素如果是空文本则不导入
-    if (!item.empty())
-        item_list.push_back(std::move(item));
-}
-
-std::vector<std::wstring> hmc_string_util::split(std::wstring &sourcePtr, wchar_t splitter)
-{
-    if (sourcePtr.empty())
-    {
-        return std::vector<std::wstring>();
-    }
-    std::vector<std::wstring> item_list;
-    split(sourcePtr, splitter, item_list);
-    return item_list;
-}
+std::vector<std::wstring> hmc_string_util::split(const std::wstring &sourcePtr, std::vector<wchar_t> splitter) { return HMC_TEMPLATE_FUNC::split<std::wstring, std::vector<wchar_t>>(sourcePtr, splitter); }
 
 void hmc_string_util::join(std::vector<std::string> &item_list, std::string splitter, std::string outputPtr)
 {
@@ -1445,122 +1581,30 @@ std::wstring hmc_string_util::lpstr_to_string(wchar_t *input, int nBufSize, bool
 std::string hmc_string_util::lpstr_to_string(char *input, int nBufSize, bool earlyTruncation)
 {
     std::string result = "";
-    if (input == nullptr && nBufSize < 0)
+    if (input == nullptr || nBufSize < 0)
         return result;
     // result.reserve(nBufSize + 1);
     result.reserve(nBufSize);
-    result.resize(nBufSize);
-    for (size_t i = 0; i < (size_t)nBufSize; i++)
+
+    size_t length = static_cast<size_t>(nBufSize);
+
+    for (size_t i = 0; i < length; i++)
     {
+        if (input == NULL)
+        {
+            break;
+        }
+
         char data = static_cast<char>(input[i]);
+
         if (earlyTruncation && data == '\0')
         {
             break;
         }
-        result[i] = data;
-    }
-    // result[result.size() - 1] = '\0';
-    return result;
-}
-
-/**
- * @brief 移除和结尾开头的空字符
- *
- * @param str
- * @return std::string
- */
-std::string hmc_string_util::removeNullCharacters(std::string str, bool start, bool tail, bool all)
-{
-
-    std::string result = std::string();
-
-    if (all)
-    {
-        for (size_t i = 0; i < result.size(); i++)
-        {
-            char data = result[i];
-            if (data != '\0')
-            {
-                result.push_back(data);
-            }
-        }
-        return result;
-    }
-
-    result.append(str);
-
-    // 移除开头的空字符
-    if (start)
-    {
-
-        while (!result.empty() && result.front() == '\0')
-        {
-            result.erase(0, 1);
-        }
-    }
-
-    // 移除末尾的空字符
-    if (tail)
-    {
-        while (!result.empty() && result.back() == '\0')
-        {
-            result.pop_back();
-        }
+        result.push_back(data);
     }
 
     return result;
-}
-
-std::wstring hmc_string_util::removeNullCharacters(std::wstring str, bool start, bool tail, bool all)
-{
-
-    std::wstring result = std::wstring();
-
-    if (all)
-    {
-        for (size_t i = 0; i < result.size(); i++)
-        {
-            wchar_t data = result[i];
-            if (data != L'\0')
-            {
-                result.push_back(data);
-            }
-        }
-        return result;
-    }
-
-    result.append(str);
-
-    // 移除开头的空字符
-    if (start)
-    {
-
-        while (!result.empty() && result.front() == L'\0')
-        {
-            result.erase(0, 1);
-        }
-    }
-
-    // 移除末尾的空字符
-    if (tail)
-    {
-        while (!result.empty() && result.back() == L'\0')
-        {
-            result.pop_back();
-        }
-    }
-
-    return result;
-}
-
-std::wstring hmc_string_util::removeNullCharactersAll(std::wstring str)
-{
-    return removeNullCharacters(str, false, false, true);
-}
-
-std::string hmc_string_util::removeNullCharactersAll(std::string str)
-{
-    return removeNullCharacters(str, false, false, true);
 }
 
 /**
@@ -1629,759 +1673,8 @@ std::wstring hmc_string_util::vec_to_array_json(std::vector<std::wstring> item_l
             result.append(L",");
         }
     }
-
     result.append(L"]");
     return result;
-}
-
-namespace hmc_string_util
-{
-
-    bool hmc_string_util::removeMatchCharPtr(std::wstring &input, const wchar_t match_char, hmc_string_util::IGNORE_NULL_CHAR_TYPE ignore = hmc_string_util::IGNORE_NULL_CHAR_TYPE::ALL_IGNORE)
-    {
-        bool result = false;
-
-        size_t the_size = input.size();
-
-        if (the_size == 0)
-        {
-            return false;
-        }
-
-        // 全部删除
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::ALL_IGNORE)
-        {
-            input.erase(std::remove(input.begin(), input.end(), match_char),
-                        input.end());
-            return the_size != input.size();
-        }
-
-        // 判断是否全是此字符
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::END_IGNORE || ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::START_IGNORE)
-        {
-            size_t length = input.size();
-            bool is_all_match_char = true;
-
-            for (size_t i = 0; i < length; i++)
-            {
-                wchar_t it = input[i];
-                if (it != match_char)
-                {
-                    is_all_match_char = false;
-                    break;
-                }
-            }
-
-            if (is_all_match_char)
-            {
-                input.clear();
-                return the_size != input.size();
-            }
-        }
-
-        // 只删除开头
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::START_IGNORE)
-        {
-
-            size_t front_index = 0;
-            size_t length = input.size();
-            for (size_t i = 0; i < length; i++)
-            {
-                wchar_t it = input[i];
-                if (i != 0 && it != match_char)
-                {
-                    front_index = i - 1;
-                    break;
-                }
-            }
-
-            if (front_index > 0)
-            {
-                input.erase(0, front_index);
-            }
-
-            return the_size != input.size();
-        }
-
-        // 只删除结尾
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::END_IGNORE)
-        {
-
-            size_t length = input.size();
-            size_t end_index = length;
-
-            for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
-            {
-                if (i >= length || length < 0)
-                {
-                    break;
-                }
-                wchar_t it = input[i];
-                if (i != 0 && it != match_char)
-                {
-                    end_index = i + 1;
-                    break;
-                }
-            }
-
-            if (end_index < length)
-            {
-                input.erase(end_index, length);
-            }
-
-            return the_size != input.size();
-        }
-
-        // 只删除中间 并忽略开头结尾出现的
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::MIDDLE_IGNORE)
-        {
-
-            size_t length = input.size();
-            // 开头结尾 都不等于此字符 删除全部此字符
-            if (input.front() != match_char && input.back() != match_char)
-            {
-                input.erase(std::remove(input.begin(), input.end(), match_char),
-                            input.end());
-                return the_size != input.size();
-            }
-            // 新的开头
-            size_t ready_front_index = 0;
-            // 尾部需要忽略多少个字符
-            size_t ready_end_size = 0;
-
-            // 全部都是 match_char 应当拒绝处理
-            if (input.size() <= ready_end_size + 1)
-            {
-                return the_size != input.size();
-            }
-
-            // 计算出开头
-            if (input.front() == match_char)
-            {
-                for (size_t i = 0; i < length; i++)
-                {
-                    wchar_t it = input[i];
-                    if (it != match_char)
-                    {
-                        ready_front_index = i;
-                        break;
-                    }
-                }
-            }
-
-            // 计算出结尾
-            if (input.front() == match_char)
-            {
-                for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
-                {
-                    if (i >= length || length < 0)
-                    {
-                        break;
-                    }
-                    wchar_t it = input[i];
-                    if (it != match_char)
-                    {
-                        break;
-                    }
-                    ready_end_size++;
-                }
-            }
-
-            for (size_t i = ready_front_index; i < input.size(); i++)
-            {
-
-                // 结尾完成
-                if (i + 1 > input.size() - ready_end_size)
-                {
-                    break;
-                }
-
-                if (input[i] == match_char)
-                {
-                    input.erase(i, 1);
-                    i--;
-                }
-            }
-        }
-
-        return result;
-    }
-
-    std::wstring hmc_string_util::removeMatchChar(const std::wstring &Input_, const wchar_t match_char, hmc_string_util::IGNORE_NULL_CHAR_TYPE ignore = hmc_string_util::IGNORE_NULL_CHAR_TYPE::ALL_IGNORE)
-    {
-        std::wstring input = std::wstring(Input_.begin(), Input_.end());
-
-        bool result = false;
-
-        size_t the_size = input.size();
-
-        if (the_size == 0)
-        {
-            return input;
-        }
-
-        // 全部删除
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::ALL_IGNORE)
-        {
-            input.erase(std::remove(input.begin(), input.end(), match_char),
-                        input.end());
-            return input;
-        }
-
-        // 判断是否全是此字符
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::END_IGNORE || ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::START_IGNORE)
-        {
-            size_t length = input.size();
-            bool is_all_match_char = true;
-
-            for (size_t i = 0; i < length; i++)
-            {
-                wchar_t it = input[i];
-                if (it != match_char)
-                {
-                    is_all_match_char = false;
-                    break;
-                }
-            }
-
-            if (is_all_match_char)
-            {
-                input.clear();
-                return input;
-            }
-        }
-
-        // 只删除开头
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::START_IGNORE)
-        {
-
-            size_t front_index = 0;
-            size_t length = input.size();
-            for (size_t i = 0; i < length; i++)
-            {
-                wchar_t it = input[i];
-                if (i != 0 && it != match_char)
-                {
-                    front_index = i - 1;
-                    break;
-                }
-            }
-
-            if (front_index > 0)
-            {
-                input.erase(0, front_index);
-            }
-
-            return input;
-        }
-
-        // 只删除结尾
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::END_IGNORE)
-        {
-
-            size_t length = input.size();
-            size_t end_index = length;
-
-            for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
-            {
-                if (i >= length || length < 0)
-                {
-                    break;
-                }
-                wchar_t it = input[i];
-                if (i != 0 && it != match_char)
-                {
-                    end_index = i + 1;
-                    break;
-                }
-            }
-
-            if (end_index < length)
-            {
-                input.erase(end_index, length);
-            }
-
-            return input;
-        }
-
-        // 只删除中间 并忽略开头结尾出现的
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::MIDDLE_IGNORE)
-        {
-
-            size_t length = input.size();
-            // 开头结尾 都不等于此字符 删除全部此字符
-            if (input.front() != match_char && input.back() != match_char)
-            {
-                input.erase(std::remove(input.begin(), input.end(), match_char),
-                            input.end());
-                return input;
-            }
-            // 新的开头
-            size_t ready_front_index = 0;
-            // 尾部需要忽略多少个字符
-            size_t ready_end_size = 0;
-
-            // 全部都是 match_char 应当拒绝处理
-            if (input.size() <= ready_end_size + 1)
-            {
-                return input;
-            }
-
-            // 计算出开头
-            if (input.front() == match_char)
-            {
-                for (size_t i = 0; i < length; i++)
-                {
-                    wchar_t it = input[i];
-                    if (it != match_char)
-                    {
-                        ready_front_index = i;
-                        break;
-                    }
-                }
-            }
-
-            // 计算出结尾
-            if (input.front() == match_char)
-            {
-                for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
-                {
-                    if (i >= length || length < 0)
-                    {
-                        break;
-                    }
-                    wchar_t it = input[i];
-                    if (it != match_char)
-                    {
-                        break;
-                    }
-                    ready_end_size++;
-                }
-            }
-
-            for (size_t i = ready_front_index; i < input.size(); i++)
-            {
-
-                // 结尾完成
-                if (i + 1 > input.size() - ready_end_size)
-                {
-                    break;
-                }
-
-                if (input[i] == match_char)
-                {
-                    input.erase(i, 1);
-                    i--;
-                }
-            }
-        }
-
-        return input;
-    }
-
-    bool hmc_string_util::removeMatchCharPtr(std::string &input, const char match_char, hmc_string_util::IGNORE_NULL_CHAR_TYPE ignore = hmc_string_util::IGNORE_NULL_CHAR_TYPE::ALL_IGNORE)
-    {
-        bool result = false;
-
-        size_t the_size = input.size();
-
-        if (the_size == 0)
-        {
-            return false;
-        }
-
-        // 全部删除
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::ALL_IGNORE)
-        {
-            input.erase(std::remove(input.begin(), input.end(), match_char),
-                        input.end());
-            return the_size != input.size();
-        }
-
-        // 判断是否全是此字符
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::END_IGNORE || ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::START_IGNORE)
-        {
-            size_t length = input.size();
-            bool is_all_match_char = true;
-
-            for (size_t i = 0; i < length; i++)
-            {
-                char it = input[i];
-                if (it != match_char)
-                {
-                    is_all_match_char = false;
-                    break;
-                }
-            }
-
-            if (is_all_match_char)
-            {
-                input.clear();
-                return the_size != input.size();
-            }
-        }
-
-        // 只删除开头
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::START_IGNORE)
-        {
-
-            size_t front_index = 0;
-            size_t length = input.size();
-            for (size_t i = 0; i < length; i++)
-            {
-                char it = input[i];
-                if (i != 0 && it != match_char)
-                {
-                    front_index = i - 1;
-                    break;
-                }
-            }
-
-            if (front_index > 0)
-            {
-                input.erase(0, front_index);
-            }
-
-            return the_size != input.size();
-        }
-
-        // 只删除结尾
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::END_IGNORE)
-        {
-
-            size_t length = input.size();
-            size_t end_index = length;
-
-            for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
-            {
-                if (i >= length || length < 0)
-                {
-                    break;
-                }
-                char it = input[i];
-                if (i != 0 && it != match_char)
-                {
-                    end_index = i + 1;
-                    break;
-                }
-            }
-
-            if (end_index < length)
-            {
-                input.erase(end_index, length);
-            }
-
-            return the_size != input.size();
-        }
-
-        // 只删除中间 并忽略开头结尾出现的
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::MIDDLE_IGNORE)
-        {
-
-            size_t length = input.size();
-            // 开头结尾 都不等于此字符 删除全部此字符
-            if (input.front() != match_char && input.back() != match_char)
-            {
-                input.erase(std::remove(input.begin(), input.end(), match_char),
-                            input.end());
-                return the_size != input.size();
-            }
-            // 新的开头
-            size_t ready_front_index = 0;
-            // 尾部需要忽略多少个字符
-            size_t ready_end_size = 0;
-
-            // 全部都是 match_char 应当拒绝处理
-            if (input.size() <= ready_end_size + 1)
-            {
-                return the_size != input.size();
-            }
-
-            // 计算出开头
-            if (input.front() == match_char)
-            {
-                for (size_t i = 0; i < length; i++)
-                {
-                    char it = input[i];
-                    if (it != match_char)
-                    {
-                        ready_front_index = i;
-                        break;
-                    }
-                }
-            }
-
-            // 计算出结尾
-            if (input.front() == match_char)
-            {
-                for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
-                {
-                    if (i >= length || length < 0)
-                    {
-                        break;
-                    }
-                    char it = input[i];
-                    if (it != match_char)
-                    {
-                        break;
-                    }
-                    ready_end_size++;
-                }
-            }
-
-            for (size_t i = ready_front_index; i < input.size(); i++)
-            {
-
-                // 结尾完成
-                if (i + 1 > input.size() - ready_end_size)
-                {
-                    break;
-                }
-
-                if (input[i] == match_char)
-                {
-                    input.erase(i, 1);
-                    i--;
-                }
-            }
-        }
-
-        return result;
-    }
-
-    std::string hmc_string_util::removeMatchChar(const std::string &Input_, const char match_char, hmc_string_util::IGNORE_NULL_CHAR_TYPE ignore = hmc_string_util::IGNORE_NULL_CHAR_TYPE::ALL_IGNORE)
-    {
-        std::string input = std::string(Input_.begin(), Input_.end());
-
-        bool result = false;
-
-        size_t the_size = input.size();
-
-        if (the_size == 0)
-        {
-            return input;
-        }
-
-        // 全部删除
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::ALL_IGNORE)
-        {
-            input.erase(std::remove(input.begin(), input.end(), match_char),
-                        input.end());
-            return input;
-        }
-
-        // 判断是否全是此字符
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::END_IGNORE || ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::START_IGNORE)
-        {
-            size_t length = input.size();
-            bool is_all_match_char = true;
-
-            for (size_t i = 0; i < length; i++)
-            {
-                char it = input[i];
-                if (it != match_char)
-                {
-                    is_all_match_char = false;
-                    break;
-                }
-            }
-
-            if (is_all_match_char)
-            {
-                input.clear();
-                return input;
-            }
-        }
-
-        // 只删除开头
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::START_IGNORE)
-        {
-
-            size_t front_index = 0;
-            size_t length = input.size();
-            for (size_t i = 0; i < length; i++)
-            {
-                char it = input[i];
-                if (i != 0 && it != match_char)
-                {
-                    front_index = i - 1;
-                    break;
-                }
-            }
-
-            if (front_index > 0)
-            {
-                input.erase(0, front_index);
-            }
-
-            return input;
-        }
-
-        // 只删除结尾
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::END_IGNORE)
-        {
-
-            size_t length = input.size();
-            size_t end_index = length;
-
-            for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
-            {
-                if (i >= length || length < 0)
-                {
-                    break;
-                }
-                char it = input[i];
-                if (i != 0 && it != match_char)
-                {
-                    end_index = i + 1;
-                    break;
-                }
-            }
-
-            if (end_index < length)
-            {
-                input.erase(end_index, length);
-            }
-
-            return input;
-        }
-
-        // 只删除中间 并忽略开头结尾出现的
-        if (ignore == hmc_string_util::IGNORE_NULL_CHAR_TYPE::MIDDLE_IGNORE)
-        {
-
-            size_t length = input.size();
-            // 开头结尾 都不等于此字符 删除全部此字符
-            if (input.front() != match_char && input.back() != match_char)
-            {
-                input.erase(std::remove(input.begin(), input.end(), match_char),
-                            input.end());
-                return input;
-            }
-            // 新的开头
-            size_t ready_front_index = 0;
-            // 尾部需要忽略多少个字符
-            size_t ready_end_size = 0;
-
-            // 全部都是 match_char 应当拒绝处理
-            if (input.size() <= ready_end_size + 1)
-            {
-                return input;
-            }
-
-            // 计算出开头
-            if (input.front() == match_char)
-            {
-                for (size_t i = 0; i < length; i++)
-                {
-                    char it = input[i];
-                    if (it != match_char)
-                    {
-                        ready_front_index = i;
-                        break;
-                    }
-                }
-            }
-
-            // 计算出结尾
-            if (input.front() == match_char)
-            {
-                for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
-                {
-                    if (i >= length || length < 0)
-                    {
-                        break;
-                    }
-                    char it = input[i];
-                    if (it != match_char)
-                    {
-                        break;
-                    }
-                    ready_end_size++;
-                }
-            }
-
-            for (size_t i = ready_front_index; i < input.size(); i++)
-            {
-                if (i >= length || length < 0)
-                {
-                    break;
-                }
-
-                // 结尾完成
-                if (i + 1 > input.size() - ready_end_size)
-                {
-                    break;
-                }
-
-                if (input[i] == match_char)
-                {
-                    input.erase(i, 1);
-                    i--;
-                }
-            }
-        }
-
-        return input;
-    }
-
-    bool hmc_string_util::diffNullCharacters(const std::wstring str1, const std::wstring str2, hmc_string_util::IGNORE_NULL_CHAR_TYPE Ignore = hmc_string_util::IGNORE_NULL_CHAR_TYPE::ALL_IGNORE)
-    {
-        std::wstring input_01 = std::wstring(str1.begin(), str1.end());
-        input_01.reserve(input_01.size());
-        std::wstring input_02 = std::wstring(str2.begin(), str2.end());
-        input_02.reserve(input_02.size());
-
-        hmc_string_util::removeMatchCharPtr(input_01, L'\0', Ignore);
-        hmc_string_util::removeMatchCharPtr(input_02, L'\0', Ignore);
-        if (input_01.size() != input_02.size())
-        {
-            return false;
-        }
-
-        const size_t length = input_01.size();
-        for (size_t i = 0; i < length; i++)
-        {
-            const wchar_t it1 = input_01.at(i);
-            const wchar_t it2 = input_02.at(i);
-
-            if (it1 != it2)
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool hmc_string_util::diffNullCharacters(const std::string str1, const std::string str2, hmc_string_util::IGNORE_NULL_CHAR_TYPE Ignore = hmc_string_util::IGNORE_NULL_CHAR_TYPE::ALL_IGNORE)
-    {
-        std::string input_01 = std::string(str1.begin(), str1.end());
-        input_01.reserve(input_01.size());
-        std::string input_02 = std::string(str2.begin(), str2.end());
-        input_02.reserve(input_02.size());
-
-        hmc_string_util::removeMatchCharPtr(input_01, '\0', Ignore);
-        hmc_string_util::removeMatchCharPtr(input_02, '\0', Ignore);
-
-        if (input_01.size() != input_02.size())
-        {
-            return false;
-        }
-
-        const size_t length = input_01.size();
-        for (size_t i = 0; i < length; i++)
-        {
-            const char it1 = input_01.at(i);
-            const char it2 = input_02.at(i);
-
-            if (it1 != it2)
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
 }
 
 #if _HAS_CXX17
