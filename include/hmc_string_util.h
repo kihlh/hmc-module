@@ -67,7 +67,6 @@ namespace hmc_string_util
 	 * @return std::wstring
 	 */
 	extern std::wstring getPathBaseName(const std::wstring &path);
-	
 	/**
 	 * @brief 获取路径的文件名
 	 *
@@ -75,7 +74,54 @@ namespace hmc_string_util
 	 * @return std::wstring
 	 */
 	extern std::string getPathBaseName(const std::string &path);
-
+	/**
+	 * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
+	 * 
+	 * @param path 
+	 * @param filterList 
+	 * @return std::string 
+	 */
+	extern std::string getAsciiPrefix(const std::string &path);
+	/**
+	 * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
+	 * 
+	 * @param path 
+	 * @param filterList 
+	 * @return std::string 
+	 */
+	extern std::string getAsciiPrefix(const std::string &path , char filter);
+	/**
+	 * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
+	 * 
+	 * @param path 
+	 * @param filterList 
+	 * @return std::string 
+	 */
+	extern std::string getAsciiPrefix(const std::string &path, std::vector<char> filterList);
+	/**
+	 * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
+	 * 
+	 * @param path 
+	 * @param filterList 
+	 * @return std::string 
+	 */
+	extern std::wstring getAsciiPrefix(const std::wstring &path);
+	/**
+	 * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
+	 * 
+	 * @param path 
+	 * @param filterList 
+	 * @return std::string 
+	 */
+	extern std::wstring getAsciiPrefix(const std::wstring &path , char filter);
+	/**
+	 * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
+	 * 
+	 * @param path 
+	 * @param filterList 
+	 * @return std::string 
+	 */
+	extern std::wstring getAsciiPrefix(const std::wstring &path, std::vector<char> filterList);
 	// ----------------------------------------------------------------
 	// W2U8
 	// utf 16 to utf8 encoding
@@ -115,34 +161,34 @@ namespace hmc_string_util
 
 	/**
 	 * @brief 先检查 utf8 还是 ascii 编码 还是 ansi 再转为utf8
-	 * 
-	 * @param ansi 
-	 * @return std::string 
+	 *
+	 * @param ansi
+	 * @return std::string
 	 */
 	extern std::string aou8_to_utf8(const std::string input);
 	/**
 	 * @brief 先检查 utf8 还是 ascii 编码 还是 ansi 再转为utf16
-	 * 
-	 * @param ansi 
-	 * @return std::wstring 
+	 *
+	 * @param ansi
+	 * @return std::wstring
 	 */
 	extern std::wstring aou8_to_utf16(const std::string input);
 	/**
 	 * @brief 判断编码长度是否是在ascii编码之内
-	 * 
-	 * @param ansi 
-	 * @return true 
-	 * @return false 
+	 *
+	 * @param ansi
+	 * @return true
+	 * @return false
 	 */
-	extern bool is_ascii(const std::string input);
+	extern inline bool is_ascii(const std::string input);
 	/**
 	 * @brief 判断编码长度是否是在ascii编码之内
-	 * 
-	 * @param ansi 
-	 * @return true 
-	 * @return false 
+	 *
+	 * @param ansi
+	 * @return true
+	 * @return false
 	 */
-	extern bool is_ascii(const std::wstring input);
+	extern inline bool is_ascii(const std::wstring input);
 	extern inline bool is_letter(char Input);
 	extern inline bool is_ascii(char Input);
 	extern inline bool is_letter(wchar_t Input);
@@ -239,18 +285,18 @@ namespace hmc_string_util
 
 	/**
 	 * @brief 转义json文本
-	 * 
+	 *
 	 * @param input 文本
-	 * @param is_to_value 添加 " 
-	 * @return std::wstring 
+	 * @param is_to_value 添加 "
+	 * @return std::wstring
 	 */
 	extern std::wstring escapeJsonString(const std::wstring &input, bool is_to_value = false);
 	/**
 	 * @brief 转义json文本
-	 * 
+	 *
 	 * @param input 文本
-	 * @param is_to_value 添加 " 
-	 * @return std::wstring 
+	 * @param is_to_value 添加 "
+	 * @return std::wstring
 	 */
 	extern std::string escapeJsonString(const std::string &input, bool is_to_value = false);
 
@@ -851,7 +897,7 @@ namespace hmc_string_util
 	 * @param matching 匹配的字符
 	 * @return size_t
 	 */
-	extern size_t removeAllCharPtr(std::wstring& input, wchar_t matching);
+	extern size_t removeAllCharPtr(std::wstring &input, wchar_t matching);
 
 	/**
 	 * @brief 删除指定的字符
@@ -860,7 +906,7 @@ namespace hmc_string_util
 	 * @param matching 匹配的字符
 	 * @return size_t
 	 */
-	extern size_t removeAllCharPtr(std::string& input, char matching);
+	extern size_t removeAllCharPtr(std::string &input, char matching);
 	/**
 	 * @brief 纯文本数组 \0 截断单个string  \0\0结束
 	 *
@@ -874,12 +920,12 @@ namespace hmc_string_util
 	 * @param input
 	 * @return std::string
 	 */
-	extern std::string convertMultiStringArray(const std::vector<std::string> input);	/**
-	 * @brief 纯文本数组 \0 截断单个string  \0\0结束
-	 *
-	 * @param input
-	 * @return std::vector<std::string>
-	 */
+	extern std::string convertMultiStringArray(const std::vector<std::string> input); /**
+																					   * @brief 纯文本数组 \0 截断单个string  \0\0结束
+																					   *
+																					   * @param input
+																					   * @return std::vector<std::string>
+																					   */
 	extern std::vector<std::wstring> convertMultiStringArray(const std::wstring input);
 	/**
 	 * @brief 纯文本数组 \0 截断单个string  \0\0结束
@@ -907,18 +953,18 @@ namespace hmc_string_util
 
 	/**
 	 * @brief 计算出数组文本总长度
-	 * 
-	 * @param input 
-	 * @return size_t 
+	 *
+	 * @param input
+	 * @return size_t
 	 */
-	extern size_t size (const std::vector<std::string> input);
+	extern size_t size(const std::vector<std::string> input);
 	/**
 	 * @brief 计算出数组文本总长度
-	 * 
-	 * @param input 
-	 * @return size_t 
+	 *
+	 * @param input
+	 * @return size_t
 	 */
-	extern size_t size (const std::vector<std::wstring> input);
+	extern size_t size(const std::vector<std::wstring> input);
 
 };
 

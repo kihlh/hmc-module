@@ -115,6 +115,9 @@ typedef enum
 	// js_array_any = 95290,
 } js_valuetype;
 
+typedef std::variant<std::wstring, std::string, std::vector<std::wstring>, std::vector<std::string>> STR_VARIANT_VALUE;
+
+
 typedef std::variant<
 	std::monostate,
 	std::wstring,
@@ -131,7 +134,10 @@ typedef std::variant<
 	std::vector<int>,
 	std::vector<unsigned long long>,
 	// any 只允许存放 std::vector<js_variant_value>  std::map<std::string,js_variant_value>   std::map<std::wstring,js_variant_value>
-	std::pair<js_valuetype, std::any>>
+	std::pair<js_valuetype, std::any>,
+	// 这里的 string 格式化为接送的时候不会被esjson格式化
+	// std::pair<std::monostate, STR_VARIANT_VALUE>>
+	>
 	js_variant_value;
 
 namespace hmc_napi_get_value
@@ -1298,7 +1304,7 @@ class hmc_NodeArgsValue
 {
 private:
 	std::vector<napi_value> args;
-	//std::vector<js_valuetype> type_args;
+	// std::vector<js_valuetype> type_args;
 	napi_env env;
 
 public:
@@ -1656,11 +1662,9 @@ extern std::string formatVariantJSONStr_utf8(std::map<std::wstring, js_variant_v
 extern std::string formatVariantJSONStr_utf8(js_variant_value js_variant);
 extern std::string formatVariantJSONStr_utf8(std::vector<js_variant_value> js_variant);
 
-
 extern std::wstring formatVariantJSONStr_utf16(std::map<std::string, js_variant_value> js_variant);
 extern std::wstring formatVariantJSONStr_utf16(std::map<std::wstring, js_variant_value> js_variant);
 extern std::wstring formatVariantJSONStr_utf16(js_variant_value js_variant);
 extern std::wstring formatVariantJSONStr_utf16(std::vector<js_variant_value> js_variant);
-
 
 #endif // MODE_INTERNAL_INCLUDE_HMC_NAPI_VALUE_UTIL_HPP

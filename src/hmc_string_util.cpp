@@ -73,7 +73,95 @@ namespace hmc_string_util
 
     }
 
+    template <typename T, typename T2>
+    static T GetAsciiPrefix(const T input, T2 filter)
+    {
+        static_assert(std::is_same_v<T, std::string> || std::is_same_v<T, std::wstring>, "Unsupported type preset escape (不支持的类型预设转义)");
+        static_assert(std::is_same_v<T2, std::vector<char>> || std::is_same_v<T2, std::monostate> || std::is_same_v<T2, char>, "Unsupported type preset escape (不支持的类型预设转义)");
+
+        T result;
+        if (input.empty())
+            return result;
+        result.reserve(input.size());
+        for (size_t i = 0; i < input.size(); i++)
+        {
+            auto it = input.at(i);
+
+            if constexpr (std::is_same_v<T2, std::vector<char>> || std::is_same_v<T2, char>)
+            {
+
+                bool is_continue = false;
+
+                if constexpr (std::is_same_v<T2, std::vector<char>>)
+                {
+                    for (auto &&_filter : filter)
+                    {
+
+                        if (it == _filter)
+                        {
+                            is_continue = true;
+                        }
+                    }
+                }
+
+                if constexpr (std::is_same_v<T2, char>)
+                {
+
+                    if (it == filter)
+                    {
+                        is_continue = true;
+                    }
+                }
+
+                if (is_continue)
+                {
+                    continue;
+                }
+            }
+
+            if (!hmc_string_util::is_ascii(it))
+            {
+                break;
+            }
+            result.push_back(it);
+        }
+
+        result.shrink_to_fit();
+
+        return result;
+    }
+
 };
+
+std::string hmc_string_util::getAsciiPrefix(const std::string& path, char filter)
+{
+    return GetAsciiPrefix<std::string, char>(path, filter);
+}
+
+std::string hmc_string_util::getAsciiPrefix(const std::string& path, std::vector<char> filterList)
+{
+    return GetAsciiPrefix<std::string, std::vector<char>>(path, filterList);
+}
+
+std::string hmc_string_util::getAsciiPrefix(const std::string& path)
+{
+    return GetAsciiPrefix<std::string, std::monostate>(path, std::monostate());
+}
+
+std::wstring hmc_string_util::getAsciiPrefix(const std::wstring &path)
+{
+    return GetAsciiPrefix<std::wstring, std::monostate>(path, std::monostate());
+}
+
+std::wstring hmc_string_util::getAsciiPrefix(const std::wstring &path, char filter)
+{
+    return GetAsciiPrefix<std::wstring, char>(path, filter);
+}
+
+std::wstring hmc_string_util::getAsciiPrefix(const std::wstring &path, std::vector<char> filterList)
+{
+    return GetAsciiPrefix<std::wstring, std::vector<char>>(path, filterList);
+}
 
 /**
  * @brief 仅拼接文本
@@ -1340,7 +1428,8 @@ std::wstring hmc_string_util::lpstr_to_string(wchar_t *input, int nBufSize, bool
     result.resize(nBufSize);
     for (size_t i = 0; i < (size_t)nBufSize; i++)
     {
-        if (input != NULL) {
+        if (input != NULL)
+        {
             wchar_t data = static_cast<wchar_t>(input[i]);
             if (earlyTruncation && data == L'\0')
             {
@@ -1348,7 +1437,6 @@ std::wstring hmc_string_util::lpstr_to_string(wchar_t *input, int nBufSize, bool
             }
             result[i] = data;
         }
-
     }
     // result[result.size() - 1] = L'\0';
     return result;
@@ -1622,8 +1710,12 @@ namespace hmc_string_util
             size_t length = input.size();
             size_t end_index = length;
 
-            for (size_t i = (length>0?length - 1:0); i >= 0; i--)
+            for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
             {
+                if (i >= length || length < 0)
+                {
+                    break;
+                }
                 wchar_t it = input[i];
                 if (i != 0 && it != match_char)
                 {
@@ -1682,6 +1774,10 @@ namespace hmc_string_util
             {
                 for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
                 {
+                    if (i >= length || length < 0)
+                    {
+                        break;
+                    }
                     wchar_t it = input[i];
                     if (it != match_char)
                     {
@@ -1788,6 +1884,10 @@ namespace hmc_string_util
 
             for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
             {
+                if (i >= length || length < 0)
+                {
+                    break;
+                }
                 wchar_t it = input[i];
                 if (i != 0 && it != match_char)
                 {
@@ -1846,6 +1946,10 @@ namespace hmc_string_util
             {
                 for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
                 {
+                    if (i >= length || length < 0)
+                    {
+                        break;
+                    }
                     wchar_t it = input[i];
                     if (it != match_char)
                     {
@@ -1950,6 +2054,10 @@ namespace hmc_string_util
 
             for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
             {
+                if (i >= length || length < 0)
+                {
+                    break;
+                }
                 char it = input[i];
                 if (i != 0 && it != match_char)
                 {
@@ -2008,6 +2116,10 @@ namespace hmc_string_util
             {
                 for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
                 {
+                    if (i >= length || length < 0)
+                    {
+                        break;
+                    }
                     char it = input[i];
                     if (it != match_char)
                     {
@@ -2114,6 +2226,10 @@ namespace hmc_string_util
 
             for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
             {
+                if (i >= length || length < 0)
+                {
+                    break;
+                }
                 char it = input[i];
                 if (i != 0 && it != match_char)
                 {
@@ -2172,6 +2288,10 @@ namespace hmc_string_util
             {
                 for (size_t i = (length > 0 ? length - 1 : 0); i >= 0; i--)
                 {
+                    if (i >= length || length < 0)
+                    {
+                        break;
+                    }
                     char it = input[i];
                     if (it != match_char)
                     {
@@ -2183,6 +2303,10 @@ namespace hmc_string_util
 
             for (size_t i = ready_front_index; i < input.size(); i++)
             {
+                if (i >= length || length < 0)
+                {
+                    break;
+                }
 
                 // 结尾完成
                 if (i + 1 > input.size() - ready_end_size)
@@ -3584,7 +3708,7 @@ inline std::string hmc_string_util::slice(const std::string &str, int start, int
     int a_temp = (end > length) ? end : length;
     end = (start > a_temp) ? start : a_temp;
 
-    return str.substr(start, static_cast<long long >(end) - start);
+    return str.substr(start, static_cast<long long>(end) - start);
 }
 
 inline std::wstring hmc_string_util::slice(const std::wstring &str, int start, int end)
@@ -3968,19 +4092,23 @@ inline size_t hmc_string_util::removeAllCharPtr(std::wstring &input, wchar_t mat
     return replacementFrequency;
 }
 
-inline bool hmc_string_util::is_letter(char Input){
+inline bool hmc_string_util::is_letter(char Input)
+{
     return (Input >= L'A' && Input <= L'Z') || (Input >= L'a' && Input <= L'z');
 }
 
-inline bool hmc_string_util::is_ascii(char Input){
-    return Input>=0&& Input<=127;
+inline bool hmc_string_util::is_ascii(char Input)
+{
+    return Input >= 0 && Input <= 127;
 }
 
-inline bool hmc_string_util::is_letter(wchar_t Input) {
+inline bool hmc_string_util::is_letter(wchar_t Input)
+{
     return (Input >= L'A' && Input <= L'Z') || (Input >= L'a' && Input <= L'z');
 }
 
-inline bool hmc_string_util::is_ascii(wchar_t Input) {
+inline bool hmc_string_util::is_ascii(wchar_t Input)
+{
     return Input >= 0 && Input <= 127;
 }
 
@@ -4069,10 +4197,10 @@ std::vector<std::string> hmc_string_util::convertMultiStringArray(const std::str
 std::string hmc_string_util::aou8_to_utf8(const std::string input)
 {
     std::string result;
-    if(
-        hmc_string_util::is_ascii(static_cast<const std::string>(input))||
-        hmc_string_util::is_utf8(static_cast<const std::string>(input))
-        ){
+    if (
+        hmc_string_util::is_ascii(static_cast<const std::string>(input)) ||
+        hmc_string_util::is_utf8(static_cast<const std::string>(input)))
+    {
         result.append(input.begin(), input.end());
         return result;
     }
@@ -4084,12 +4212,14 @@ std::wstring hmc_string_util::aou8_to_utf16(const std::string input)
 {
     std::wstring result;
 
-    if (hmc_string_util::is_ascii(static_cast<const std::string>(input))) {
+    if (hmc_string_util::is_ascii(static_cast<const std::string>(input)))
+    {
         result = std::move(hmc_string_util::asciiConvers(input));
         return result;
     }
 
-    if (hmc_string_util::is_utf8(static_cast<const std::string>(input))) {
+    if (hmc_string_util::is_utf8(static_cast<const std::string>(input)))
+    {
         result = std::move(hmc_string_util::utf8_to_utf16(input));
         return result;
     }

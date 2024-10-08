@@ -1,5 +1,6 @@
 ﻿#include <hmc_path_util.h>
 #include <hmc_string_util.h>
+#include <hmc_util.h>
 #include <regex>
 #include <shlwapi.h>
 #pragma comment(lib, "Shlwapi.lib")
@@ -11,45 +12,13 @@ namespace ____O_O____
 
     using T = std::wstring;
 
-    static std::wstring GetAllBeginAscii(const std::wstring input);
-    static std::string GetAllBeginAscii(const std::string input);
-
-    template <typename T>
-    static T HMC_GET_ALL_BEGIN_ASCII(const T input)
-    {
-        static_assert(std::is_same_v<T, std::string> || std::is_same_v<T, std::wstring>, "Unsupported type preset escape (不支持的类型预设转义)");
-
-        T result;
-        if (input.empty())
-            return result;
-        result.reserve(input.size());
-        for (size_t i = 0; i < input.size(); i++)
-        {
-            auto it = input.at(i);
-
-            if (it == '\0')
-            {
-                continue;
-            }
-            if (!hmc_string_util::is_ascii(it))
-            {
-                break;
-            }
-            result.push_back(it);
-        }
-
-        result.shrink_to_fit();
-
-        return result;
-    }
-
     template <typename T>
     static bool isNtPath(const T Input)
     {
         static_assert(std::is_same_v<T, std::string> || std::is_same_v<T, std::wstring>, "Unsupported type preset escape (不支持的类型预设转义)");
 
         bool result = false;
-        T input = GetAllBeginAscii(Input);
+        T input = formatSeparator<T>(hmc_string_util::getAsciiPrefix(Input));
         input = hmc_string_util::text_to_lower(input);
 
         // "\\Device\\HarddiskVolume2"
@@ -98,7 +67,7 @@ namespace ____O_O____
     {
         static_assert(std::is_same_v<T, std::string> || std::is_same_v<T, std::wstring>, "Unsupported type preset escape (不支持的类型预设转义)");
         bool result = false;
-        T input = GetAllBeginAscii(Input);
+        T input = formatSeparator<T>(hmc_string_util::getAsciiPrefix(Input));
         input = hmc_string_util::text_to_lower(input);
         // '\\\\?\\Volume{68de5ae6-0000-0000-0000-100000000000}\\'
         if (input.empty() || input.size() < 8)
@@ -150,29 +119,55 @@ namespace ____O_O____
         return result;
     }
 
-    template <typename chVolumeParse__T, typename ThisString__T>
-    static chVolumeParse__T ParseVolume(const ThisString__T Input)
+    template <typename chVolumeParse__T, typename T>
+    // using chVolumeParse__T = hmc_path_util::chVolumeParseW;
+    // using T = std::wstring;
+    static chVolumeParse__T ParseVolume(const T Input)
     {
 
-        chVolumeParse__T result = {ThisString__T(), ThisString__T(), false};
+        chVolumeParse__T result;
+        result.valid = false;
 
-        static_assert(std::is_same_v<ThisString__T, std::string> || std::is_same_v<ThisString__T, std::wstring>, "Unsupported type preset escape (不支持的类型预设转义)");
+        static_assert(std::is_same_v<T, std::string> || std::is_same_v<T, std::wstring>, "Unsupported type preset escape (不支持的类型预设转义)");
 
-        ThisString__T input2 = GetAllBeginAscii(Input);
-        ThisString__T input = hmc_string_util::text_to_lower(input2);
+        T input2 = formatSeparator<T>(hmc_string_util::getAsciiPrefix(Input));
+        T input = hmc_string_util::text_to_lower(input2);
 
         // '\\\\?\\Volume{68de5ae6-0000-0000-0000-100000000000}\\'
         if (input.empty() || input.size() < 8)
             return result;
 
         // '\\\\?\\Volume{68de5ae6-0000-0000-0000-100000000000}\\' -> 'Volume{68de5ae6-0000-0000-0000-100000000000}\\'
-        hmc_path_util::removeUnc(&input);
+        size_t uncSize = hmc_path_util::removeUnc(&input);
         hmc_path_util::removeUnc(&input2);
 
         if (input.empty() || input.size() < 5)
             return result;
 
-        const ThisString__T voiumeName = ThisString__T({'v', 'o', 'l', 'u', 'm', 'e'});
+        if (false)
+        {
+        do_return:
+            if (result.valid)
+            {
+                auto parse = hmc_path_util::parse(result.sub);
+                result.base = parse.base;
+                result.ext = parse.ext;
+                result.name = parse.name;
+                result.root = result.resolve;
+                result.dir.append(result.root);
+
+                if (result.dir.back() != hmc_path_util::SEPARATOR)
+                {
+                    result.dir.push_back(hmc_path_util::SEPARATOR);
+                }
+
+                result.dir.append(parse.dir);
+                result.dir = formatSeparator<T>(result.dir);
+            }
+            return result;
+        }
+
+        const T voiumeName = T({'v', 'o', 'l', 'u', 'm', 'e'});
 
         // \\ 第一个
         size_t firstSlashPos = input.find(voiumeName, 0);
@@ -217,36 +212,78 @@ namespace ____O_O____
                 auto &at = input2.at(i);
                 result.cuid.push_back(at);
             }
+
+            // ?SUB-> [   \\\\?\\Volume{000000-0000-0000-0000-100000000000}  ]  \\123456789\\\\123456
+            if (!result.cuid.empty() && (end_pos + uncSize + 2) < input2.size())
+            {
+                size_t sub_pos = Input.find(result.cuid, 0);
+                if (sub_pos != Input.npos)
+                {
+                    sub_pos = sub_pos + result.cuid.size() + 1;
+                    if (sub_pos > result.cuid.size() && sub_pos != Input.npos && sub_pos < Input.size())
+                    {
+                        result.sub = T(Input.begin() + sub_pos, Input.end());
+                    }
+                }
+            }
+
             result.cuid.shrink_to_fit();
             result.valid = true;
-            result.resolve = ThisString__T({hmc_path_util::SEPARATOR, hmc_path_util::SEPARATOR, '?', hmc_path_util::SEPARATOR, 'V', 'o', 'l', 'u', 'm', 'e', '{'});
+            result.resolve = T({hmc_path_util::SEPARATOR, hmc_path_util::SEPARATOR, '?', hmc_path_util::SEPARATOR, 'V', 'o', 'l', 'u', 'm', 'e', '{'});
             result.resolve.append(result.cuid);
             result.resolve.push_back('}');
             result.resolve.push_back(hmc_path_util::SEPARATOR);
         }
-
+        goto do_return;
         return result;
     }
 
-    template <typename chNtParse_T, typename ThisString_T>
-    static chNtParse_T ParseNT(const ThisString_T Input)
+    template <typename chNtParse_T, typename T>
+    static chNtParse_T ParseNT(const T Input)
     {
-        chNtParse_T result = {ThisString_T(), ThisString_T(), ThisString_T(), ThisString_T(), 0, false};
-        static_assert(std::is_same_v<ThisString_T, std::string> || std::is_same_v<ThisString_T, std::wstring>, "Unsupported type preset escape (不支持的类型预设转义)");
+        chNtParse_T result;
+        result.valid = false;
+        result.index = 0;
 
-        ThisString_T input2 = GetAllBeginAscii(Input);
-        ThisString_T input = hmc_string_util::text_to_lower(input2);
+        static_assert(std::is_same_v<T, std::string> || std::is_same_v<T, std::wstring>, "Unsupported type preset escape (不支持的类型预设转义)");
+
+        T input2 = formatSeparator<T>(hmc_string_util::getAsciiPrefix(Input));
+        T input = hmc_string_util::text_to_lower(input2);
 
         // "\\Device\\HarddiskVolume2"
         if (input.empty() || input.size() < 8)
             return result;
 
         // "\\\\?\\\\Device\\\\HarddiskVolume2" -> '\\Device\\HarddiskVolume2'
-        hmc_path_util::removeUnc(&input);
+        size_t uncSize = hmc_path_util::removeUnc(&input);
         hmc_path_util::removeUnc(&input2);
 
         if (input.empty() || input.size() < 5)
             return result;
+
+        if (false)
+        {
+        do_return:
+            if (result.valid)
+            {
+                auto parse = hmc_path_util::parse(result.sub);
+                result.base = parse.base;
+                result.ext = parse.ext;
+                result.name = parse.name;
+                result.root = result.resolve;
+                result.root.push_back(hmc_path_util::SEPARATOR);
+                result.dir.append(result.root);
+
+                if (result.dir.back() != hmc_path_util::SEPARATOR)
+                {
+                    result.dir.push_back(hmc_path_util::SEPARATOR);
+                }
+
+                result.dir.append(parse.dir);
+                result.dir = formatSeparator<T>(result.dir);
+            }
+            return result;
+        }
 
         if (input[0] == '\\')
         {
@@ -258,7 +295,7 @@ namespace ____O_O____
                 // \\ 第二个
                 size_t secondSlashPos = input.find('\\', firstSlashPos + 1);
 
-                ThisString_T deviceType = ThisString_T(input2.begin() + (firstSlashPos + 1), input2.begin() + secondSlashPos);
+                T deviceType = T(input2.begin() + (firstSlashPos + 1), input2.begin() + secondSlashPos);
 
                 if (deviceType.empty())
                 {
@@ -273,12 +310,12 @@ namespace ____O_O____
                         return result;
                     }
 
-                    ThisString_T volumeName = ThisString_T(input.begin() + secondSlashPos + 1, input.end());
+                    T volumeName = T(input.begin() + secondSlashPos + 1, input.end());
 
-                    ThisString_T HarddiskVolume = ThisString_T({'h', 'a', 'r', 'd', 'd', 'i', 's', 'k', 'v', 'o', 'l', 'u', 'm', 'e'});
+                    T HarddiskVolume = T({'h', 'a', 'r', 'd', 'd', 'i', 's', 'k', 'v', 'o', 'l', 'u', 'm', 'e'});
                     size_t volumeNameIndex = volumeName.find(HarddiskVolume);
 
-                    ThisString_T volumeNameCopy = ThisString_T(input2.begin() + secondSlashPos + 1, input2.end());
+                    T volumeNameCopy = T(input2.begin() + secondSlashPos + 1, input2.end());
                     if (volumeNameIndex != volumeName.npos)
                     {
 
@@ -286,12 +323,15 @@ namespace ____O_O____
                         std::string index_str;
 
                         bool is_number_eq = false;
+                        size_t root_end_pos = 0;
+
                         for (size_t i = volumeNameIndex; i < volumeNameCopy.size(); i++)
                         {
                             auto &at = volumeNameCopy.at(i);
 
-                            if (is_number_eq && hmc_string_util::is_letter(at))
+                            if (is_number_eq && !(at <= '9' && at >= '0'))
                             {
+                                root_end_pos = i;
                                 break;
                             }
 
@@ -311,13 +351,27 @@ namespace ____O_O____
                             return result;
                         }
 
+                        // ?SUB-> [   \\\\?\\\\Device\\HarddiskVolume2\\  ]  \\123456789\\\\123456
+                        if (!result.volume_id.empty())
+                        {
+                            size_t sub_pos = Input.find(result.volume_id, 0);
+                            if (sub_pos != Input.npos)
+                            {
+                                sub_pos = sub_pos + result.volume_id.size() + 1;
+                                if (sub_pos > result.volume_id.size() && sub_pos != Input.npos && sub_pos < Input.size())
+                                {
+                                    result.sub = T(Input.begin() + sub_pos, Input.end());
+                                }
+                            }
+                        }
+
                         result.device_type = std::move(deviceType);
-                        // result.resolve = ThisString_T({'\\','\\','?','\\'});
+                        // result.resolve = T({'\\','\\','?','\\'});
                         result.resolve.push_back(hmc_path_util::SEPARATOR);
                         result.resolve.append(result.device_type);
                         result.resolve.push_back(hmc_path_util::SEPARATOR);
                         result.resolve.append(result.volume_id);
-                        result.resolve_unc.append(ThisString_T({hmc_path_util::SEPARATOR, hmc_path_util::SEPARATOR, '?', hmc_path_util::SEPARATOR}));
+                        result.resolve_unc.append(T({hmc_path_util::SEPARATOR, hmc_path_util::SEPARATOR, '?', hmc_path_util::SEPARATOR}));
                         result.resolve_unc.append(result.resolve);
                         result.valid = true;
                     }
@@ -325,37 +379,16 @@ namespace ____O_O____
             }
         }
 
+        goto do_return;
         return result;
     }
 
-    /**
-     * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
-     *
-     * @param input
-     * @return std::wstring
-     */
-    static std::wstring GetAllBeginAscii(const std::wstring input)
-    {
-        return HMC_GET_ALL_BEGIN_ASCII<std::wstring>(input);
-    }
-
-    /**
-     * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
-     *
-     * @param input
-     * @return std::string
-     */
-    static std::string GetAllBeginAscii(const std::string input)
-    {
-        return HMC_GET_ALL_BEGIN_ASCII<std::string>(input);
-    }
-
     template <typename T>
-    static T baseName(const T path)
+    static T baseName(const T _path)
     {
         static_assert(std::is_same_v<T, std::string> || std::is_same_v<T, std::wstring>, "Unsupported type preset escape (不支持的类型预设转义)");
         T result = T();
-
+        T path = formatSeparator<T>(_path);
         long long length = path.size();
 
         if (path.empty())
@@ -368,11 +401,10 @@ namespace ____O_O____
             size_t i = static_cast<size_t>(_i);
 
             // 防止有可能的 -1 越界
-            if (i > path.size())
+            if (i >= path.size())
             {
                 break;
             }
-
 
             if constexpr (std::is_same_v<T, std::wstring>)
             {
@@ -413,11 +445,12 @@ namespace ____O_O____
     }
 
     template <typename T>
-    static T extName(const T path)
+    static T extName(const T _path)
     {
         static_assert(std::is_same_v<T, std::string> || std::is_same_v<T, std::wstring>, "Unsupported type preset escape (不支持的类型预设转义)");
         T result = T();
 
+        T path = formatSeparator<T>(_path);
         if (path.empty() || hmc_path_util::isPathSeparator(path.back()))
         {
             return result;
@@ -508,7 +541,7 @@ namespace ____O_O____
     {
         static_assert(std::is_same_v<T, std::string> || std::is_same_v<T, std::wstring>, "Unsupported type preset escape (不支持的类型预设转义)");
         T result = T();
-        T input = T(Input.begin(), Input.end());
+        T input = formatSeparator<T>(T(Input.begin(), Input.end()));
 
         if (input.empty())
         {
@@ -540,16 +573,18 @@ namespace ____O_O____
         return result;
     }
 
-    template <typename chParse__T, typename ThisString__T>
-    static chParse__T Parse(const ThisString__T Input)
+    template <typename chParse__T, typename T>
+    static chParse__T Parse(const T _Input)
     {
         static_assert(std::is_same_v<T, std::string> || std::is_same_v<T, std::wstring>, "Unsupported type preset escape (不支持的类型预设转义)");
         chParse__T result = chParse__T();
 
-        if (Input.empty())
+        if (_Input.empty())
         {
             return result;
         }
+
+        T Input = formatSeparator<T>(_Input);
 
         result.root = hmc_path_util::rootName(Input);
         result.dir = hmc_path_util::dirName(Input);
@@ -566,7 +601,7 @@ namespace ____O_O____
 
         T result = T();
 
-        T Input = T(_Input.begin(), _Input.end());
+        T Input = formatSeparator<T>(_Input);
 
         if (hmc_path_util::isUncPath(Input))
         {
@@ -614,7 +649,7 @@ namespace ____O_O____
     template <typename T>
     static T getRootPath(const T Input)
     {
-        T input = GetAllBeginAscii(Input);
+        T input = formatSeparator<T>(hmc_string_util::getAsciiPrefix(Input));
 
         T result;
         if (hmc_path_util::isVolumePath(input))
@@ -650,117 +685,232 @@ namespace ____O_O____
         return result;
     }
 
-}
-
-bool hmc_path_util::isUncPath(const std::string Input)
-{
-    bool result = false;
-    std::string input = ____O_O____::GetAllBeginAscii(Input);
-
-    if (input.size() > 4)
+    template <typename T>
+    static T formatSeparator(const T _Input)
     {
-        result = input[0] == L'\\' && input[1] == L'\\' && input[2] == L'?' && input[3] == L'\\';
-    }
-    return result;
-}
+        T Input;
+        Input.reserve(_Input.size());
 
-bool hmc_path_util::isUncPath(const std::wstring Input)
-{
-    bool result = false;
-    std::wstring input = ____O_O____::GetAllBeginAscii(Input);
-    if (input.size() > 4)
-    {
-        result = input[0] == L'\\' && input[1] == L'\\' && input[2] == L'?' && input[3] == L'\\';
-    }
-    return result;
-}
-
-bool hmc_path_util::isDosPath(const std::wstring Input)
-{
-    bool result = false;
-    std::wstring input = ____O_O____::GetAllBeginAscii(Input);
-
-    bool IS_UNC_PRE_FIX = isUncPath(input);
-
-    if (IS_UNC_PRE_FIX)
-    {
-        if (input.size() > 5)
+        for (size_t i = 0; i < _Input.size(); ++i)
         {
-            const wchar_t AT = input[4];
-            const wchar_t FIX = input[5];
+
+            if (i >= _Input.size())
+                break;
+
+            auto &at = _Input.at(i);
+
+            if (at == '\0')
+            {
+                continue;
+            }
+
+            if (at == '\\' || at == '/')
+            {
+                auto sep = 0 + hmc_path_util::SEPARATOR;
+                Input.push_back(sep);
+                continue;
+            }
+
+            Input.push_back(at);
+        }
+
+        T result;
+        if (Input.empty())
+        {
+            return result;
+        }
+
+        result.reserve(Input.size());
+
+        size_t start = 0;
+
+        // \\?\
+
+        if constexpr (std::is_same_v<T, std::wstring>)
+        {
+            if (start == 0 && Input.compare(0, 5, L"\\\\?\\\\") == 0)
+            {
+                result.append(Input, 0, 5);
+                start = 5;
+            }
+
+            if (start == 0 && Input.compare(0, 4, L"\\\\?\\") == 0)
+            {
+                result.append(Input, 0, 4);
+                start = 4;
+            }
+        }
+
+        if constexpr (std::is_same_v<T, std::string>)
+        {
+            if (start == 0 && Input.compare(0, 5, "\\\\?\\\\") == 0)
+            {
+                result.append(Input, 0, 5);
+                start = 5;
+            }
+
+            if (start == 0 && Input.compare(0, 4, "\\\\?\\") == 0)
+            {
+                result.append(Input, 0, 4);
+                start = 4;
+            }
+        }
+
+        for (size_t i = start; i < Input.size(); ++i)
+        {
+
+            if (i >= Input.size())
+            {
+                break;
+            }
+
+            auto it = Input.at(i);
+
+            if (i > 0 && it == hmc_path_util::SEPARATOR && result.back() == hmc_path_util::SEPARATOR)
+            {
+                continue;
+            }
+
+            result.push_back(it);
+        }
+
+        if constexpr (std::is_same_v<T, std::wstring>)
+        {
+            if (result.compare(0, 3, L"\\?\\") == 0)
+            {
+                result.insert(0, 1, '\\');
+            }
+        }
+
+        if constexpr (std::is_same_v<T, std::string>)
+        {
+            if (result.compare(0, 3, "\\?\\") == 0)
+            {
+                result.insert(0, 1, '\\');
+            }
+        }
+
+        return result;
+    }
+
+    template <typename T>
+    static size_t removeUnc(T *Input)
+    {
+        size_t result = 0;
+        if (Input == NULL || Input->size() < 5)
+            return result;
+
+        if (hmc_path_util::isUncPath(*Input))
+        {
+            Input->erase(0, 4);
+            result = 4;
+            return result;
+        }
+        return result;
+    }
+
+    template <typename T>
+    static bool isDosPath(T Input)
+    {
+        bool result = false;
+        T input = hmc_string_util::getAsciiPrefix(Input);
+
+        bool IS_UNC_PRE_FIX = hmc_path_util::isUncPath(input);
+
+        if (IS_UNC_PRE_FIX)
+        {
+            if (input.size() > 5)
+            {
+                if constexpr (std::is_same_v<T, std::string>)
+                {
+                    const char AT = input[4];
+                    const char FIX = input[5];
+
+                    if (FIX == ':' && hmc_string_util::is_letter(AT))
+                    {
+                        result = true;
+                        return result;
+                    }
+                }
+                if constexpr (std::is_same_v<T, std::wstring>)
+                {
+                    const wchar_t AT = input[4];
+                    const wchar_t FIX = input[5];
+
+                    if (FIX == ':' && hmc_string_util::is_letter(AT))
+                    {
+                        result = true;
+                        return result;
+                    }
+                }
+            }
+        }
+        if constexpr (std::is_same_v<T, std::wstring>)
+        {
+            const wchar_t AT = input[0];
+            const wchar_t FIX = input[1];
 
             if (FIX == ':' && hmc_string_util::is_letter(AT))
             {
                 result = true;
-                return result;
             }
         }
+        if constexpr (std::is_same_v<T, std::string>)
+        {
+            const char AT = input[0];
+            const char FIX = input[1];
+
+            if (FIX == ':' && hmc_string_util::is_letter(AT))
+            {
+                result = true;
+            }
+        }
+
+        return result;
     }
 
-    const wchar_t AT = input[0];
-    const wchar_t FIX = input[1];
-
-    if (FIX == ':' && hmc_string_util::is_letter(AT))
+    template <typename T>
+    static bool isUncPath(T Input)
     {
-        result = true;
+        bool result = false;
+        T input = hmc_string_util::getAsciiPrefix(Input);
+        if (input.size() > 4)
+        {
+            result = input[0] == L'\\' && input[1] == L'\\' && input[2] == L'?' && input[3] == L'\\';
+        }
+        return result;
     }
 
-    return result;
+}
+
+bool hmc_path_util::isUncPath(const std::string Input)
+{
+    return ____O_O____::isUncPath<std::string>(Input);
+}
+
+bool hmc_path_util::isUncPath(const std::wstring Input)
+{
+    return ____O_O____::isUncPath<std::wstring>(Input);
+}
+
+bool hmc_path_util::isDosPath(const std::wstring Input)
+{
+    return ____O_O____::isDosPath<std::wstring>(Input);
 }
 
 bool hmc_path_util::isDosPath(const std::string Input)
 {
-    bool result = false;
-    std::string input = ____O_O____::GetAllBeginAscii(Input);
-
-    bool IS_UNC_PRE_FIX = isUncPath(input);
-
-    if (IS_UNC_PRE_FIX)
-    {
-        if (input.size() > 5)
-        {
-            const char AT = input[4];
-            const char FIX = input[5];
-
-            if (FIX == ':' && ((AT >= L'A' && AT <= L'Z') || (AT >= L'a' && AT <= L'z')))
-            {
-                result = true;
-                return result;
-            }
-        }
-    }
-
-    const char AT = input[0];
-    const char FIX = input[1];
-
-    if (FIX == ':' && hmc_string_util::is_letter(AT))
-    {
-        result = true;
-    }
-
-    return result;
+    return ____O_O____::isDosPath<std::string>(Input);
 }
 
-void hmc_path_util::removeUnc(std::string *Input)
+size_t hmc_path_util::removeUnc(std::string *Input)
 {
-    if (Input == NULL || Input->size() < 5)
-        return;
-
-    if (isUncPath(*Input))
-    {
-        Input->erase(0, 4);
-    }
+    return ____O_O____::removeUnc<std::string>(Input);
 }
 
-void hmc_path_util::removeUnc(std::wstring *Input)
+size_t hmc_path_util::removeUnc(std::wstring *Input)
 {
-    if (Input == NULL || Input->size() < 5)
-        return;
-
-    if (isUncPath(*Input))
-    {
-        Input->erase(0, 4);
-    }
+    return ____O_O____::removeUnc<std::wstring>(Input);
 }
 
 bool hmc_path_util::isNtPath(const std::wstring Input)
@@ -783,8 +933,6 @@ bool hmc_path_util::isVolumePath(const std::string Input)
     return ____O_O____::isVolumePath<std::string>(Input);
 }
 
-hmc_path_util::chVolumeParseA hmc_path_util::parseVolume(const std::string Input);
-
 hmc_path_util::chVolumeParseW hmc_path_util::parseVolume(const std::wstring Input)
 {
     return ____O_O____::ParseVolume<hmc_path_util::chVolumeParseW, std::wstring>(Input);
@@ -794,9 +942,6 @@ hmc_path_util::chVolumeParseA hmc_path_util::parseVolume(const std::string Input
 {
     return ____O_O____::ParseVolume<hmc_path_util::chVolumeParseA, std::string>(Input);
 }
-
-// using ThisString_T = std::wstring;
-// using chNtParse_T = hmc_path_util::chNtParseW;
 
 hmc_path_util::chNtParseA hmc_path_util::parseNt(const std::string Input)
 {
@@ -901,4 +1046,26 @@ std::wstring hmc_path_util::getRootPath(const std::wstring Input)
 std::string hmc_path_util::getRootPath(const std::string Input)
 {
     return ____O_O____::getRootPath<std::string>(Input);
+}
+
+std::string hmc_path_util::formatSeparator(const std::string Input)
+{
+    return ____O_O____::formatSeparator<std::string>(Input);
+}
+
+std::wstring hmc_path_util::formatSeparator(const std::wstring Input)
+{
+    return ____O_O____::formatSeparator<std::wstring>(Input);
+}
+
+void hmc_path_util::formatSeparator(std::string *Input)
+{
+    auto result = ____O_O____::formatSeparator<std::string>(*Input);
+    *Input = result;
+}
+
+void hmc_path_util::formatSeparator(std::wstring *Input)
+{
+    auto result = ____O_O____::formatSeparator<std::wstring>(*Input);
+    *Input = result;
 }

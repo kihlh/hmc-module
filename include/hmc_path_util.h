@@ -37,36 +37,40 @@ namespace hmc_path_util
         std::string root;
     };
 
-    struct chVolumeParseA
+    struct chVolumeParseA : public chParseA
     {
         std::string cuid;
         std::string resolve;
+        std::string sub;
         bool valid;
     };
 
-    struct chVolumeParseW
+    struct chVolumeParseW : public chParseW
     {
         std::wstring cuid;
         std::wstring resolve;
+        std::wstring sub;
         bool valid;
     };
 
-    struct chNtParseA
+    struct chNtParseA  : public chParseA
     {
         std::string volume_id;
         std::string device_type;
         std::string resolve;
         std::string resolve_unc;
+        std::string sub;
         std::uint32_t index;
         bool valid;
     };
 
-    struct chNtParseW
+    struct chNtParseW : public chParseW
     {
         std::wstring volume_id;
         std::wstring device_type;
         std::wstring resolve;
         std::wstring resolve_unc;
+        std::wstring sub;
         std::uint32_t index;
         bool valid;
     };
@@ -94,7 +98,7 @@ namespace hmc_path_util
      * @return true
      * @return false
      */
-    extern void removeUnc(std::wstring *Input);
+    extern size_t removeUnc(std::wstring *Input);
     /**
      * @brief 删除开头的  \\\\?\\
      *
@@ -102,7 +106,53 @@ namespace hmc_path_util
      * @return true
      * @return false
      */
-    extern void removeUnc(std::string *Input);
+    extern size_t removeUnc(std::string *Input);
+
+    /**
+     * @brief 替换为win标准的 \\ 路径分隔符号
+     * @example \\\\/ -> \\
+     * @example \\\\?\\\\123 -> \\\\?\\123
+     * @example /1234\\2344  -> \\1234\\2344
+     * @example C:\\/\\Users\\Example -> C:\\Users\\Example
+     * 
+     * @param Input 
+     * @return size_t 
+     */
+    extern void formatSeparator(std::wstring *Input);
+    /**
+     * @brief 替换为win标准的 \\ 路径分隔符号
+     * @example \\\\/ -> \\
+     * @example \\\\?\\\\123 -> \\\\?\\123
+     * @example /1234\\2344  -> \\1234\\2344
+     * @example C:\\/\\Users\\Example -> C:\\Users\\Example
+     * 
+     * @param Input 
+     * @return size_t 
+     */
+    extern void formatSeparator(std::string *Input);
+    /**
+     * @brief 替换为win标准的 \\ 路径分隔符号
+     * @example \\\\/ -> \\
+     * @example \\\\?\\\\123 -> \\\\?\\123
+     * @example /1234\\2344  -> \\1234\\2344
+     * @example C:\\/\\Users\\Example -> C:\\Users\\Example
+     * 
+     * @param Input 
+     * @return size_t 
+     */
+    extern std::wstring formatSeparator(const std::wstring Input);
+    /**
+     * @brief 替换为win标准的 \\ 路径分隔符号
+     * @example \\\\/ -> \\
+     * @example \\\\?\\\\123 -> \\\\?\\123
+     * @example /1234\\2344  -> \\1234\\2344
+     * @example C:\\/\\Users\\Example -> C:\\Users\\Example
+     * 
+     * @param Input 
+     * @return size_t 
+     */
+    extern std::string formatSeparator(const std::string Input);
+
     /**
      * @brief 判断是否是 \\\\?\\ 开头的标准dos路径 并忽略空白字符
      * @example \\\\?\\F:\\sss\\

@@ -988,6 +988,11 @@ std::vector<MOUSEMOVEPOINT> hmc_mouse::getMouseMovePoints()
     // 处理多屏幕数据
     for (int i = PointsLength - 1; i >= 0; i--)
     {
+        
+        if(i>=PointsLength||PointsLength<0){
+            break;
+        }
+
         auto &mp = mobileProgressList[i];
 
         switch (dwMode)

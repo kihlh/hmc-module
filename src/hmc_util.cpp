@@ -360,6 +360,10 @@ std::string hmc_util::getBaseName(const std::string path)
 
     for (int i = length - 1; i >= 0; i--)
     {
+        if(i>=length||length<0){
+            break;
+        }
+        
         auto it = path.at(i);
 
         if (it == '\\' || it == '/')
@@ -381,6 +385,11 @@ std::wstring hmc_util::getBaseName(const std::wstring path)
 
     for (int i = length - 1; i >= 0; i--)
     {
+                
+        if(i>=length||length<0){
+            break;
+        }
+
         auto it = path.at(i);
 
         if (it == '\\' || it == '/')

@@ -26,7 +26,6 @@ std::wstring hmc_usb_util::formatVolumeName(std::wstring VolumeName)
 {
     DWORD VolumePathNamesLeng = MAX_PATH + 1;
     std::wstring VolumePathNames = L"";
-    HMC_EvalAuto({ hmc_util::removeAllCharPtr(VolumePathNames, L'\0'); });
 
     VolumePathNames.resize(VolumePathNamesLeng);
 
@@ -50,7 +49,6 @@ std::wstring hmc_usb_util::formatVolumeNtName(std::wstring VolumeName)
 {
     DWORD VolumePathNamesLeng = MAX_PATH + 1;
     std::wstring VolumePathNames = L"";
-    HMC_EvalAuto({ hmc_util::removeAllCharPtr(VolumePathNames, L'\0'); });
 
     VolumePathNames.resize(VolumePathNamesLeng);
 
@@ -172,6 +170,7 @@ std::vector<std::wstring> hmc_usb_util::getUsbDevsNameList()
 
                     for (int i = 3 - 1; i >= 0; i--)
                     {
+                        
                         str_device_path.replace(str_device_path.find(L"#"), 1, L"\\");
                     }
 
@@ -442,8 +441,6 @@ std::wstring hmc_usb_util::formatVolumePath(std::wstring VolumePath)
 {
     std::wstring result(VolumePath.begin(), VolumePath.begin() + VolumePath.size());
     hmc_util::removeAllCharPtr(result, L'\0');
-
-    HMC_EvalAuto({ hmc_util::removeAllCharPtr(result, L'\0'); });
 
     bool IS_UNC_PRE_FIX = false;
 
