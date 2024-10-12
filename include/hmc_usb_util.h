@@ -38,7 +38,10 @@ namespace hmc_usb_util
         std::wstring name;
         // 驱动器 磁盘号    "\\Device\\HarddiskVolume6"
         std::wstring device;
-
+        // 68de5ae6-0000-0000-0000-100000000000
+        std::wstring volume_id;
+        // HarddiskVolume6
+        std::wstring device_id;
         std::wstring to_json();
 
         static std::wstring to_json(chVolume Volume);

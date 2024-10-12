@@ -3,6 +3,7 @@
 #include "hmc_string_util.h"
 #include "hmc_util.h"
 #include "hmc_registr_util.h"
+#include "hmc_string_util.h"
 
 #include <windows.h>
 #include <string>
@@ -27,6 +28,8 @@
 
 #include <gdiplus.h>
 #endif // !_GDIPLUS_HPP
+
+namespace HS = hmc_string_util;
 
 class GetThumbnail
 {
@@ -418,7 +421,6 @@ namespace hmc_shell_util
         hRes = pIShellLink->QueryInterface(IID_IPersistFile, (void **)&pIPersistFile);
         if (!SUCCEEDED(hRes))
         {
-
             return result;
         }
 
@@ -485,7 +487,7 @@ int hmc_shell_util::ShellOpen::openApp(std::wstring AppPath, std::wstring Comman
     const LPCWSTR flag = isAdmin ? L"runas" : L"open";
     const int sw_command = isHide ? 0 : 5;
 
-    HINSTANCE hResult = ShellExecuteW(
+    HINSTANCE hResult = ::ShellExecuteW(
         // hwnd
         NULL,
         // lpOperation
@@ -510,64 +512,192 @@ bool hmc_shell_util::chShortcutLinkItem::isValid()
 hmc_shell_util::chShortcutLinkItem::chShortcutLinkItem()
 {
     // 目标路径
-    path = L"";
+    path = std::wstring();
     // 启动属性
     showCmd = 0;
     // 启动命令
-    args = L"";
+    args = std::wstring();
     // 描述
-    desc = L"";
+    desc = std::wstring();
     // 进程图标(例如来自1.dll)
-    icon = L"";
+    icon = std::wstring();
     // 图标索引位置
     iconIndex = 0;
     // 工作环境文件夹
-    cwd = L"";
+    cwd = std::wstring();
     // hotkey
     hotkey = 0;
 }
 
-hmc_shell_util::chShortcutLinkItem hmc_shell_util::getShortcutLink(std::wstring lnkPath)
+std::wstring hmc_shell_util::chShortcutLinkItem::to_json()
 {
-    auto lnkItem = chShortcutLinkItem();
+    std::wstring result;
+    size_t size_len = path.size() + args.size() + desc.size() + icon.size() + cwd.size() + MAX_PATH;
+    result.reserve(size_len);
+    result.push_back('{');
 
-    IShellLinkW *GetShellLinkContent = NULL;
+    const wchar_t* format = 
+    LR"( "path"      : {path}      ,)"
+    LR"( "showCmd"   : {showCmd}   ,)"
+    LR"( "args"      : {args}      ,)"
+    LR"( "desc"      : {desc}      ,)"
+    LR"( "icon"      : {icon}      ,)"
+    LR"( "iconIndex" : {iconIndex} ,)"
+    LR"( "cwd"       : {cwd}       ,)"
+    LR"( "hotkey"    : {hotkey}     )"
+    ;
+
+    result.append(format);
+
+    hmc_string_util::replace(result, L"{path}", hmc_string_util::escapeJsonString(path,true));
+
+    hmc_string_util::replace(result, L"{args}", hmc_string_util::escapeJsonString(args,true));
+    hmc_string_util::replace(result, L"{desc}", hmc_string_util::escapeJsonString(desc,true));
+    hmc_string_util::replace(result, L"{icon}", hmc_string_util::escapeJsonString(icon,true));
+    hmc_string_util::replace(result, L"{cwd}", hmc_string_util::escapeJsonString(cwd,true));
+    hmc_string_util::replace(result, L"{showCmd}", std::to_wstring(showCmd));
+    hmc_string_util::replace(result, L"{iconIndex}", std::to_wstring(iconIndex));
+    hmc_string_util::replace(result, L"{hotkey}", std::to_wstring(hotkey));
+
+
+    result.push_back('}');
+    return result;
+}
+
+bool hmc_shell_util::getShortcutLink(std::wstring _lnkPath, std::wstring *path, int64_t *showCmd, std::wstring *args, std::wstring *desc, std::wstring *icon, int64_t *iconIndex, std::wstring *cwd, int64_t *hotkey)
+{
+    bool result = false;
+    std::wstring lnkPath;
+
+    if (hmc_string_util::includes(_lnkPath, '\0'))
+    {
+        lnkPath = std::wstring(_lnkPath.begin(), _lnkPath.end());
+        hmc_string_util::formatCStr(lnkPath);
+    }
+    else
+    {
+        lnkPath = _lnkPath;
+    }
+
+    IShellLinkW *GetShellLinkContent = nullptr;
 
     auto temp_coinit = ::CoInitialize(0);
 
-    LPWSTR temp_GetPathString = new wchar_t[MAX_PATH + 1];
-    LPWSTR temp_GetArgumentsString = new wchar_t[MAX_PATH + 1];
-    int temp_GetShowCmdNum = 0;
-    LPWSTR temp_GetGetIconLocationString = new wchar_t[MAX_PATH + 1];
-    int piIcon = 0;
-    LPWSTR temp_GetGetDescriptionString = new wchar_t[MAX_PATH + 1];
-    LPWSTR temp_GetWorkingDirectoryString = new wchar_t[MAX_PATH + 1];
-    WORD pwHotkey = 0;
+    if (!SUCCEEDED(temp_coinit))
+    {
+        return result;
+    }
+
+    HMC_FreeAnyAuto(::CoUninitialize(););
 
     HRESULT CreateHRESULT = ::CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID *)&GetShellLinkContent);
-    DWORD dwReserved = 0;
 
     if (SUCCEEDED(CreateHRESULT))
     {
         IPersistFile *PersistFile;
         CreateHRESULT = GetShellLinkContent->QueryInterface(IID_IPersistFile, (LPVOID *)&PersistFile);
+
         if (SUCCEEDED(CreateHRESULT))
         {
             CreateHRESULT = PersistFile->Load(lnkPath.c_str(), STGM_READ);
 
             if (SUCCEEDED(CreateHRESULT))
             {
-                WIN32_FIND_DATAW wfd = WIN32_FIND_DATAW();
+                if (path != nullptr)
+                {
+                    WIN32_FIND_DATAW wfd = WIN32_FIND_DATAW();
+                    path->resize(MAX_PATH);
+                    GetShellLinkContent->GetPath(path->data(), MAX_PATH, &wfd, SLGP_UNCPRIORITY | SLGP_RAWPATH);
 
-                GetShellLinkContent->GetPath(temp_GetPathString, MAX_PATH, &wfd, SLGP_UNCPRIORITY | SLGP_RAWPATH);
+                    auto indexOf = hmc_string_util::indexOf(*path, '\0');
+                    if (indexOf >= 0)
+                    {
+                        path->resize(indexOf);
+                    }
 
-                GetShellLinkContent->GetShowCmd(&temp_GetShowCmdNum);
-                GetShellLinkContent->GetArguments(temp_GetArgumentsString, MAX_PATH);
-                GetShellLinkContent->GetDescription(temp_GetGetDescriptionString, MAX_PATH);
-                GetShellLinkContent->GetIconLocation(temp_GetGetIconLocationString, MAX_PATH, &piIcon);
-                GetShellLinkContent->GetWorkingDirectory(temp_GetWorkingDirectoryString, MAX_PATH);
-                GetShellLinkContent->GetHotkey(&pwHotkey);
+                    result = true;
+                }
+
+                if (showCmd != nullptr)
+                {
+                    int temp_GetShowCmdNum = 0;
+                    GetShellLinkContent->GetShowCmd(&temp_GetShowCmdNum);
+                    (*showCmd) = temp_GetShowCmdNum;
+                    result = true;
+                }
+
+                if (cwd != nullptr)
+                {
+                    cwd->resize(MAX_PATH);
+                    GetShellLinkContent->GetWorkingDirectory(cwd->data(), MAX_PATH);
+
+                    auto indexOf = hmc_string_util::indexOf(*cwd, '\0');
+                    if (indexOf >= 0)
+                    {
+                        cwd->resize(indexOf);
+                    }
+
+                    result = true;
+                }
+
+                if (args != nullptr)
+                {
+                    args->resize(MAX_PATH);
+                    GetShellLinkContent->GetArguments(args->data(), MAX_PATH);
+                    auto indexOf = hmc_string_util::indexOf(*args, '\0');
+                    if (indexOf >= 0)
+                    {
+                        args->resize(indexOf);
+                    }
+
+                    result = true;
+                }
+
+                if (desc != nullptr)
+                {
+                    desc->resize(MAX_PATH);
+                    GetShellLinkContent->GetDescription(desc->data(), MAX_PATH);
+                    auto indexOf = hmc_string_util::indexOf(*desc, '\0');
+                    if (indexOf >= 0)
+                    {
+                        desc->resize(indexOf);
+                    }
+
+                    result = true;
+                }
+
+                if (icon != nullptr)
+                {
+
+                    int piIcon = 0;
+                    icon->resize(MAX_PATH);
+                    GetShellLinkContent->GetIconLocation(icon->data(), MAX_PATH, &piIcon);
+
+                    auto indexOf = hmc_string_util::indexOf(*icon, '\0');
+                    if (indexOf >= 0)
+                    {
+                        icon->resize(indexOf);
+                    }
+
+                    result = true;
+
+                    if (iconIndex != nullptr)
+                    {
+                        (*iconIndex) = piIcon;
+                    }
+                }
+
+                if (hotkey != nullptr)
+                {
+                    WORD pwHotkey = 0;
+                    GetShellLinkContent->GetHotkey(&pwHotkey);
+                    result = true;
+
+                    (*hotkey) = pwHotkey;
+                }
             }
+
+            PersistFile->Release();
         }
     }
 
@@ -576,23 +706,17 @@ hmc_shell_util::chShortcutLinkItem hmc_shell_util::getShortcutLink(std::wstring 
         GetShellLinkContent->Release();
     }
 
-    CreateHRESULT = NULL;
+    return result;
+}
 
-    lnkItem.args.append(temp_GetArgumentsString);
-    lnkItem.cwd.append(temp_GetWorkingDirectoryString);
-    lnkItem.desc.append(temp_GetGetDescriptionString);
-    lnkItem.path.append(temp_GetPathString);
-    lnkItem.icon.append(temp_GetGetIconLocationString);
+hmc_shell_util::chShortcutLinkItem hmc_shell_util::getShortcutLink(std::wstring lnkPath)
+{
 
-    lnkItem.hotkey = pwHotkey;
-    lnkItem.iconIndex = piIcon;
-    lnkItem.showCmd = temp_GetShowCmdNum;
+    auto lnkItem = chShortcutLinkItem();
 
-    if (CreateHRESULT > 0)
-    {
+    IShellLinkW *GetShellLinkContent = nullptr;
 
-        ::CoUninitialize();
-    }
+    getShortcutLink(lnkPath, &lnkItem.path, &lnkItem.showCmd, &lnkItem.args, &lnkItem.desc, &lnkItem.icon, &lnkItem.iconIndex, &lnkItem.cwd, &lnkItem.hotkey);
 
     return lnkItem;
 }
@@ -923,13 +1047,13 @@ int64_t hmc_shell_util::getSystemIdleTime()
     return SystemIdleTime;
 }
 
-bool hmc_shell_util::copyFile(const std::wstring &filePath, const std::wstring &newFilePath, bool isShowConfirm, bool isShow, bool isShowProgress)
+bool hmc_shell_util::copyFile(const std::wstring &filePath, const std::wstring &cloneFilePath, bool isShowConfirm, bool isShow, bool isShowProgress)
 {
     SHFILEOPSTRUCTW fileOP = {0};
     ::ZeroMemory(&fileOP, sizeof(SHFILEOPSTRUCTW));
     fileOP.wFunc = FO_COPY;
     fileOP.pFrom = filePath.c_str();
-    fileOP.pTo = newFilePath.c_str();
+    fileOP.pTo = cloneFilePath.c_str();
 
     fileOP.fFlags = (isShowConfirm ? 0 : (isShowProgress ? 0 : FOF_SILENT)) | FOF_NOCONFIRMATION | (isShow ? 0 : FOF_NO_UI);
     int fileOperation = ::SHFileOperationW(&fileOP);
@@ -937,13 +1061,13 @@ bool hmc_shell_util::copyFile(const std::wstring &filePath, const std::wstring &
     return fileOperation == 0;
 }
 
-bool hmc_shell_util::moveFile(const std::wstring &filePath, const std::wstring &newFilePath, bool isShowConfirm, bool isShow, bool isShowProgress)
+bool hmc_shell_util::moveFile(const std::wstring &filePath, const std::wstring &cloneFilePath, bool isShowConfirm, bool isShow, bool isShowProgress)
 {
     SHFILEOPSTRUCTW fileOP = {0};
     ::ZeroMemory(&fileOP, sizeof(SHFILEOPSTRUCTW));
     fileOP.wFunc = FO_MOVE;
     fileOP.pFrom = filePath.c_str();
-    fileOP.pTo = newFilePath.c_str();
+    fileOP.pTo = cloneFilePath.c_str();
     fileOP.fFlags = (isShowConfirm ? 0 : (isShowProgress ? 0 : FOF_SILENT)) | FOF_NOCONFIRMATION | (isShow ? 0 : FOF_NO_UI);
     int fileOperation = ::SHFileOperationW(&fileOP);
     return fileOperation == 0;
@@ -961,10 +1085,15 @@ bool hmc_shell_util::SetFolderIcon(const std::wstring &folderPath, const std::ws
         ::SetFileAttributesW(folderPath.c_str(), folderAttributes | FILE_ATTRIBUTE_READONLY);
 
     // 构建 desktop.ini 文件路径
-    std::wstring desktopIniPath = folderPath + L"\\desktop.ini";
+    std::wstring desktopIniPath = std::wstring(folderPath.begin(), folderPath.end());
+    desktopIniPath.append(L"\\desktop.ini");
+    hmc_string_util::removeMatchChar(&desktopIniPath, '\0');
 
     // 写入 desktop.ini 文件内容
     std::wstring iniContent = L"[.ShellClassInfo]\nIconResource=" + iconPath + L"," + std::to_wstring(iconIndex) + L"\n";
+
+    hmc_string_util::removeMatchChar(&iniContent, '\0');
+
     if (!::WritePrivateProfileStringW(L".ShellClassInfo", L"IconResource", (iconPath + L"," + std::to_wstring(iconIndex)).c_str(), desktopIniPath.c_str()))
         return false;
 
@@ -1180,6 +1309,28 @@ bool hmc_shell_util::Symlink::isLink(const std::wstring &Path)
     return dwAttr & FILE_ATTRIBUTE_REPARSE_POINT;
 }
 
+bool hmc_shell_util::Symlink::isSymbolicDirLink(const std::wstring &Path)
+{
+    bool result = false;
+    if (!(getFileAttributesInfo(Path) & FILE_ATTRIBUTE_DIRECTORY))
+    {
+        return result;
+    }
+    result = getLinkType(Path) == LINK_TYPE::JUNCTION_POINT_DIR;
+    return result;
+}
+
+bool hmc_shell_util::Symlink::isDirLink(const std::wstring &Path)
+{
+    bool result = false;
+    if (!(getFileAttributesInfo(Path) & FILE_ATTRIBUTE_DIRECTORY))
+    {
+        return result;
+    }
+    result = getLinkType(Path) == LINK_TYPE::SOFT_LINK_DIR;
+    return result;
+}
+
 std::wstring hmc_shell_util::Symlink::getSymbolicLinkTarget(const std::wstring &symlinkPath)
 {
     HANDLE hFile = ::CreateFileW(symlinkPath.c_str(), 0, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
@@ -1188,8 +1339,9 @@ std::wstring hmc_shell_util::Symlink::getSymbolicLinkTarget(const std::wstring &
         return L"";
     }
 
-    wchar_t *targetPath = new wchar_t[MAX_PATH + 1];
-    DWORD pathSize = ::GetFinalPathNameByHandleW(hFile, targetPath, MAX_PATH, VOLUME_NAME_DOS);
+    std::vector<wchar_t> targetPath(MAX_PATH + 1);
+
+    DWORD pathSize = ::GetFinalPathNameByHandleW(hFile, targetPath.data(), MAX_PATH, VOLUME_NAME_DOS);
     if (pathSize == 0)
     {
         ::CloseHandle(hFile);
@@ -1197,7 +1349,7 @@ std::wstring hmc_shell_util::Symlink::getSymbolicLinkTarget(const std::wstring &
     }
 
     // '\\\\?\\F:\\source\\module\\hmc-win32\\source\\h2c-win32\\source\\node\\debug.js'
-    std::wstring finalPath = std::wstring(targetPath, pathSize);
+    std::wstring finalPath = std::wstring(targetPath.data(), pathSize);
 
     const std::wstring prefix = L"\\\\?\\";
 
@@ -1212,7 +1364,7 @@ std::wstring hmc_shell_util::Symlink::getSymbolicLinkTarget(const std::wstring &
 
 bool hmc_shell_util::Symlink::createDirSymlink(const std::wstring &targetPath, const std::wstring &sourcePath)
 {
-    return CreateSymbolicLinkW(targetPath.c_str(), sourcePath.c_str(), 0x1);
+    return ::CreateSymbolicLinkW(targetPath.c_str(), sourcePath.c_str(), 0x1);
 }
 
 hmc_shell_util::Symlink::LINK_TYPE hmc_shell_util::Symlink::getLinkType(const std::wstring &path)
@@ -1262,7 +1414,7 @@ hmc_shell_util::Symlink::LINK_TYPE hmc_shell_util::Symlink::getLinkType(const st
                 else if (reparseData->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
                 {
                     // 目录连接点
-                    return LINK_TYPE::SYMBOLIC_LINK_DIR;
+                    return LINK_TYPE::JUNCTION_POINT_DIR;
                 }
             }
         }
@@ -1302,17 +1454,17 @@ hmc_shell_util::Symlink::LINK_TYPE hmc_shell_util::Symlink::getLinkType(const st
 
 bool hmc_shell_util::Symlink::createSymlink(const std::wstring &targetPath, const std::wstring &sourcePath)
 {
-    return CreateSymbolicLinkW(targetPath.c_str(), sourcePath.c_str(), 0x1);
+    return ::CreateSymbolicLinkW(targetPath.c_str(), sourcePath.c_str(), 0x1);
 }
 
 bool hmc_shell_util::Symlink::createHardLink(const std::wstring &targetPath, const std::wstring &sourcePath)
 {
-    return CreateHardLinkW(targetPath.c_str(), sourcePath.c_str(), NULL);
+    return ::CreateHardLinkW(targetPath.c_str(), sourcePath.c_str(), NULL);
 }
 
 bool hmc_shell_util::Symlink::createSymbolicLink(const std::wstring &targetPath, const std::wstring &sourcePath)
 {
-    return CreateSymbolicLinkW(targetPath.c_str(), sourcePath.c_str(), SYMBOLIC_LINK_FLAG_DIRECTORY);
+    return ::CreateSymbolicLinkW(targetPath.c_str(), sourcePath.c_str(), SYMBOLIC_LINK_FLAG_DIRECTORY);
 }
 
 int GetThumbnail::GetEncoderClsid(const WCHAR *format, CLSID *pClsid)
@@ -1391,10 +1543,12 @@ void GetThumbnail::GetBitmapPixel(HBITMAP hbitmap, std::vector<BYTE> &result, Gd
     Gdiplus::Rect rect(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
     Gdiplus::BitmapData bd;
     bitmap->LockBits(&rect, Gdiplus::ImageLockModeRead, bitmap->GetPixelFormat(), &bd);
-    Gdiplus::Bitmap *bitmapWithAlpha = new Gdiplus::Bitmap(bd.Width, bd.Height, bd.Stride, format, (BYTE *)bd.Scan0);
+
+    std::unique_ptr<Gdiplus::Bitmap> bitmapWithAlpha(new Gdiplus::Bitmap(bd.Width, bd.Height, bd.Stride, format, (BYTE *)bd.Scan0));
+
     bitmap->UnlockBits(&bd);
 
-    WriteToImageByte(bitmapWithAlpha, formatMimeType, result);
+    WriteToImageByte(bitmapWithAlpha.get(), formatMimeType, result);
 }
 
 std::vector<std::uint8_t> hmc_shell_util::getThumbnailBuffer(std::wstring input, int nSize)
@@ -1446,9 +1600,9 @@ std::vector<std::uint8_t> hmc_shell_util::getThumbnailBuffer(std::wstring input,
                     Gdiplus::Rect rect(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
                     Gdiplus::BitmapData bd;
                     bitmap->LockBits(&rect, Gdiplus::ImageLockModeRead, bitmap->GetPixelFormat(), &bd);
-                    Gdiplus::Bitmap *bitmapWithAlpha = new Gdiplus::Bitmap(bd.Width, bd.Height, bd.Stride, PixelFormat32bppARGB, (BYTE *)bd.Scan0);
+                    std::unique_ptr<Gdiplus::Bitmap> bitmapWithAlpha(new Gdiplus::Bitmap(bd.Width, bd.Height, bd.Stride, PixelFormat32bppARGB, (BYTE *)bd.Scan0));
                     bitmap->UnlockBits(&bd);
-                    GetThumbnail::WriteToImageByte(bitmapWithAlpha, L"image/png", result);
+                    GetThumbnail::WriteToImageByte(bitmapWithAlpha.get(), L"image/png", result);
                 }
             }
         }
@@ -2129,7 +2283,7 @@ bool hmc_shell_util::Dialog::SelectSaveFolder(std::wstring &folderPath, const st
         if (!initFolder.empty())
         {
             IShellItem *psiFolder = NULL;
-            hr = SHCreateItemFromParsingName(initFolder.c_str(), NULL, IID_PPV_ARGS(&psiFolder));
+            hr = ::SHCreateItemFromParsingName(initFolder.c_str(), NULL, IID_PPV_ARGS(&psiFolder));
             if (SUCCEEDED(hr))
             {
                 pFileSaveDialog->SetFolder(psiFolder);
@@ -2340,5 +2494,70 @@ std::vector<DWORD> hmc_shell_util::getFileAttributesInfoList(const std::string &
         }
     }
 
+    return result;
+}
+
+bool hmc_shell_util::SetExtensionIcon(const std::wstring &extensionName, const std::wstring &typeName, const std::wstring &iconPath, const int &iconIndex)
+{
+    bool result = false;
+
+    std::wstring extensionNamePath = L"Software\\Classes\\" + extensionName;
+
+    std::wstring keyPath = L"Software\\Classes\\" + typeName + L"\\DefaultIcon";
+
+    std::wstring iconPath2 = iconPath + L"," + std::to_wstring(iconIndex);
+
+    hmc_string_util::formatCStr(&extensionNamePath);
+    hmc_string_util::formatCStr(&keyPath);
+    hmc_string_util::formatCStr(&iconPath2);
+
+    hmc_registr_util::SetRegistrString(HKEY_CURRENT_USER, keyPath, L"", iconPath2, false);
+    hmc_registr_util::SetRegistrString(HKEY_CURRENT_USER, extensionNamePath, L"", typeName, false);
+
+    result = hmc_registr_util::hasRegistrValue(HKEY_CURRENT_USER, keyPath, L"");
+    result = result && hmc_registr_util::hasRegistrValue(HKEY_CURRENT_USER, extensionNamePath, L"");
+    return result;
+}
+
+bool hmc_shell_util::SetAppURLProtocol(const std::wstring &protocolName, const std::wstring &appPath, const std::wstring &command)
+{
+    bool result = false;
+
+    // HKEY_CURRENT_USER\SOFTWARE\Classes\HMMagicPocket
+    std::wstring protocolPath = L"Software\\Classes\\" + protocolName;
+
+    hmc_string_util::formatCStr(&protocolPath);
+
+    hmc_registr_util::SetRegistrString(HKEY_CURRENT_USER, protocolPath, L"URL Protocol", L"", false);
+
+    std::wstring URL_LINK = L"URL:" + protocolName;
+    hmc_string_util::formatCStr(&URL_LINK);
+
+    hmc_registr_util::SetRegistrString(HKEY_CURRENT_USER, protocolPath, L"", URL_LINK, false);
+
+    std::wstring commandKey = protocolPath + L"\\shell\\open\\command";
+    std::wstring commandValue = L"\"" + appPath + L"\" ";
+
+    bool is_add_colon = HS::search(command, LR"(^( +)?".+"( +)?)") == -1;
+
+    if (is_add_colon)
+    {
+        commandValue.push_back('"');
+    }
+
+    commandValue.append(command);
+
+    if (is_add_colon)
+    {
+        commandValue.push_back('"');
+    }
+
+    hmc_string_util::formatCStr(&commandValue);
+    hmc_string_util::formatCStr(&commandKey);
+
+    hmc_registr_util::SetRegistrString(HKEY_CURRENT_USER, commandKey, L"", commandValue, false);
+
+    result = hmc_registr_util::hasRegistrValue(HKEY_CURRENT_USER, protocolPath, L"URL Protocol");
+    result = result && hmc_registr_util::hasRegistrValue(HKEY_CURRENT_USER, commandKey, L"");
     return result;
 }

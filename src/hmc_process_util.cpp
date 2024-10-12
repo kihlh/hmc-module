@@ -3,6 +3,7 @@
 #include "hmc_usb_util.h"
 #include "hmc_string_util.h"
 #include "hmc_util.h"
+#include "hmc_path_util.h"
 #include <memory>
 #include <map>
 #include <set>
@@ -192,7 +193,7 @@ std::vector<DWORD> hmc_process_util::enumProcessIDList()
     processList.resize(lp_cblength);
 
     // 最好使用大型数组，因为很难预测在调用 EnumProcesses 时将存在多少个进程。
-    if (!::EnumProcesses(processList.data(), sizeof(DWORD) * lp_cblength, &lp_cblength))
+    if (!::EnumProcesses(&processList[0], sizeof(DWORD) * lp_cblength, &lp_cblength))
     {
         processList.resize(0);
         return processList;
@@ -201,14 +202,15 @@ std::vector<DWORD> hmc_process_util::enumProcessIDList()
     processList.resize(lp_cblength / sizeof(DWORD));
 
     // 超过了载体极限了
-    if (processList.size() >= 1024) {
+    if (processList.size() >= 1024)
+    {
 
         lp_cblength = 10240;
-        
+
         processList.resize(lp_cblength);
 
         // 最好使用大型数组，因为很难预测在调用 EnumProcesses 时将存在多少个进程。
-        if (!::EnumProcesses(processList.data(), sizeof(DWORD) * lp_cblength, &lp_cblength))
+        if (!::EnumProcesses(&processList[0], sizeof(DWORD) * lp_cblength, &lp_cblength))
         {
             processList.resize(0);
             return processList;
@@ -218,30 +220,26 @@ std::vector<DWORD> hmc_process_util::enumProcessIDList()
     }
 
     // 去重
-    std::unordered_set<DWORD> new_process_ID_List = {};
+    std::unordered_set<DWORD> cloneProcessIdList = {};
 
     size_t count = processList.size();
 
     for (size_t i = 0; i < count; i++)
     {
         auto &it = processList.at(i);
-        new_process_ID_List.insert(it);
+        cloneProcessIdList.insert(it);
     }
 
     processList.clear();
-
-    // 克隆 取消内存预开劈
-
-    std::vector<DWORD> processList2 = {};
-
-    processList2.reserve(new_process_ID_List.size());
-
-    for (auto &&it : new_process_ID_List)
+    
+    for (auto &&it : cloneProcessIdList)
     {
-        processList2.push_back(it);
+        processList.push_back(it);
     }
 
-    return processList2;
+    processList.shrink_to_fit();
+
+    return processList;
 }
 
 bool hmc_process_util::existProcessInEnum(DWORD processID)
@@ -335,8 +333,8 @@ std::vector<DWORD> hmc_process_util::getSubProcess(DWORD processID)
     {
         const auto &it = tempSnapshotList.at(i);
 
-        //if (result.find(it.th32ParentProcessID)) {
-            //result.push_back(it.th32ProcessID);
+        // if (result.find(it.th32ParentProcessID)) {
+        // result.push_back(it.th32ProcessID);
         //}
 
         if (it.th32ParentProcessID == processID)
@@ -345,7 +343,7 @@ std::vector<DWORD> hmc_process_util::getSubProcess(DWORD processID)
         }
     }
 
-    return std::vector<DWORD>(result.begin(),result.end());
+    return std::vector<DWORD>(result.begin(), result.end());
 }
 
 DWORD hmc_process_util::getParentProcess(DWORD processID)
@@ -1372,13 +1370,16 @@ NTSTATUS hmc_process_util::CpGetProcessCwdPath::readCwd(wchar_t **outputString, 
         if (initReadString.Length == 0)
         {
             nt.close(processHandle);
-            *outputString = new WCHAR[1];
+            if (outputString == NULL)
+            {
+                *outputString = new WCHAR[1];
+            }
             *outputString[0] = '\0';
             return status;
         }
 
         size_t strLength = initReadString.Length + 1;
-        cwdString = new WCHAR[strLength];
+        cwdString = new (std::nothrow) WCHAR[strLength];
         cwdString[strLength / 2] = 0;
         if (!NT_SUCCESS(status = nt.readVirtualMemory(
                             processHandle,
@@ -1430,13 +1431,17 @@ NTSTATUS hmc_process_util::CpGetProcessCwdPath::readCwd(wchar_t **outputString, 
         if (initReadString.Length == 0)
         {
             nt.close(processHandle);
-            *outputString = new wchar_t[1];
+            if (outputString == NULL)
+            {
+
+                *outputString = new wchar_t[1];
+            }
             *outputString[0] = '\0';
             return status;
         }
 
         size_t strLength = initReadString.Length + 1;
-        cwdString = new WCHAR[strLength];
+        cwdString = new (std::nothrow) WCHAR[strLength];
         cwdString[strLength / 2] = 0;
         if (!NT_SUCCESS(status = nt.readVirtualMemory(
                             processHandle,
@@ -1445,6 +1450,7 @@ NTSTATUS hmc_process_util::CpGetProcessCwdPath::readCwd(wchar_t **outputString, 
                             initReadString.Length,
                             NULL)))
         {
+
             return status;
         }
     }
@@ -1689,29 +1695,29 @@ namespace hmc_process_util
             std::wstring res = L"";
 
             if (!::ReadProcessMemory(ProcessHandle, (PCHAR)pebAddress + 0x10,
-                                   &rtlUserProcParamsAddress, sizeof(PVOID), NULL))
+                                     &rtlUserProcParamsAddress, sizeof(PVOID), NULL))
             {
                 *status = ::GetLastError();
                 return res;
             }
 
             if (!::ReadProcessMemory(ProcessHandle, (PCHAR)rtlUserProcParamsAddress + 0x40,
-                                   &commandLine, sizeof(commandLine), NULL))
+                                     &commandLine, sizeof(commandLine), NULL))
             {
                 *status = ::GetLastError();
                 return res;
             }
 
-            wchar_t *commandLineContents = new wchar_t[commandLine.Length];
+            std::unique_ptr<wchar_t[]> commandLineContents (new (std::nothrow) wchar_t[commandLine.Length]);
 
             if (!::ReadProcessMemory(ProcessHandle, commandLine.Buffer,
-                                   commandLineContents, commandLine.Length, NULL))
+                                     commandLineContents.get(), commandLine.Length, NULL))
             {
                 *status = ::GetLastError();
                 return res;
             }
-            
-            res.append(commandLineContents);
+
+            res.append(commandLineContents.get());
 
             return res;
         }
@@ -1897,7 +1903,7 @@ std::wstring hmc_process_util::getProcessName(DWORD ProcessID, hmc_process_util:
 
     GOTO_FILE_NAME:
         auto temp = getProcessFilePath(ProcessID, false, true);
-        auto baseName = hmc_string_util::getPathBaseName(temp);
+        auto baseName = hmc_path_util::baseName(temp);
         result.append(baseName);
         hmc_util::removeAllCharPtr(result, '\0');
         return result;
@@ -1990,7 +1996,7 @@ std::wstring hmc_process_util::ch_ProcessEnumItem::ch_ProcessEnumItem::to_json()
 
     if (!path.empty() && name.empty())
     {
-        name = hmc_string_util::getPathBaseName(path);
+        name = hmc_path_util::baseName(path);
     }
 
     hmc_string_util::replace(result, L"${name}", hmc_string_util::escapeJsonString(name));
@@ -2022,7 +2028,7 @@ std::vector<hmc_process_util::ch_ProcessEnumItem> hmc_process_util::getAllProces
                 if (!filePath.empty())
                 {
                     obj.path = filePath;
-                    obj.name = hmc_string_util::getPathBaseName(filePath);
+                    obj.name = hmc_path_util::baseName(filePath);
                 }
                 else
                 {
@@ -2058,7 +2064,7 @@ std::vector<hmc_process_util::ch_ProcessEnumItem> hmc_process_util::getAllProces
 
                 if (obj.name.empty())
                 {
-                    obj.name.append(hmc_string_util::getPathBaseName(obj.path));
+                    obj.name.append(hmc_path_util::baseName(obj.path));
                 }
             }
         }
@@ -2198,7 +2204,6 @@ std::wstring hmc_process_util::ch_THREADENTRY32::to_json()
     hmc_string_util::replace(result, L"${tpBasePri}", std::to_wstring(tpBasePri));
     hmc_string_util::replace(result, L"${tpDeltaPri}", std::to_wstring(tpDeltaPri));
     hmc_string_util::replace(result, L"${dwFlags}", std::to_wstring(dwFlags));
-
 
     return result;
 }

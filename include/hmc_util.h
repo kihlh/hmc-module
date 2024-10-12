@@ -84,6 +84,9 @@
 #define HMC_CONCAT_IMPL(x, y) x##y
 #define HMC_CONCAT(x, y) HMC_CONCAT_IMPL(x, y)
 
+#define HMC_FreeDelete(ptr) std::shared_ptr<void> HMC_CONCAT(_Shared_close_Library, __LINE__)(nullptr, [&](void *) {if(ptr!=nullptr){delete ptr;ptr = nullptr;}});
+#define HMC_FreeDeleteList(ptr) std::shared_ptr<void> HMC_CONCAT(_Shared_close_Library, __LINE__)(nullptr, [&](void *) {if(ptr!=nullptr){delete[] ptr;ptr = nullptr;}});
+
 #define HMC_FreeAnyAuto(code) \
     std::shared_ptr<void> HMC_CONCAT(_Shared_close_Library, __LINE__)(nullptr, [&](void *) {\
     try\
@@ -102,7 +105,6 @@
 
 #endif // HMC_FreeAnyAuto
 
-// 自动释放 自定义释放
 #ifndef HMC_CATCH_ALL
 #define HMC_CATCH_ALL catch (...){};
 #endif // HMC_FreeAnyAuto

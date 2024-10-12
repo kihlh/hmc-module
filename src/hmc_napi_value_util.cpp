@@ -1275,7 +1275,11 @@ const wchar_t *hmc_napi_get_value::buffer_utf16_clpStrW(napi_env env, napi_value
     std::vector<wchar_t> buffer;
     buffer_vector<wchar_t>(env, nodeValue, buffer);
     std::wstring wideString(buffer.begin(), buffer.end()); // 将 std::vector<wchar_t> 转换为 std::wstring
-    wchar_t *utf16Ptr = new wchar_t[wideString.size() + 1];
+    wchar_t *utf16Ptr = new(std::nothrow) wchar_t[wideString.size() + 1];
+    
+    if(!utf16Ptr){
+        return utf16Ptr;
+    }
 
     for (size_t i = 0; i < wideString.size(); i++)
     {
@@ -1284,7 +1288,7 @@ const wchar_t *hmc_napi_get_value::buffer_utf16_clpStrW(napi_env env, napi_value
     }
     const size_t end = wideString.size();
 
-    utf16Ptr[end] = *L"\0";
+    utf16Ptr[end] = '\0';
 
     return utf16Ptr;
 }
@@ -1320,7 +1324,11 @@ const char *hmc_napi_get_value::buffer_utf8_clpStrU8(napi_env env, napi_value no
     buffer_vector<unsigned char>(env, nodeValue, buffer);
     std::string utf8String(buffer.begin(), buffer.end());
 
-    char *utf8Ptr = new char[utf8String.size() + 1];
+    char *utf8Ptr = new(std::nothrow) char[utf8String.size() + 1];
+
+    if(!utf8Ptr){
+        return utf8Ptr;
+    }
 
     for (size_t i = 0; i < utf8String.size(); i++)
     {
@@ -1329,7 +1337,7 @@ const char *hmc_napi_get_value::buffer_utf8_clpStrU8(napi_env env, napi_value no
     }
     const size_t end = utf8String.size();
 
-    utf8Ptr[end] = *"\0";
+    utf8Ptr[end] = '\0';
 
     return utf8Ptr;
 }
@@ -1346,7 +1354,11 @@ const char *hmc_napi_get_value::buffer_ansi_clpStrA(napi_env env, napi_value nod
     buffer_vector<unsigned char>(env, nodeValue, buffer);
     std::string ansiString(buffer.begin(), buffer.end());
 
-    char *ansiPtr = new char[ansiString.size() + 1];
+    char *ansiPtr = new (std::nothrow) char[ansiString.size() + 1];
+    
+    if(ansiPtr==NULL){
+        return ansiPtr;
+    }
 
     for (size_t i = 0; i < ansiString.size(); i++)
     {
@@ -1355,7 +1367,7 @@ const char *hmc_napi_get_value::buffer_ansi_clpStrA(napi_env env, napi_value nod
     }
     const size_t end = ansiString.size();
 
-    ansiPtr[end] = *"\0";
+    ansiPtr[end] = '\0';
 
     return ansiPtr;
 }

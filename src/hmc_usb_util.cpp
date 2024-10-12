@@ -1,6 +1,7 @@
 ﻿#include "hmc_usb_util.h"
 #include "hmc_json_util.h"
 #include "hmc_util.h"
+#include "hmc_path_util.h"
 
 #include <windows.h>
 #include <setupapi.h>
@@ -98,7 +99,7 @@ std::vector<hmc_usb_util::chVolume> hmc_usb_util::getVolumeList()
 
     while (true)
     {
-        PrefixIndex = wcslen(VolumeName) - 1;
+        PrefixIndex = ::wcslen(VolumeName) - 1;
         if (VolumeName[0] != L'\\' ||
             VolumeName[1] != L'\\' ||
             VolumeName[2] != L'?' ||
@@ -117,15 +118,20 @@ std::vector<hmc_usb_util::chVolume> hmc_usb_util::getVolumeList()
         if (CharCount == 0)
             break;
 
-        Results.push_back(chVolume{
-            formatVolumeName(VolumeName),
-            std::wstring(VolumeName),
-            std::wstring(DeviceName),
-        });
+        chVolume item = {};
+
+        item.device_id = hmc_path_util::parseNt(DeviceName).volume_id;
+        item.path = formatVolumeName(VolumeName);
+        item.name = std::wstring(VolumeName);
+        item.volume_id = hmc_path_util::parseVolume(VolumeName).cuid;
+        item.device = std::wstring(DeviceName);
+
+        Results.push_back(item);
 
         Success = ::FindNextVolumeW(FindHandle, VolumeName, ARRAYSIZE(VolumeName));
         if (!Success)
             break;
+
     }
 
     return Results;
@@ -145,7 +151,7 @@ std::vector<std::wstring> hmc_usb_util::getUsbDevsNameList()
     if (hDevInfo != INVALID_HANDLE_VALUE)
     {
         std::shared_ptr<void> _shared_free_handle(nullptr, [&](void *)
-                                                  {
+                                                {
         ::GlobalFree(psp_device_details);
         ::SetupDiDestroyDeviceInfoList(hDevInfo); });
 
@@ -211,7 +217,7 @@ std::vector<hmc_usb_util::chUsbDevsInfo> hmc_usb_util::getUsbDevsInfoList()
 
         // 获取设备ID
         wchar_t deviceID[4096];
-        if (::CM_Get_Device_IDW(deviceInfoData.DevInst, deviceID, sizeof(deviceID), 0) != CR_SUCCESS)
+        if (::CM_Get_Device_IDW(deviceInfoData.DevInst, deviceID, sizeof(deviceID) / sizeof(wchar_t) , 0) != CR_SUCCESS)
         {
             continue;
         }
@@ -266,7 +272,7 @@ std::vector<std::wstring> hmc_usb_util::getUsbHidNameList()
 
     // 设备列表缓冲区
     int nResult;
-    nResult = ::GetRawInputDeviceList(pRawInputDeviceList.data(), &nDevices, sizeof(RAWINPUTDEVICELIST));
+    nResult = ::GetRawInputDeviceList(&pRawInputDeviceList[0], &nDevices, sizeof(RAWINPUTDEVICELIST));
 
     if (nResult < 0)
     {
@@ -339,7 +345,7 @@ std::vector<hmc_usb_util::thHidInfo> hmc_usb_util::getUsbHidList()
 
     // 设备列表缓冲区
     int nResult;
-    nResult = ::GetRawInputDeviceList(pRawInputDeviceList.data(), &nDevices, sizeof(RAWINPUTDEVICELIST));
+    nResult = ::GetRawInputDeviceList(&pRawInputDeviceList[0], &nDevices, sizeof(RAWINPUTDEVICELIST));
 
     // 是否有设备列表
     if (nResult < 0)
@@ -609,6 +615,8 @@ std::wstring hmc_usb_util::chVolume::to_json()
         L"{"
         LR"( "name":{name}, )"
         LR"( "path":{path}, )"
+        LR"( "volume_id":{volume_id}, )"
+        LR"( "device_id":{device_id}, )"
         LR"( "device":{device})"
         L"}";
 
@@ -617,6 +625,8 @@ std::wstring hmc_usb_util::chVolume::to_json()
     hmc_util::replace(result, L"{name}", hmc_json_util::toJsonValueW(name, true));
     hmc_util::replace(result, L"{path}", hmc_json_util::toJsonValueW(path, true));
     hmc_util::replace(result, L"{device}", hmc_json_util::toJsonValueW(device, true));
+    hmc_util::replace(result, L"{volume_id}", hmc_json_util::toJsonValueW(volume_id, true));
+    hmc_util::replace(result, L"{device_id}", hmc_json_util::toJsonValueW(device_id, true));
 
     return result;
 }

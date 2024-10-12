@@ -91,8 +91,8 @@ namespace hmc_windows_util
             if (filePath.empty())
             {
 
-                wchar_t *szFilePath = new wchar_t[MAX_PATH + 1];
-                size_t len = ::GetModuleFileNameW(NULL, szFilePath, MAX_PATH + 1);
+                std::vector<wchar_t> szFilePath(MAX_PATH + 1);
+                size_t len = ::GetModuleFileNameW(NULL, &szFilePath[0], MAX_PATH);
                 if (len <= 1)
                 {
                     return;
@@ -380,9 +380,9 @@ std::variant<std::wstring, DWORD> hmc_windows_util::getWindowTitle(HWND hwnd)
 
     HMC_EQ_RUN_LAST(buff_size);
 
-    wchar_t *pszMem = new wchar_t[buff_size + sizeof(wchar_t)];
+    std::vector<wchar_t> pszMem(buff_size + sizeof(wchar_t));
 
-    size_t leng = ::GetWindowTextW(hwnd, pszMem, buff_size + sizeof(wchar_t));
+    size_t leng = ::GetWindowTextW(hwnd, &pszMem[0], buff_size + sizeof(wchar_t));
 
     HMC_EQ_RUN_LAST(leng);
 
@@ -407,9 +407,9 @@ std::variant<std::wstring, DWORD> hmc_windows_util::getWindowTitleInternal(HWND 
 
     // 缓冲区
 
-    wchar_t *pszMem = new wchar_t[512 + 1];
+    std::vector<wchar_t> pszMem(512 + 1);
 
-    size_t leng = ::InternalGetWindowText(hwnd, pszMem, 512 + 1);
+    size_t leng = ::InternalGetWindowText(hwnd, &pszMem[0], 512 + 1);
 
     HMC_EQ_RUN_LAST(leng);
 
@@ -519,8 +519,10 @@ bool hmc_windows_util::isWindow(HWND hwnd)
 std::variant<std::wstring, DWORD> hmc_windows_util::getClassName(HWND hwnd)
 {
     std::wstring result = std::wstring();
-    wchar_t *className = new wchar_t[MAX_PATH + 1];
-    int leng = ::GetClassNameW(hwnd, className, MAX_PATH + 1);
+
+    std::vector<wchar_t> className(MAX_PATH + 1);
+
+    int leng = ::GetClassNameW(hwnd, &className[0], MAX_PATH + 1);
 
     HMC_EQ_RUN_LAST(leng);
     // 添加内容
@@ -795,13 +797,16 @@ bool hmc_windows_util::isDesktopWindow(HWND hwnd)
     bool result = false;
 
     // 获取窗口的窗口类名
-    wchar_t *className = new wchar_t[MAX_PATH + 1];
+
+    std::vector<wchar_t> className(MAX_PATH + 1);
+
     DWORD length = 0;
-    if ((length = ::GetClassNameW(hwnd, className, MAX_PATH + 1)) == 0)
+    if ((length = ::GetClassNameW(hwnd, &className[0], MAX_PATH + 1)) == 0)
     {
         // 获取窗口类名失败
         return false;
     }
+
 
     // 移除空白
     std::wstring className_temp = L"";
@@ -816,7 +821,7 @@ bool hmc_windows_util::isDesktopWindow(HWND hwnd)
     }
 
     // 检查窗口类名是否是 "Progman" 或 "WorkerW"
-    if (::wcscmp(className, L"Progman") == 0 || ::wcscmp(className, L"WorkerW") == 0)
+    if (::wcscmp(className.data(), L"Progman") == 0 || ::wcscmp(&className[0], L"WorkerW") == 0)
     {
         return true;
     }

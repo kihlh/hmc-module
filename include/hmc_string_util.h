@@ -46,7 +46,24 @@ typedef UNICODE_STRING HMC_UNICODE_STRING;
 
 namespace hmc_string_util
 {
-
+	/**
+	 * @brief 格式化json字符串缩进
+	 * 
+	 * @param json 
+	 * @param indent 缩进符号
+	 * @param indentSize 缩进数量
+	 * @return std::wstring 
+	 */
+	extern std::wstring formatJson(std::wstring json, wchar_t indent = ' ' , size_t indentSize = 4);
+	/**
+	 * @brief 格式化json字符串缩进
+	 * 
+	 * @param json 
+	 * @param indent 缩进符号
+	 * @param indentSize 缩进数量
+	 * @return std::wstring 
+	 */
+	extern std::string formatJson(std::string json, char indent = ' ' , size_t indentSize = 4);
 	// 删除匹配条件的字符
 	extern size_t removeMatchChar(std::wstring *StrInput, wchar_t filter);
 	// 删除匹配条件的字符
@@ -68,20 +85,6 @@ namespace hmc_string_util
 	// 删除匹配条件的字符
 	extern size_t removeMatchChar(std::string *StrInput, std::function<bool(char at)> filter);
 
-	/**
-	 * @brief 获取路径的文件名
-	 *
-	 * @param path
-	 * @return std::wstring
-	 */
-	extern std::wstring getPathBaseName(const std::wstring &path);
-	/**
-	 * @brief 获取路径的文件名
-	 *
-	 * @param path
-	 * @return std::wstring
-	 */
-	extern std::string getPathBaseName(const std::string &path);
 	/**
 	 * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
 	 *
@@ -209,13 +212,6 @@ namespace hmc_string_util
 	// ----------------------------------------------------------------
 	extern std::string utf8_to_ansi(const std::string utf8);
 
-	// ----------------------------------------------------------------
-	// U82[936]
-	// utf8 to CP_936 ( cp_936 [936] ) encoding
-	// utf8 字符 转 winapi A字符
-	// ----------------------------------------------------------------
-	extern std::string utf8_to_gbk(std::string u8str);
-
 	/**
 	 * @brief base64 编码 8位
 	 *
@@ -255,24 +251,177 @@ namespace hmc_string_util
 	// 文本中是否有数字 并且是否是安全的 long long
 	extern bool is_longlong_str(const std::string Value);
 
-	// 拼接文本
-	extern std::wstring join(std::vector<std::wstring> &item_list);
-	extern std::wstring join(std::vector<std::wstring> &item_list, std::wstring splitter);
-	extern void join(std::vector<std::wstring> &item_list, std::wstring splitter, std::wstring outputPtr);
-	extern std::string join(std::vector<std::string> &item_list);
-	extern std::string join(std::vector<std::string> &item_list, std::string splitter);
-	extern void join(std::vector<std::string> &item_list, std::string splitter, std::string outputPtr);
+	/**
+	 * @brief 拼接文本 并且添加分隔符
+	 *
+	 * @param item_list 文本组
+	 * @return std::wstring
+	 */
+	extern std::wstring join(const std::vector<std::wstring> &item_list);
+	/**
+	 * @brief 拼接文本 并且添加分隔符
+	 *
+	 * @param item_list 文本组
+	 * @param splitter 分割符号
+	 * @return std::wstring
+	 */
+	extern std::wstring join(const std::vector<std::wstring> &item_list, std::wstring splitter);
+	/**
+	 * @brief 拼接文本 并且添加分隔符
+	 *
+	 * @param item_list 文本组
+	 * @param splitter 分割符号
+	 * @param outputPtr 数据结果指向
+	 */
+	extern void join(const std::vector<std::wstring> &item_list, std::wstring splitter, std::wstring &outputPtr);
+	/**
+	 * @brief 拼接文本 并且添加分隔符
+	 *
+	 * @param item_list 文本组
+	 * @return std::string
+	 */
+	extern std::string join(const std::vector<std::string> &item_list);
+	/**
+	 * @brief 拼接文本 并且添加分隔符
+	 *
+	 * @param item_list 文本组
+	 * @param splitter 分割符号
+	 * @return std::string
+	 */
+	extern std::string join(const std::vector<std::string> &item_list, std::string splitter);
+	/**
+	 * @brief 拼接文本 并且添加分隔符
+	 *
+	 * @param item_list 文本组
+	 * @param splitter 分割符号
+	 * @param outputPtr 数据结果指向
+	 */
+	extern void join(const std::vector<std::string> &item_list, std::string splitter, std::string &outputPtr);
+	/**
+	 * @brief 拼接文本 并且添加分隔符
+	 *
+	 * @param input 数组
+	 * @param separator 分隔符
+	 * @return std::wstring
+	 */
+	extern std::wstring join(const std::vector<std::wstring> input, wchar_t separator);
+	/**
+	 * @brief 拼接文本 并且添加分隔符
+	 *
+	 * @param input 数组
+	 * @param separator 分隔符
+	 * @return std::string
+	 */
+	extern std::string join(const std::vector<std::string> input, char separator);
 
-	// 分割文本
-	extern std::vector<std::wstring> split(const std::wstring &sourcePtr, wchar_t splitter);
-	extern void split(const std::wstring &sourcePtr, wchar_t splitter, std::vector<std::wstring> &item_list);
-	extern std::vector<std::string> split(const std::string &sourcePtr, char splitter);
-	extern void split(const std::string &sourcePtr, char splitter, std::vector<std::string> &item_list);
-
-	extern std::vector<std::wstring> split(const std::wstring &sourcePtr, std::vector<wchar_t> splitter);
-	extern void split(const std::wstring &sourcePtr, std::vector<wchar_t> splitter, std::vector<std::wstring> &item_list);
-	extern std::vector<std::string> split(const std::string &sourcePtr, std::vector<char> splitter);
-	extern void split(const std::string &sourcePtr, std::vector<char> splitter, std::vector<std::string> &item_list);
+	/**
+	 * @brief 分割文本
+	 *
+	 * @param sourcePtr 输入文本
+	 * @param splitter 分割符号
+	 * @param ignore_empty 是否忽略空白的元素
+	 * @return std::vector<std::wstring>
+	 */
+	extern std::vector<std::wstring> split(const std::wstring &sourcePtr, wchar_t splitter, const bool ignore_empty = false);
+	/**
+	 * @brief 分割文本
+	 *
+	 * @param sourcePtr 输入文本
+	 * @param splitter 分割符号
+	 * @param item_list 文本组
+	 * @param ignore_empty 是否忽略空白的元素
+	 */
+	extern void split(const std::wstring &sourcePtr, wchar_t splitter, std::vector<std::wstring> &item_list, const bool ignore_empty = false);
+	/**
+	 * @brief 分割文本
+	 *
+	 * @param sourcePtr 输入文本
+	 * @param splitter 分割符号
+	 * @param ignore_empty 是否忽略空白的元素
+	 * @return std::vector<std::string>
+	 */
+	extern std::vector<std::string> split(const std::string &sourcePtr, char splitter, const bool ignore_empty = false);
+	/**
+	 * @brief 分割文本
+	 *
+	 * @param sourcePtr 输入文本
+	 * @param splitter 分割符号
+	 * @param item_list 文本组
+	 * @param ignore_empty 是否忽略空白的元素
+	 */
+	extern void split(const std::string &sourcePtr, char splitter, std::vector<std::string> &item_list, const bool ignore_empty = false);
+	/**
+	 * @brief 分割文本
+	 *
+	 * @param sourcePtr 输入文本
+	 * @param splitter 分割符号
+	 * @param ignore_empty 是否忽略空白的元素
+	 * @return std::vector<std::wstring>
+	 */
+	extern std::vector<std::wstring> split(const std::wstring &sourcePtr, std::vector<wchar_t> splitter, const bool ignore_empty = false);
+	/**
+	 * @brief 分割文本
+	 *
+	 * @param sourcePtr 输入文本
+	 * @param splitter 分割符号
+	 * @param item_list 文本组
+	 * @param ignore_empty 是否忽略空白的元素
+	 */
+	extern void split(const std::wstring &sourcePtr, std::vector<wchar_t> splitter, std::vector<std::wstring> &item_list, const bool ignore_empty = false);
+	/**
+	 * @brief 分割文本
+	 *
+	 * @param sourcePtr 输入文本
+	 * @param splitter 分割符号
+	 * @param ignore_empty 是否忽略空白的元素
+	 * @return std::vector<std::string>
+	 */
+	extern std::vector<std::string> split(const std::string &sourcePtr, std::vector<char> splitter, const bool ignore_empty = false);
+	/**
+	 * @brief 分割文本
+	 *
+	 * @param sourcePtr 输入文本
+	 * @param splitter 分割符号
+	 * @param item_list 文本组
+	 * @param ignore_empty 是否忽略空白的元素
+	 */
+	extern void split(const std::string &sourcePtr, std::vector<char> splitter, std::vector<std::string> &item_list, const bool ignore_empty = false);
+	/**
+	 * @brief 分割文本
+	 *
+	 * @param sourcePtr 输入文本
+	 * @param splitter 分割符号
+	 * @param ignore_empty 是否忽略空白的元素
+	 * @return std::vector<std::wstring>
+	 */
+	extern std::vector<std::wstring> split(const std::wstring &sourcePtr, std::wstring splitter, const bool ignore_empty = false);
+	/**
+	 * @brief 分割文本
+	 *
+	 * @param sourcePtr 输入文本
+	 * @param splitter 分割符号
+	 * @param item_list 文本组
+	 * @param ignore_empty 是否忽略空白的元素
+	 */
+	extern void split(const std::wstring &sourcePtr, std::wstring splitter, std::vector<std::wstring> &item_list, const bool ignore_empty = false);
+	/**
+	 * @brief 分割文本
+	 *
+	 * @param sourcePtr 输入文本
+	 * @param splitter 分割符号
+	 * @param ignore_empty 是否忽略空白的元素
+	 * @return std::vector<std::string>
+	 */
+	extern std::vector<std::string> split(const std::string &sourcePtr, std::string splitter, const bool ignore_empty = false);
+	/**
+	 * @brief 分割文本
+	 *
+	 * @param sourcePtr 输入文本
+	 * @param splitter 分割符号
+	 * @param item_list 文本组
+	 * @param ignore_empty 是否忽略空白的元素
+	 */
+	extern void split(const std::string &sourcePtr, std::string splitter, std::vector<std::string> &item_list, const bool ignore_empty = false);
 
 	/**
 	 * @brief 转义json文本
@@ -440,13 +589,22 @@ namespace hmc_string_util
 	template <class KEY, class V>
 	extern std::string map_to_jsonA(std::map<KEY, V> item_list);
 	// 大写
-	extern std::string text_to_upper(std::string data);
+	extern std::string text_to_upper(const std::string data);
 	// 大写
-	extern std::wstring text_to_upper(std::wstring data);
+	extern std::wstring text_to_upper(const std::wstring data);
 	// 小写
-	extern std::string text_to_lower(std::string data);
+	extern std::string text_to_lower(const std::string data);
 	// 小写
-	extern std::wstring text_to_lower(std::wstring data);
+	extern std::wstring text_to_lower(const std::wstring data);
+	// 大写
+	extern size_t text_to_upper(std::string *data);
+	// 大写
+	extern size_t text_to_upper(std::wstring *data);
+	// 小写
+	extern size_t text_to_lower(std::string *data);
+	// 小写
+	extern size_t text_to_lower(std::wstring *data);
+
 	/**
 	 * @brief 文本转为严格的文本指针
 	 *
@@ -788,13 +946,13 @@ namespace hmc_string_util
 	 * @param input
 	 * @return std::string
 	 */
-	extern std::string convertMultiStringArray(const std::vector<std::string> input); 
+	extern std::string convertMultiStringArray(const std::vector<std::string> input);
 	/**
-     * @brief 纯文本数组 \0 截断单个string  \0\0结束
-     *
-     * @param input
-     * @return std::vector<std::string>
-     */
+	 * @brief 纯文本数组 \0 截断单个string  \0\0结束
+	 *
+	 * @param input
+	 * @return std::vector<std::string>
+	 */
 	extern std::vector<std::wstring> convertMultiStringArray(const std::wstring input);
 	/**
 	 * @brief 纯文本数组 \0 截断单个string  \0\0结束
@@ -803,22 +961,52 @@ namespace hmc_string_util
 	 * @return std::vector<std::string>
 	 */
 	extern std::vector<std::string> convertMultiStringArray(const std::string input);
+
 	/**
-	 * @brief 拼接文本 并且添加分隔符
-	 *
-	 * @param input 数组
-	 * @param separator 分隔符
-	 * @return std::wstring
+	 * @brief 删除所有的\0 并返回一个带有\0结尾的文本指针
+	 * 
+	 * @param input 
+	 * @return const char* 
 	 */
-	extern std::wstring join(const std::vector<std::wstring> input, wchar_t separator);
+	extern const char *formatCStr(std::string *input);
 	/**
-	 * @brief 拼接文本 并且添加分隔符
-	 *
-	 * @param input 数组
-	 * @param separator 分隔符
-	 * @return std::string
+	 * @brief 合并数组的文本并以\0分隔 并以 \0\0 结束 的文本指针
+	 * 
+	 * @param input 
+	 * @param temp_ptr 
+	 * @return const char* 
 	 */
-	extern std::string join(const std::vector<std::string> input, char separator);
+	extern const char *formatCStr(const std::vector<std::string> input, std::string *temp_ptr);
+	/**
+	 * @brief 删除所有的\0 并返回一个带有\0结尾的文本指针
+	 * 
+	 * @param input 
+	 * @return const wchar_t* 
+	 */
+	extern const wchar_t *formatCStr(std::wstring *input);
+	/**
+	 * @brief 删除所有的\0 并将其\0结尾
+	 * 
+	 * @param input 
+	 * @return const wchar_t* 
+	 */
+	extern void formatCStr(std::wstring &input);
+	/**
+	 * @brief 删除所有的\0 并将其\0结尾
+	 * 
+	 * @param input 
+	 * @return const wchar_t* 
+	 */
+	extern void formatCStr(std::string &input);
+	
+	/**
+	 * @brief 合并数组的文本并以\0分隔 并以 \0\0 结束 的文本指针
+	 * 
+	 * @param input 
+	 * @param temp_ptr 
+	 * @return const wchar_t* 
+	 */
+	extern const wchar_t *formatCStr(const std::vector<std::wstring> input, std::wstring *temp_ptr);
 
 	/**
 	 * @brief 计算出数组文本总长度

@@ -480,7 +480,7 @@ hmc_sock_util::ConnectNetList hmc_sock_util::enumConnectNet(bool tcp, bool udp, 
     processList.resize(lp_cblength);
 
     // 最好使用大型数组，因为很难预测在调用 EnumProcesses 时将存在多少个进程。
-    if (!::EnumProcesses(processList.data(), sizeof(DWORD) * lp_cblength, &lp_cblength))
+    if (!::EnumProcesses(&processList[0], sizeof(DWORD) * lp_cblength, &lp_cblength))
     {
         processList.resize(0);
         return result;
@@ -1045,7 +1045,7 @@ std::vector<std::wstring> hmc_sock_util::getDomainAddress(std::wstring domainNam
 
         for (ptr = addrInfoResult; ptr != nullptr; ptr = ptr->ai_next)
         {
-            if (::GetNameInfoW(ptr->ai_addr, static_cast<socklen_t>(ptr->ai_addrlen), ipBuffer.data(), NI_MAXHOST, nullptr, 0, NI_NUMERICHOST) != 0)
+            if (::GetNameInfoW(ptr->ai_addr, static_cast<socklen_t>(ptr->ai_addrlen), &ipBuffer[0], NI_MAXHOST, nullptr, 0, NI_NUMERICHOST) != 0)
             {
                 continue;
             }

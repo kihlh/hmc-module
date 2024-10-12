@@ -24,6 +24,7 @@
 #include <variant>
 
 #include "hmc_string_util.h"
+#include "hmc_util.h"
 
 #if defined(__x86_64__) || defined(_M_X64)
 const size_t BIT_2GB = 8589934592ull;
@@ -117,7 +118,6 @@ typedef enum
 
 typedef std::variant<std::wstring, std::string, std::vector<std::wstring>, std::vector<std::string>> STR_VARIANT_VALUE;
 
-
 typedef std::variant<
 	std::monostate,
 	std::wstring,
@@ -134,8 +134,7 @@ typedef std::variant<
 	std::vector<int>,
 	std::vector<unsigned long long>,
 	// any 只允许存放 std::vector<js_variant_value>  std::map<std::string,js_variant_value>   std::map<std::wstring,js_variant_value>
-	std::pair<js_valuetype, std::any>
-	>
+	std::pair<js_valuetype, std::any>>
 	js_variant_value;
 
 namespace hmc_napi_get_value
@@ -1640,6 +1639,286 @@ namespace HMC_PromiseStore
 	extern std::map<size_t, chFormatArgFun> PromiseFormatEventListenerFunList;
 	extern std::map<size_t, chExecuteWorkFun> PromiseWorkEventListenerFunList;
 	extern std::map<size_t, chExecuteResultFormatFun> PromiseResultFormatEventListenerFunList;
+
+}
+
+namespace HMC_PromiseUtilV2
+{
+	template <typename GET_SHELL_ENV_INFO_ID>
+	struct EnvNextWorkDataTemplate
+	{
+		napi_deferred deferred;
+		napi_async_work work;
+
+		// 没有格式化的话默认-> `vector<wstring>` `vector<int64_t>` `int64_t` `wstring` `vector<uint8_t>` `bool` `Array<wstring>`
+		std::vector<js_variant_value> *arguments;
+		// js_variant_value *index1;
+		js_variant_value *Result;
+		GET_SHELL_ENV_INFO_ID TAKE_TYPE;
+
+		static void gc(EnvNextWorkDataTemplate *work)
+		{
+			if (work == NULL)
+				return;
+
+			if (work->arguments != NULL)
+			{
+				work->arguments->clear();
+				work->arguments->shrink_to_fit();
+				delete work->arguments;
+				work->arguments = nullptr;
+			}
+
+			HMC_GC_CPP_BASIC_PTR(work->Result);
+			::VirtualFree(work, 0, 0x00008000);
+		}
+
+		static EnvNextWorkDataTemplate *make()
+		{
+			EnvNextWorkDataTemplate *workData = HMC_VcAllocAutoLength(EnvNextWorkDataTemplate);
+
+			if (workData != NULL)
+			{
+				workData->arguments = new std::vector<js_variant_value>();
+				workData->Result = new js_variant_value();
+				workData->TAKE_TYPE = GET_SHELL_ENV_INFO_ID::NONE;
+			}
+
+			return workData;
+		}
+
+		bool exists(size_t index, bool existsValue = false)
+		{
+			bool result = (this->arguments->size() > index);
+			if (existsValue)
+			{
+				result = this->arguments->at(index).index() != 0;
+			}
+
+			return result;
+		}
+
+		template <typename T>
+		bool exists(size_t index)
+		{
+			bool result = (this->arguments->size() > index);
+			return result;
+		}
+
+		bool exists(size_t index, size_t valueIndex)
+		{
+			bool result = (this->arguments->size() > index);
+
+			auto temp = this->arguments->at(index);
+			result = temp.index() == valueIndex;
+
+			return result;
+		}
+
+		template <typename T>
+		T get(size_t index)
+		{
+			T result = T();
+			if (this->exists<T>(index))
+			{
+				result = std::get<T>(this->arguments->at(index));
+			}
+
+			return result;
+		}
+
+		template <typename T>
+		T get(size_t index, T orValue)
+		{
+			T result = T();
+			if (this->exists<T>(index))
+			{
+				result = std::get<T>(this->arguments->at(index));
+			}
+			else {
+				(*result) = orValue;
+			}
+
+			return result;
+		}
+
+		template <typename T>
+		bool get_if(size_t index,T *varPtr)
+		{
+			bool result = false;
+			if (this->exists<T>(index))
+			{
+				(*varPtr) = std::get<T>(this->arguments->at(index));
+				result = true;
+			}
+
+			return result;
+		}
+
+		template <typename T>
+		bool get_if(size_t index, T* varPtr, T orValue)
+		{
+			bool result = false;
+			if (this->exists<T>(index))
+			{
+				(*varPtr) = std::get<T>(this->arguments->at(index));
+				result = true;
+			}
+			else {
+				(*varPtr) = orValue;
+				result = true;
+			}
+
+			return result;
+		}
+	};
+
+	template <typename GET_SHELL_ENV_INFO_ID, typename EnvNextWorkData>
+	bool get_argumentsTemplate(napi_env env, hmc_NodeArgsValue input, void *Work, const std::map<GET_SHELL_ENV_INFO_ID, std::vector<std::tuple<size_t, js_valuetype>>> &GET_SHELL_EQ_TYPE_LIST)
+	{
+		EnvNextWorkData *work = (EnvNextWorkData *)Work;
+
+		if (!input.eq(0, js_number, true))
+		{
+			return false;
+		}
+
+		work->TAKE_TYPE = (GET_SHELL_ENV_INFO_ID)at_Number32Or(0, 0);
+
+		// 移除掉第一位的命令位
+		input.removeIndex(0);
+
+		for (auto &&EQ_TYPE : GET_SHELL_EQ_TYPE_LIST)
+		{
+			if (EQ_TYPE.first == work->TAKE_TYPE)
+			{
+
+				auto second = EQ_TYPE.second;
+				if (!input.eq(second, true))
+				{
+					return false;
+				}
+
+				break;
+			}
+		}
+
+		for (size_t index = 0; index < input.size(); index++)
+		{
+			if (input.exists(index))
+			{
+				auto temp = input.get_variant(index);
+				work->arguments->push_back(temp);
+			}
+		}
+
+		return true;
+	}
+
+	template <typename GET_SHELL_ENV_INFO_ID, typename EnvNextWorkData>
+	napi_value ExecuteSyncTemplate(napi_env env, napi_callback_info info, const std::map<GET_SHELL_ENV_INFO_ID, std::vector<std::tuple<size_t, js_valuetype>>> &GET_SHELL_EQ_TYPE_LIST, std::function<void(EnvNextWorkData *work)> main)
+	{
+		napi_value result = as_Null();
+
+		try
+		{
+			auto input = hmc_NodeArgsValue(env, info);
+			auto *workData = EnvNextWorkData::make();
+
+			HMC_FreeAnyAuto(EnvNextWorkData::gc(workData););
+
+			bool is_eq_args = HMC_PromiseUtilV2::get_arguments<GET_SHELL_ENV_INFO_ID, EnvNextWorkData>(env, input, workData, GET_SHELL_EQ_TYPE_LIST);
+			if (workData == NULL || !is_eq_args)
+			{
+				return result;
+			}
+
+			main(workData);
+
+			result = hmc_napi_create_value::Variant(env, *workData->Result);
+			return result;
+		}
+		HMC_CATCH_ALL;
+		return hmc_napi_create_value::Error(env, "A fatal error occurred unexpectedly.", __FUNCSIG__, "HMC_SHELL_API_CATCH");
+	}
+
+	template <typename EnvNextWorkData>
+	void ExecuteAsyncWorkTemplate(napi_env env, void *data, std::function<void(EnvNextWorkData *work)> main)
+	{
+		EnvNextWorkData *workData = (EnvNextWorkData *)data;
+		try
+		{
+			main(workData);
+		}
+		HMC_CATCH_ALL;
+	}
+
+	// 异步任务完成后的回调函数
+
+	template <typename EnvNextWorkData>
+	void ResolveWorkTemplate(napi_env env, napi_status status, void *data)
+	{
+		EnvNextWorkData *workData = (EnvNextWorkData *)data;
+		HMC_FreeAnyAuto(EnvNextWorkData::gc(workData););
+
+		napi_value result;
+		napi_get_null(env, &result);
+
+		if (workData == NULL || workData->Result == NULL || workData->Result->index() == 0)
+		{
+			if (workData != NULL)
+			{
+				napi_resolve_deferred(env, workData->deferred, result);
+				napi_delete_async_work(env, workData->work);
+			}
+			return;
+		}
+
+		result = hmc_napi_create_value::Variant(env, *workData->Result);
+
+		if (result == NULL)
+		{
+			napi_get_null(env, &result);
+		}
+
+		napi_resolve_deferred(env, workData->deferred, result);
+		napi_delete_async_work(env, workData->work);
+	}
+
+	// 启动异步任务的函数
+
+	template <typename GET_SHELL_ENV_INFO_ID, typename EnvNextWorkData>
+	napi_value StartAsyncTaskTemplate(
+		napi_env env,
+		napi_callback_info info,
+		const std::map<GET_SHELL_ENV_INFO_ID, std::vector<std::tuple<size_t, js_valuetype>>> &GET_SHELL_EQ_TYPE_LIST,
+		napi_async_execute_callback execute,
+		napi_async_complete_callback complete)
+	{
+		napi_value promise;
+		try
+		{
+			napi_value resourceName;
+			napi_create_string_utf8(env, __FUNCSIG__, NAPI_AUTO_LENGTH, &resourceName);
+
+			auto *workData = EnvNextWorkData::make();
+
+			auto input = hmc_NodeArgsValue(env, info);
+			bool is_eq_args = HMC_PromiseUtilV2::get_arguments<GET_SHELL_ENV_INFO_ID, EnvNextWorkData>(env, input, workData, GET_SHELL_EQ_TYPE_LIST);
+			if (workData == NULL || !is_eq_args)
+			{
+				EnvNextWorkData::gc(workData);
+				return as_Null();
+			}
+
+			napi_create_promise(env, &workData->deferred, &promise);
+			napi_create_async_work(env, nullptr, resourceName, execute, complete, workData, &workData->work);
+			napi_queue_async_work(env, workData->work);
+			return promise;
+		}
+		HMC_CATCH_ALL;
+		return hmc_napi_create_value::Error(env, "A fatal error occurred unexpectedly.", __FUNCSIG__, "HMC_SHELL_API_CATCH");
+	}
 
 }
 

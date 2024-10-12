@@ -162,6 +162,7 @@
     <ClCompile Include="temp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\hmc-module.h" />
     <ClInclude Include="..\..\include\hmc_automation_util.h" />
     <ClInclude Include="..\..\include\hmc_byte_util.h" />
     <ClInclude Include="..\..\include\hmc_clip_util.h" />

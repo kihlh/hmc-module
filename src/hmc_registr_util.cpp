@@ -1489,7 +1489,7 @@ std::vector<std::wstring> hmc_registr_util::GetRegistrMulti(HKEY hKey, std::wstr
 	DWORD pDataSize = 0;
 
 	// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
-	if (RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
+	if (::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
 	{
 		std::wstring lpWstrList;
 		lpWstrList.resize(pDataSize / sizeof(wchar_t));
@@ -1548,7 +1548,7 @@ std::vector<std::string> hmc_registr_util::GetRegistrMulti(HKEY hKey, std::strin
 	DWORD pDataSize = 0;
 
 	// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
-	if (RegQueryValueExA(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
+	if (::RegQueryValueExA(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
 	{
 		std::string lpWstrList;
 		lpWstrList.resize(pDataSize / sizeof(char));
@@ -1607,11 +1607,11 @@ std::wstring hmc_registr_util::GetRegistrString(HKEY hKey, std::wstring FolderPa
 	DWORD pDataSize = 0;
 
 	// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
-	if (RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
+	if (::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
 	{
 
 		// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
-		if (RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
+		if (::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
 		{
 
 			if (pDataSize < 1)
@@ -1620,9 +1620,10 @@ std::wstring hmc_registr_util::GetRegistrString(HKEY hKey, std::wstring FolderPa
 			}
 
 			size_t char_len = pDataSize / sizeof(wchar_t);
-			wchar_t *lpValue = new wchar_t[char_len];
 
-			if (::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, reinterpret_cast<BYTE *>(lpValue), &pDataSize) == ERROR_SUCCESS)
+			std::unique_ptr<wchar_t[]> lpValue (new (std::nothrow) wchar_t[char_len]);
+
+			if (::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, reinterpret_cast<BYTE *>(lpValue.get()), &pDataSize) == ERROR_SUCCESS)
 			{
 				char_len = pDataSize / sizeof(wchar_t);
 				result.reserve(char_len);
@@ -1666,7 +1667,7 @@ std::string hmc_registr_util::GetRegistrString(HKEY hKey, std::string FolderPath
 	DWORD pDataSize = 0;
 
 	// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
-	if (RegQueryValueExA(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
+	if (::RegQueryValueExA(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
 	{
 
 		if (pDataSize < 1)
@@ -1676,9 +1677,9 @@ std::string hmc_registr_util::GetRegistrString(HKEY hKey, std::string FolderPath
 
 		size_t char_len = pDataSize / sizeof(char);
 
-		char *lpValue = new char[char_len];
+		std::unique_ptr<char[]> lpValue (new (std::nothrow) char[char_len]);
 
-		if (::RegQueryValueExA(open_hkey, KeyName.c_str(), nullptr, &lpType, reinterpret_cast<BYTE *>(lpValue), &pDataSize) == ERROR_SUCCESS)
+		if (::RegQueryValueExA(open_hkey, KeyName.c_str(), nullptr, &lpType, reinterpret_cast<BYTE *>(lpValue.get()), &pDataSize) == ERROR_SUCCESS)
 		{
 
 			char_len = pDataSize / sizeof(char);
@@ -1721,11 +1722,11 @@ std::uint32_t hmc_registr_util::GetRegistrInt32(HKEY hKey, std::wstring FolderPa
 	DWORD pDataSize = 0;
 
 	// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
-	if (RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
+	if (::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
 	{
 
 		// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
-		if (RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
+		if (::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
 		{
 			if (lpType == REG_QWORD)
 			{
@@ -1813,11 +1814,11 @@ std::uint64_t hmc_registr_util::GetRegistrInt64(HKEY hKey, std::wstring FolderPa
 	DWORD pDataSize = 0;
 
 	// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
-	if (RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
+	if (::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
 	{
 
 		// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
-		if (RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
+		if (::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
 		{
 
 			if (pDataSize < 1 || pDataSize > sizeof(std::uint64_t))
@@ -1892,8 +1893,8 @@ bool hmc_registr_util::removeRegistrTree(HKEY hKey, std::string subKey)
 	auto Key = splitSubKey.back();
 	splitSubKey.pop_back();
 
-	auto new_SubKey = hmc_string_util::join(splitSubKey, '\\');
-	result = removeRegistrTree(hKey, new_SubKey, Key);
+	auto cloneSubKey = hmc_string_util::join(splitSubKey, '\\');
+	result = removeRegistrTree(hKey, cloneSubKey, Key);
 	return result;
 }
 
@@ -1910,9 +1911,9 @@ bool hmc_registr_util::removeRegistrTree(HKEY hKey, std::wstring subKey)
 	auto Key = splitSubKey.back();
 	splitSubKey.pop_back();
 
-	auto new_SubKey = hmc_string_util::join(splitSubKey, '\\');
+	auto cloneSubKey = hmc_string_util::join(splitSubKey, '\\');
 
-	return removeRegistrTree(hKey, new_SubKey, Key);
+	return removeRegistrTree(hKey, cloneSubKey, Key);
 }
 
 bool hmc_registr_util::removeRegistrFolder(HKEY hKey, std::wstring FolderPath, bool tree)
@@ -1928,9 +1929,9 @@ bool hmc_registr_util::removeRegistrFolder(HKEY hKey, std::wstring FolderPath, b
 	auto Key = splitSubKey.back();
 	splitSubKey.pop_back();
 
-	auto new_SubKey = hmc_string_util::join(splitSubKey, '\\');
+	auto cloneSubKey = hmc_string_util::join(splitSubKey, '\\');
 
-	return removeRegistrFolder(hKey, new_SubKey, Key, tree);
+	return removeRegistrFolder(hKey, cloneSubKey, Key, tree);
 }
 
 bool hmc_registr_util::removeRegistrFolder(HKEY hKey, std::string FolderPath, bool tree)
@@ -1946,9 +1947,9 @@ bool hmc_registr_util::removeRegistrFolder(HKEY hKey, std::string FolderPath, bo
 	auto Key = splitSubKey.back();
 	splitSubKey.pop_back();
 
-	auto new_SubKey = hmc_string_util::join(splitSubKey, '\\');
+	auto cloneSubKey = hmc_string_util::join(splitSubKey, '\\');
 
-	return removeRegistrFolder(hKey, new_SubKey, Key, tree);
+	return removeRegistrFolder(hKey, cloneSubKey, Key, tree);
 }
 
 bool hmc_registr_util::removeRegistrValue(HKEY hKey, const std::wstring FolderPath, const std::vector<std::wstring> keyList)
@@ -2209,7 +2210,6 @@ std::wstring hmc_registr_util::chQueryFolderInfoW::to_json(hmc_registr_util::chQ
 	result.push_back('}');
 
 	hmc_string_util::removeAllCharPtr(result, '\0');
-
 	return result;
 }
 
@@ -2765,399 +2765,3 @@ hmc_registr_util::chValueData hmc_registr_util::getRegistrBuffer(HKEY hKey, std:
 	return result;
 }
 
-
-#ifdef HMC_IMPORT_HMC_REGISTR_UTIL_REMOVE
-
-bool hmc_registr_util::setRegistrValue::set(hmc_registr_util::REG_TYPE type, const std::vector<BYTE>& value)
-{
-
-	if (!is_ready())
-		return false;
-
-	// wstring
-	if (is_wide)
-	{
-		return SetRegistrSourceValue(root_hKey, NameW, type, value);
-	}
-
-	// string
-	return SetRegistrSourceValue(root_hKey, NameA, type, value);
-}
-
-bool hmc_registr_util::setRegistrValue::set(DWORD type, const std::vector<BYTE>& value)
-{
-	return set((REG_TYPE)type, value);
-}
-
-bool hmc_registr_util::setRegistrValue::set(/*REG_NONE*/)
-{
-	if (!is_ready())
-		return false;
-
-	if (is_wide)
-	{
-		return ERROR_SUCCESS == ::RegSetValueExW(open_hkey, NameW.c_str(), 0, REG_NONE, nullptr, 0ul);
-	}
-	return ERROR_SUCCESS == ::RegSetValueExA(open_hkey, NameA.c_str(), 0, REG_NONE, nullptr, 0ul);
-}
-
-bool hmc_registr_util::setRegistrValue::set(int64_t number, REG_TYPE type /*REG_QWORD*/)
-{
-	if (!is_ready())
-		return false;
-
-	if (is_wide)
-	{
-		return ERROR_SUCCESS == ::RegSetValueExW(open_hkey, NameW.c_str(), 0, type, reinterpret_cast<const BYTE*>(&number), static_cast<DWORD>(sizeof(number)));
-	}
-	return ERROR_SUCCESS == ::RegSetValueExA(open_hkey, NameA.c_str(), 0, type, reinterpret_cast<const BYTE*>(&number), static_cast<DWORD>(sizeof(number)));
-}
-
-bool hmc_registr_util::setRegistrValue::set(long number, REG_TYPE type /*REG_DWORD*/)
-{
-	if (!is_ready())
-		return false;
-
-	if (is_wide)
-	{
-		return ERROR_SUCCESS == ::RegSetValueExW(open_hkey, NameW.c_str(), 0, type, reinterpret_cast<const BYTE*>(&number), static_cast<DWORD>(sizeof(number)));
-	}
-	return ERROR_SUCCESS == ::RegSetValueExA(open_hkey, NameA.c_str(), 0, type, reinterpret_cast<const BYTE*>(&number), static_cast<DWORD>(sizeof(number)));
-}
-
-bool hmc_registr_util::setRegistrValue::set(std::wstring input /*REG_SZ*/, bool expand /* [true] to REG_EXPAND_SZ*/)
-{
-	if (!is_ready())
-		return false;
-
-	return ERROR_SUCCESS == ::RegSetValueExW(
-		open_hkey,
-		NameW.c_str(),
-		0,
-		(expand ? REG_EXPAND_SZ : REG_SZ),
-		reinterpret_cast<const BYTE*>(input.c_str()),
-		static_cast<DWORD>(input.size() * sizeof(wchar_t)));
-}
-
-bool hmc_registr_util::setRegistrValue::set(std::string input /*REG_SZ*/, bool expand /* [true] to REG_EXPAND_SZ*/)
-{
-
-	if (!is_ready())
-		return false;
-
-	std::vector<BYTE> input_value;
-
-	return ERROR_SUCCESS == ::RegSetValueExA(
-		open_hkey,
-		NameA.c_str(),
-		0,
-		(expand ? REG_EXPAND_SZ : REG_SZ),
-		reinterpret_cast<const BYTE*>(input.c_str()),
-		static_cast<DWORD>(input.size() * sizeof(char)));
-}
-
-bool hmc_registr_util::setRegistrValue::setRegistrValue::set(/*REG_MULTI_SZ*/ const std::vector<std::wstring>& input)
-{
-	return SetRegistrMulti(root_hKey, subKeyW, NameW, input);
-}
-
-bool hmc_registr_util::setRegistrValue::setRegistrValue::set(/*REG_MULTI_SZ*/ const std::vector<std::string>& input)
-{
-	return SetRegistrMulti(root_hKey, subKeyA, NameA, input);
-}
-
-std::string hmc_registr_util::RegistrValueUtil::utf16_to_ansi(const std::wstring input)
-{
-	const wchar_t* pwszText = input.c_str();
-
-	if (pwszText == NULL || wcslen(pwszText) == 0)
-	{
-		return std::string();
-	}
-	int iSizeInBytes = WideCharToMultiByte(CP_ACP, 0, pwszText, -1, NULL, 0, NULL, NULL);
-	char* pMultiByte = new (std::nothrow) char[iSizeInBytes];
-	if (pMultiByte == NULL)
-	{
-		return std::string();
-	}
-
-	memset(pMultiByte, 0, iSizeInBytes);
-	WideCharToMultiByte(CP_ACP, 0, pwszText, -1, pMultiByte, iSizeInBytes, NULL, NULL);
-
-	std::string strResult = std::string(pMultiByte);
-	delete[] pMultiByte;
-	pMultiByte = NULL;
-
-	return strResult;
-}
-
-std::wstring hmc_registr_util::RegistrValueUtil::ansi_to_utf16(const std::string input)
-{
-	const char* pszText = input.c_str();
-
-	if (pszText == NULL || strlen(pszText) == 0)
-	{
-		return std::wstring();
-	}
-	int iSizeInChars = MultiByteToWideChar(CP_ACP, 0, pszText, -1, NULL, 0);
-	wchar_t* pWideChar = new (std::nothrow) wchar_t[iSizeInChars];
-	if (pWideChar == NULL)
-	{
-		return std::wstring();
-	}
-
-	wmemset(pWideChar, 0, iSizeInChars);
-	MultiByteToWideChar(CP_ACP, 0, pszText, -1, pWideChar, iSizeInChars);
-
-	std::wstring strResult = std::wstring(pWideChar);
-	delete[] pWideChar;
-	pWideChar = NULL;
-	return strResult;
-}
-
-bool hmc_registr_util::RegistrValueUtil::is_ready()
-{
-	return (!_is_ready || !root_hKey || (subKeyW.empty() && subKeyA.empty())) ? false : true;
-}
-
-hmc_registr_util::getRegistrValue::getRegistrValue(HKEY hKey, std::wstring subKey, std::wstring Name)
-{
-	root_hKey = hKey;
-	_is_ready = ::RegOpenKeyExW(hKey, subKey.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) == ERROR_SUCCESS;
-	subKeyW.append(subKey);
-	NameW.append(Name);
-
-	// subKeyA.append(utf16_to_ansi(subKey));
-	NameA.append(utf16_to_ansi(Name));
-	is_wide = true;
-}
-
-hmc_registr_util::getRegistrValue::getRegistrValue(HKEY hKey, std::string subKey, std::string Name)
-{
-	root_hKey = hKey;
-	_is_ready = ::RegOpenKeyExA(hKey, subKey.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) == ERROR_SUCCESS;
-	subKeyA.append(subKey);
-	NameA.append(Name);
-	// subKeyW.append(ansi_to_utf16(subKey));
-	NameW.append(ansi_to_utf16(Name));
-	is_wide = false;
-}
-
-hmc_registr_util::setRegistrValue::setRegistrValue(HKEY hKey, std::wstring subKey, std::wstring Name)
-{
-	root_hKey = hKey;
-	_is_ready = ::RegOpenKeyExW(hKey, subKey.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) == ERROR_SUCCESS;
-	subKeyW.append(subKey);
-	NameW.append(Name);
-
-	// subKeyA.append(utf16_to_ansi(subKey));
-	NameA.append(utf16_to_ansi(Name));
-	is_wide = true;
-}
-
-hmc_registr_util::setRegistrValue::setRegistrValue(HKEY hKey, std::string subKey, std::string Name)
-{
-	root_hKey = hKey;
-	_is_ready = ::RegOpenKeyExA(hKey, subKey.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) == ERROR_SUCCESS;
-	subKeyA.append(subKey);
-	NameA.append(Name);
-	// subKeyW.append(ansi_to_utf16(subKey));
-	NameW.append(ansi_to_utf16(Name));
-	is_wide = false;
-}
-
-hmc_registr_util::RegistrValueUtil::~RegistrValueUtil()
-{
-	if (open_hkey != nullptr)
-	{
-		::RegCloseKey(open_hkey);
-		open_hkey = nullptr;
-	}
-
-	if (root_hKey != nullptr)
-	{
-		root_hKey = nullptr;
-	}
-}
-
-std::vector<BYTE> hmc_registr_util::getRegistrValue::getBuff()
-{
-	if (!is_ready())
-		return {};
-	return GetRegistrSourceValue(open_hkey, NameW).value;
-}
-
-int32_t hmc_registr_util::getRegistrValue::getInt32()
-{
-	if (!is_ready())
-		return 0;
-
-	auto ValueStat = getValueStat(open_hkey, NameW);
-	DWORD type = REG_DWORD;
-	std::uint32_t result = 0;
-
-	// 防止溢出
-	if (ValueStat.size > sizeof(std::uint32_t))
-	{
-		return 0ull;
-	}
-
-	if (::RegQueryValueExW(open_hkey, NameW.c_str(), 0, &type, reinterpret_cast<BYTE*>(&result), &ValueStat.size) == ERROR_SUCCESS)
-	{
-		// 缩减
-		return static_cast<std::uint32_t>(result);
-	}
-	return 0ul;
-}
-
-int64_t hmc_registr_util::getRegistrValue::getInt64()
-{
-	if (!is_ready())
-		return 0ull;
-	auto ValueStat = getValueStat(open_hkey, NameW);
-	DWORD type = REG_QWORD;
-	std::uint64_t result = 0;
-
-	// 防止溢出
-	if (ValueStat.size > sizeof(std::uint64_t))
-	{
-		return 0ull;
-	}
-
-	if (::RegQueryValueExW(open_hkey, NameW.c_str(), 0, &type, reinterpret_cast<BYTE*>(&result), &ValueStat.size) == ERROR_SUCCESS)
-	{
-		return result;
-	}
-	return 0ull;
-}
-
-HWND hmc_registr_util::getRegistrValue::getHwnd()
-{
-	if (!is_ready())
-		return NULL;
-	auto value = GetRegistrSourceValue(open_hkey, NameW);
-
-	return (HWND)value.getInt64();
-}
-
-std::vector<std::wstring> hmc_registr_util::getRegistrValue::getMultiW()
-{
-	if (!is_ready())
-		return {};
-	return GetRegistrMulti(root_hKey, subKeyW, NameW);
-}
-
-std::vector<std::string> hmc_registr_util::getRegistrValue::getMultiA()
-{
-	if (!is_ready())
-		return {};
-	return GetRegistrMulti(root_hKey, subKeyA, NameA);
-}
-
-std::wstring hmc_registr_util::getRegistrValue::getStringW(bool expand)
-{
-	if (!is_ready())
-		return L"";
-
-	auto sizep = hmc_registr_util::getValueStat(open_hkey, NameW);
-
-	std::wstring result = std::wstring();
-
-	DWORD cBuffer = (sizep.size / sizeof(WCHAR)) + 1;
-	LPWSTR lpData = new WCHAR[cBuffer];
-
-	DWORD type = expand ? REG_EXPAND_SZ : REG_SZ;
-
-	if (::RegQueryValueExW(open_hkey, NameW.c_str(), 0, &type, reinterpret_cast<std::uint8_t*>(lpData), &sizep.size) == ERROR_SUCCESS)
-	{
-		result.append(lpData);
-	}
-
-	return result;
-}
-
-std::string hmc_registr_util::getRegistrValue::getStringA(bool expand)
-{
-	if (!is_ready())
-		return "";
-
-	auto sizep = hmc_registr_util::getValueStat(open_hkey, NameA);
-
-	std::string result = std::string();
-	std::vector<std::uint8_t> value_data(sizep.size);
-
-	DWORD type = expand ? REG_EXPAND_SZ : REG_SZ;
-
-	if (::RegQueryValueExA(open_hkey, NameA.c_str(), 0, &type, reinterpret_cast<std::uint8_t*>(value_data.data()), &sizep.size) == ERROR_SUCCESS)
-	{
-		result.reserve(sizep.size);
-
-		for (size_t i = 0; i < sizep.size; i++)
-		{
-			result.push_back(static_cast<char>(value_data.at(i)));
-		}
-	}
-
-	return result;
-}
-
-bool hmc_registr_util::getRegistrValue::isValue()
-{
-	if (!is_ready())
-		return false;
-	return hmc_registr_util::getValueStat(open_hkey, NameW).exists;
-}
-
-bool hmc_registr_util::getRegistrValue::isString()
-{
-	if (!is_ready())
-		return false;
-
-	auto stat = hmc_registr_util::getValueStat(open_hkey, NameW);
-	return stat.isString();
-}
-
-bool hmc_registr_util::getRegistrValue::isNumber()
-{
-	if (!is_ready())
-		return false;
-	auto stat = hmc_registr_util::getValueStat(open_hkey, NameW);
-	return stat.isNumber();
-}
-
-bool hmc_registr_util::getRegistrValue::isInt64()
-{
-	if (!is_ready())
-		return false;
-	auto stat = hmc_registr_util::getValueStat(open_hkey, NameW);
-	return stat.isInt64();
-}
-
-bool hmc_registr_util::getRegistrValue::isType(DWORD type)
-{
-	return getType() == type;
-}
-
-hmc_registr_util::chValueStat hmc_registr_util::getRegistrValue::getStat()
-{
-	if (!is_ready())
-		return hmc_registr_util::chValueStat();
-
-	return hmc_registr_util::getValueStat(open_hkey, NameW);
-}
-
-DWORD hmc_registr_util::getRegistrValue::getType()
-{
-	if (!is_ready())
-		return REG_NONE;
-	return hmc_registr_util::getValueStat(open_hkey, NameW).type;
-}
-
-DWORD hmc_registr_util::getRegistrValue::getSize()
-{
-	if (!is_ready())
-		return REG_NONE;
-	return hmc_registr_util::getValueStat(open_hkey, NameW).size;
-}
-
-#endif

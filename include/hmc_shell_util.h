@@ -23,6 +23,7 @@ namespace hmc_shell_util
         bool isValid();
 
         chShortcutLinkItem();
+        std::wstring to_json();
     };
 
     extern std::vector<DWORD> getFileAttributesInfoList(const std::wstring &path);
@@ -92,6 +93,13 @@ namespace hmc_shell_util
      * @return chShortcutLinkItem
      */
     extern chShortcutLinkItem getShortcutLink(std::wstring lnkPath);
+    /**
+     * @brief 获取快捷方式的信息
+     *
+     * @param lnkPath 快捷方式的路径
+     * @return chShortcutLinkItem
+     */
+    extern bool getShortcutLink(std::wstring lnkPath, std::wstring *path, int64_t *showCmd = nullptr, std::wstring *args = nullptr, std::wstring *desc = nullptr, std::wstring *icon = nullptr, int64_t *iconIndex = nullptr, std::wstring *cwd = nullptr, int64_t *hotkey = nullptr);
 
     /**
      * @brief 创建快捷方式
@@ -225,6 +233,10 @@ namespace hmc_shell_util
      */
     extern bool SetFolderIcon(const std::wstring &folderPath, const std::wstring &iconPath, int iconIndex);
 
+    extern bool SetExtensionIcon(const std::wstring &extensionName, const std::wstring &typeName, const std::wstring &iconPath, const int &iconIndex);
+
+    extern bool SetAppURLProtocol(const std::wstring &protocolName, const std::wstring &appPath, const std::wstring &command = L"%1");
+
     /**
      * 播放win警告的声音
      */
@@ -342,7 +354,7 @@ namespace hmc_shell_util
             /**目录软链接*/
             SOFT_LINK_DIR = 166,
             /**目录链接点*/
-            SYMBOLIC_LINK_DIR = 172,
+            JUNCTION_POINT_DIR = 172,
             /**是个未知的类型 */
             UNKNOWN = 0
         };
@@ -354,7 +366,7 @@ namespace hmc_shell_util
          * @return LINK_TYPE
          */
         LINK_TYPE getLinkType(const std::wstring &path);
-        
+
         /**
          * @brief 创建文件夹软链接
          *
@@ -419,7 +431,7 @@ namespace hmc_shell_util
         bool isDirLink(const std::wstring &Path);
 
         /**
-         * 
+         *
          * @brief 判断是目录链接点
          *
          * @param filePath
@@ -710,8 +722,6 @@ namespace hmc_shell_util
          */
         static bool hasOnce(const std::string &key);
     };
-
-
 
 }
 

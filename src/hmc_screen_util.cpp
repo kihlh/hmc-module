@@ -63,7 +63,7 @@ bool hmc_screen_util::captureBmpToFile(std::variant<std::string, std::wstring> o
         HGDIOBJ hOldBitmap = ::SelectObject(hMemoryDC, hBitmap);
 
         // 将屏幕内容拷贝到内存设备上下文中
-        BitBlt(hMemoryDC, 0, 0, nScopeWidth, nScopeHeight, hScreenDC, upperLeftX, upperLeftY, SRCCOPY);
+        ::BitBlt(hMemoryDC, 0, 0, nScopeWidth, nScopeHeight, hScreenDC, upperLeftX, upperLeftY, SRCCOPY);
 
         // 保存位图到文件
         BITMAPFILEHEADER fileHeader;
@@ -71,7 +71,7 @@ bool hmc_screen_util::captureBmpToFile(std::variant<std::string, std::wstring> o
         BITMAP bitmap;
 
         // 获取位图信息
-        GetObject(hBitmap, sizeof(BITMAP), &bitmap);
+        ::GetObject(hBitmap, sizeof(BITMAP), &bitmap);
 
         DWORD dwBmpSize = ((bitmap.bmWidth * bitmap.bmBitsPixel + 31) / 32) * 4 * bitmap.bmHeight;
         HANDLE hDIB = ::GlobalAlloc(GHND, dwBmpSize + sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER));
@@ -107,15 +107,15 @@ bool hmc_screen_util::captureBmpToFile(std::variant<std::string, std::wstring> o
         {
             HANDLE hFile = CreateFileW(std::get<std::wstring>(output).c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
             DWORD dwBytesWritten;
-            WriteFile(hFile, lpbitmap, dwBmpSize + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER), &dwBytesWritten, NULL);
-            CloseHandle(hFile);
+            ::WriteFile(hFile, lpbitmap, dwBmpSize + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER), &dwBytesWritten, NULL);
+            ::CloseHandle(hFile);
         }
         else if (std::holds_alternative<std::string>(output))
         {
             HANDLE hFile = CreateFileA(std::get<std::string>(output).c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
             DWORD dwBytesWritten;
-            WriteFile(hFile, lpbitmap, dwBmpSize + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER), &dwBytesWritten, NULL);
-            CloseHandle(hFile);
+            ::WriteFile(hFile, lpbitmap, dwBmpSize + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER), &dwBytesWritten, NULL);
+            ::CloseHandle(hFile);
         }
 
         // 清理

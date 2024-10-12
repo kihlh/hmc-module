@@ -221,11 +221,11 @@ namespace hmc_Keyboard
         initializeBasicValues();
 
         GpEventSessionToCallBack = callback;
-        std::thread new_thread = std::thread(InitKeyboardEventHookWorker);
+        std::thread threadHandlePointer = std::thread(InitKeyboardEventHookWorker);
 
-        GpWorkerThreadID = hmc_automation_util::toThreadId(new_thread.get_id());
+        GpWorkerThreadID = hmc_automation_util::toThreadId(threadHandlePointer.get_id());
 
-        new_thread.detach();
+        threadHandlePointer.detach();
 
         result = GpWorkerThreadID != 0;
         return result;
@@ -242,11 +242,11 @@ namespace hmc_Keyboard
 
         initializeBasicValues();
 
-        std::thread new_thread = std::thread(InitKeyboardEventHookWorker);
+        std::thread threadHandlePointer = std::thread(InitKeyboardEventHookWorker);
 
-        GpWorkerThreadID = hmc_automation_util::toThreadId(new_thread.get_id());
+        GpWorkerThreadID = hmc_automation_util::toThreadId(threadHandlePointer.get_id());
 
-        new_thread.detach();
+        threadHandlePointer.detach();
 
         result = GpWorkerThreadID != 0;
         return result;
@@ -785,11 +785,11 @@ namespace hmc_mouse
         }
         initializeBasicValues();
 
-        std::thread new_thread = std::thread(InitHookMouse);
+        std::thread threadHandlePointer = std::thread(InitHookMouse);
 
-        GpMouseWorkerThreadID = hmc_automation_util::toThreadId(new_thread.get_id());
+        GpMouseWorkerThreadID = hmc_automation_util::toThreadId(threadHandlePointer.get_id());
 
-        new_thread.detach();
+        threadHandlePointer.detach();
 
         result = GpMouseWorkerThreadID != 0;
         return result;
@@ -807,11 +807,11 @@ namespace hmc_mouse
 
         GpEventSessionToCallBack = callback;
 
-        std::thread new_thread = std::thread(InitHookMouse);
+        std::thread threadHandlePointer = std::thread(InitHookMouse);
 
-        GpMouseWorkerThreadID = hmc_automation_util::toThreadId(new_thread.get_id());
+        GpMouseWorkerThreadID = hmc_automation_util::toThreadId(threadHandlePointer.get_id());
 
-        new_thread.detach();
+        threadHandlePointer.detach();
 
         result = GpMouseWorkerThreadID != 0;
         return result;
