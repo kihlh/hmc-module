@@ -46,24 +46,7 @@ typedef UNICODE_STRING HMC_UNICODE_STRING;
 
 namespace hmc_string_util
 {
-	/**
-	 * @brief 格式化json字符串缩进
-	 * 
-	 * @param json 
-	 * @param indent 缩进符号
-	 * @param indentSize 缩进数量
-	 * @return std::wstring 
-	 */
-	extern std::wstring formatJson(std::wstring json, wchar_t indent = ' ' , size_t indentSize = 4);
-	/**
-	 * @brief 格式化json字符串缩进
-	 * 
-	 * @param json 
-	 * @param indent 缩进符号
-	 * @param indentSize 缩进数量
-	 * @return std::wstring 
-	 */
-	extern std::string formatJson(std::string json, char indent = ' ' , size_t indentSize = 4);
+
 	// 删除匹配条件的字符
 	extern size_t removeMatchChar(std::wstring *StrInput, wchar_t filter);
 	// 删除匹配条件的字符
@@ -423,23 +406,6 @@ namespace hmc_string_util
 	 */
 	extern void split(const std::string &sourcePtr, std::string splitter, std::vector<std::string> &item_list, const bool ignore_empty = false);
 
-	/**
-	 * @brief 转义json文本
-	 *
-	 * @param input 文本
-	 * @param is_to_value 添加 "
-	 * @return std::wstring
-	 */
-	extern std::wstring escapeJsonString(const std::wstring &input, bool is_to_value = false);
-	/**
-	 * @brief 转义json文本
-	 *
-	 * @param input 文本
-	 * @param is_to_value 添加 "
-	 * @return std::wstring
-	 */
-	extern std::string escapeJsonString(const std::string &input, bool is_to_value = false);
-
 	// 替换单次
 	extern void replace(std::wstring &sourcePtr, const std::wstring from, const std::wstring to);
 	extern void replace(std::string &sourcePtr, std::string from, std::string to);
@@ -487,11 +453,6 @@ namespace hmc_string_util
 	extern std::wstring trimLastAll(const std::wstring &input, const std::wstring &match);
 	// 移除开头为xx 的指定文本
 	extern std::wstring trimFirstAll(const std::wstring &input, const std::wstring &match);
-
-	// 反特殊字符序列化
-	extern void unEscapeJsonString(std::string &sourcePtr);
-	// 反特殊字符序列化
-	extern void unEscapeJsonString(std::wstring &sourcePtr);
 
 	// c数组转json
 
@@ -917,6 +878,21 @@ namespace hmc_string_util
 	 * @return std::wstring
 	 */
 	extern std::string asciiConvers(std::wstring input);
+	/**
+	 * @brief 宽窄文本转码 但是仅限于ascii
+	 *
+	 * @param input
+	 * @return std::wstring
+	 */
+	extern std::wstring asciiConvers(std::vector<char> input);
+	/**
+	 * @brief 宽窄文本转码 但是仅限于ascii
+	 *
+	 * @param input
+	 * @return std::wstring
+	 */
+	extern std::string asciiConvers(std::vector<wchar_t> input);
+
 	/**
 	 * @brief 删除指定的字符
 	 *

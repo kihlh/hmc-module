@@ -62,6 +62,7 @@ namespace hmc_path_util
         std::string sub;
         std::uint32_t index;
         bool valid;
+        chNtParseA():valid(false), index(0){}
     };
 
     struct chNtParseW : public chParseW
@@ -73,6 +74,7 @@ namespace hmc_path_util
         std::wstring sub;
         std::uint32_t index;
         bool valid;
+        chNtParseW() :valid(false), index(0) {}
     };
 
     /**

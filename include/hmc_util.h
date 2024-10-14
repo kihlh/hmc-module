@@ -119,6 +119,17 @@
 
 namespace hmc_util
 {
+    
+    template <typename T, typename T2>
+    extern std::vector<T> formatNumberList(std::vector<T2> input){
+        std::vector<T> result;
+        for (auto &item : input)
+        {
+            result.push_back(static_cast<T>(item));
+        }
+        return result;
+    }
+
     /**
      * @brief 删除指定的字符
      *
@@ -172,24 +183,6 @@ namespace hmc_util
      * @param to 替换到
      */
     extern inline void replaceAll(std::string &sourcePtr, const std::string from, const std::string to);
-
-    /**
-     * @brief 转义json文本
-     *
-     * @param input 内容
-     * @param is_to_value 如果為true 請加上"
-     * @return std::wstring
-     */
-    extern inline std::wstring escapeJsonString(const std::wstring &input, bool is_to_value = false);
-
-    /**
-     * @brief 转义json文本
-     *
-     * @param input 内容
-     * @param is_to_value 如果為true 請加上"
-     * @return std::wstring
-     */
-    extern inline std::string escapeJsonString(const std::string &input, bool is_to_value = false);
 
     /**
      * @brief 宽窄文本转码 但是仅限于ascii
@@ -499,6 +492,8 @@ public:
 
     T *data() const { return m_data; }
 
+    T *get() { return m_data; }
+
     // if
     operator bool() const
     {
@@ -506,13 +501,13 @@ public:
     }
 
     // *
-    operator T *() const
+    operator T *() 
     {
         return m_data;
     }
 
     // &
-    operator T &() const
+    operator T &() 
     {
         return m_data;
     }
@@ -523,7 +518,7 @@ public:
         return !is_data || reinterpret_cast<void *>(m_data) == nullptr;
     }
 
-    T *operator->() const
+    T *operator->()
     {
         return m_data;
     }

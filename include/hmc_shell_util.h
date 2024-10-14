@@ -26,9 +26,21 @@ namespace hmc_shell_util
         std::wstring to_json();
     };
 
+    /**
+     * 检索指定文件或目录的文件系统属性
+     */
     extern std::vector<DWORD> getFileAttributesInfoList(const std::wstring &path);
+    /**
+     * 检索指定文件或目录的文件系统属性.
+     */
     extern std::vector<DWORD> getFileAttributesInfoList(const std::string &path);
+    /**
+     * 检索指定文件或目录的文件系统属性.
+     */
     extern DWORD getFileAttributesInfo(const std::wstring &path);
+    /**
+     * 检索指定文件或目录的文件系统属性.
+     */
     extern DWORD getFileAttributesInfo(const std::string &path);
 
     /**

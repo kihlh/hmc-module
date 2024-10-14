@@ -79,104 +79,6 @@ inline void hmc_util::replace(std::wstring &sourcePtr, const std::wstring from, 
     }
 }
 
-inline std::string hmc_util::escapeJsonString(const std::string &input, bool is_to_value)
-{
-    std::string output;
-    if (is_to_value)
-    {
-        output.push_back('"');
-    }
-
-    for (char ch : input)
-    {
-        switch (ch)
-        {
-
-        case '\0':
-            break;
-        case '"':
-            output.append("\\\"");
-            break;
-        case '\\':
-            output.append("\\\\");
-            break;
-        case '\b':
-            output.append("\\b");
-            break;
-        case '\f':
-            output.append("\\f");
-            break;
-        case '\n':
-            output.append("\\n");
-            break;
-        case '\r':
-            output.append("\\r");
-            break;
-        case '\t':
-            output.append("\\t");
-            break;
-        default:
-            output.push_back(ch);
-            break;
-        }
-    }
-
-    if (is_to_value)
-    {
-        output.push_back('"');
-    }
-
-    return output;
-}
-
-inline std::wstring hmc_util::escapeJsonString(const std::wstring &input, bool is_to_value)
-{
-    std::wstring output;
-
-    if (is_to_value)
-    {
-        output.push_back(L'"');
-    }
-
-    for (wchar_t ch : input)
-    {
-        switch (ch)
-        {
-        case L'\0':
-            break;
-        case L'"':
-            output.append(L"\\\"");
-            break;
-        case L'\\':
-            output.append(L"\\\\");
-            break;
-        case L'\b':
-            output.append(L"\\b");
-            break;
-        case L'\f':
-            output.append(L"\\f");
-            break;
-        case L'\n':
-            output.append(L"\\n");
-            break;
-        case L'\r':
-            output.append(L"\\r");
-            break;
-        case L'\t':
-            output.append(L"\\t");
-            break;
-        default:
-            output.push_back(ch);
-            break;
-        }
-    }
-    if (is_to_value)
-    {
-        output.push_back(L'"');
-    }
-    return output;
-}
-
 inline std::wstring hmc_util::asciiConvers(std::string input)
 {
     std::wstring result = std::wstring();
@@ -761,8 +663,9 @@ bool hmc_util::anyCastList::is_integral(size_t index)
     {
         const std::type_info &ti = it->type();
 
-        if (typeid(int) == ti ||
-            typeid(int64_t) == ti ||
+        if (
+            typeid(int) == ti ||
+            //typeid(int64_t) == ti ||
             typeid(long long) == ti ||
             typeid(int32_t) == ti ||
             typeid(size_t) == ti ||
@@ -772,7 +675,8 @@ bool hmc_util::anyCastList::is_integral(size_t index)
             typeid(long int) == ti ||
             typeid(unsigned char) == ti ||
             typeid(char) == ti ||
-            typeid(wchar_t) == ti)
+            typeid(wchar_t) == ti
+            )
         {
             return true;
         }

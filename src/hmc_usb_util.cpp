@@ -2,6 +2,7 @@
 #include "hmc_json_util.h"
 #include "hmc_util.h"
 #include "hmc_path_util.h"
+#include "hmc_json_util.h"
 
 #include <windows.h>
 #include <setupapi.h>
@@ -131,7 +132,6 @@ std::vector<hmc_usb_util::chVolume> hmc_usb_util::getVolumeList()
         Success = ::FindNextVolumeW(FindHandle, VolumeName, ARRAYSIZE(VolumeName));
         if (!Success)
             break;
-
     }
 
     return Results;
@@ -151,7 +151,7 @@ std::vector<std::wstring> hmc_usb_util::getUsbDevsNameList()
     if (hDevInfo != INVALID_HANDLE_VALUE)
     {
         std::shared_ptr<void> _shared_free_handle(nullptr, [&](void *)
-                                                {
+                                                  {
         ::GlobalFree(psp_device_details);
         ::SetupDiDestroyDeviceInfoList(hDevInfo); });
 
@@ -176,7 +176,7 @@ std::vector<std::wstring> hmc_usb_util::getUsbDevsNameList()
 
                     for (int i = 3 - 1; i >= 0; i--)
                     {
-                        
+
                         str_device_path.replace(str_device_path.find(L"#"), 1, L"\\");
                     }
 
@@ -217,7 +217,7 @@ std::vector<hmc_usb_util::chUsbDevsInfo> hmc_usb_util::getUsbDevsInfoList()
 
         // 获取设备ID
         wchar_t deviceID[4096];
-        if (::CM_Get_Device_IDW(deviceInfoData.DevInst, deviceID, sizeof(deviceID) / sizeof(wchar_t) , 0) != CR_SUCCESS)
+        if (::CM_Get_Device_IDW(deviceInfoData.DevInst, deviceID, sizeof(deviceID) / sizeof(wchar_t), 0) != CR_SUCCESS)
         {
             continue;
         }
@@ -462,11 +462,8 @@ std::wstring hmc_usb_util::formatVolumePath(std::wstring VolumePath)
         const wchar_t AT = result[4];
 
         if (
-            result[5]==':' && (
-                (AT >= L'A' && AT <= L'Z') ||
-                (AT >= L'a' && AT <= L'z')
-              )
-            )
+            result[5] == ':' && ((AT >= L'A' && AT <= L'Z') ||
+                                 (AT >= L'a' && AT <= L'z')))
         {
             result.erase(0, 4);
             return result;
@@ -622,11 +619,11 @@ std::wstring hmc_usb_util::chVolume::to_json()
 
     result.reserve(result.size() + MAX_PATH + device.size() + name.size() + path.size());
 
-    hmc_util::replace(result, L"{name}", hmc_json_util::toJsonValueW(name, true));
-    hmc_util::replace(result, L"{path}", hmc_json_util::toJsonValueW(path, true));
-    hmc_util::replace(result, L"{device}", hmc_json_util::toJsonValueW(device, true));
-    hmc_util::replace(result, L"{volume_id}", hmc_json_util::toJsonValueW(volume_id, true));
-    hmc_util::replace(result, L"{device_id}", hmc_json_util::toJsonValueW(device_id, true));
+    hmc_util::replace(result, L"{name}", hmc_json_util::escapeJsonString(name, true));
+    hmc_util::replace(result, L"{path}", hmc_json_util::escapeJsonString(path, true));
+    hmc_util::replace(result, L"{device}", hmc_json_util::escapeJsonString(device, true));
+    hmc_util::replace(result, L"{volume_id}", hmc_json_util::escapeJsonString(volume_id, true));
+    hmc_util::replace(result, L"{device_id}", hmc_json_util::escapeJsonString(device_id, true));
 
     return result;
 }
@@ -684,10 +681,10 @@ std::wstring hmc_usb_util::chUsbDevsInfo::to_json()
 
     result.reserve(result.size() + MAX_PATH + name.size() + description.size());
 
-    hmc_util::replace(result, L"{name}", hmc_json_util::toJsonValueW(name, true));
-    hmc_util::replace(result, L"{description}", hmc_json_util::toJsonValueW(description, true));
-    hmc_util::replace(result, L"{dwProductId}", hmc_json_util::toJsonValueW(dwProductId));
-    hmc_util::replace(result, L"{dwVendorId}", hmc_json_util::toJsonValueW(dwVendorId));
+    hmc_util::replace(result, L"{name}", hmc_json_util::escapeJsonString(name, true));
+    hmc_util::replace(result, L"{description}", hmc_json_util::escapeJsonString(description, true));
+    hmc_util::replace(result, L"{dwProductId}", std::to_wstring(dwProductId));
+    hmc_util::replace(result, L"{dwVendorId}", std::to_wstring(dwVendorId));
 
     return result;
 }
@@ -708,14 +705,14 @@ std::wstring hmc_usb_util::chHidSomeInfo::to_json()
 
     result.reserve(result.size() + 1024 + name.size() + type.size());
 
-    hmc_util::replace(result, L"{name}", hmc_json_util::toJsonValueW(name, true));
-    hmc_util::replace(result, L"{type}", hmc_json_util::toJsonValueW(type, true));
-    hmc_util::replace(result, L"{index}", hmc_json_util::toJsonValueW(index));
-    hmc_util::replace(result, L"{dwProductId}", hmc_json_util::toJsonValueW(dwProductId));
-    hmc_util::replace(result, L"{dwVendorId}", hmc_json_util::toJsonValueW(dwVendorId));
-    hmc_util::replace(result, L"{dwVersionNumber}", hmc_json_util::toJsonValueW(dwVersionNumber));
-    hmc_util::replace(result, L"{usUsagePage}", hmc_json_util::toJsonValueW(usUsagePage));
-    hmc_util::replace(result, L"{usUsage}", hmc_json_util::toJsonValueW(usUsage));
+    hmc_util::replace(result, L"{name}", hmc_json_util::escapeJsonString(name, true));
+    hmc_util::replace(result, L"{type}", hmc_json_util::escapeJsonString(type, true));
+    hmc_util::replace(result, L"{index}", std::to_wstring(index));
+    hmc_util::replace(result, L"{dwProductId}", std::to_wstring(dwProductId));
+    hmc_util::replace(result, L"{dwVendorId}", std::to_wstring(dwVendorId));
+    hmc_util::replace(result, L"{dwVersionNumber}", std::to_wstring(dwVersionNumber));
+    hmc_util::replace(result, L"{usUsagePage}", std::to_wstring(usUsagePage));
+    hmc_util::replace(result, L"{usUsage}", std::to_wstring(usUsage));
 
     return result;
 }
@@ -737,15 +734,15 @@ std::wstring hmc_usb_util::chHidKeyboardInfo::to_json()
 
     result.reserve(result.size() + 1024 + name.size() + type.size());
 
-    hmc_util::replace(result, L"{name}", hmc_json_util::toJsonValueW(name, true));
-    hmc_util::replace(result, L"{type}", hmc_json_util::toJsonValueW(type, true));
-    hmc_util::replace(result, L"{index}", hmc_json_util::toJsonValueW(index));
-    hmc_util::replace(result, L"{dwKeyboardMode}", hmc_json_util::toJsonValueW(dwKeyboardMode));
-    hmc_util::replace(result, L"{dwNumberOfFunctionKeys}", hmc_json_util::toJsonValueW(dwNumberOfFunctionKeys));
-    hmc_util::replace(result, L"{dwNumberOfIndicators}", hmc_json_util::toJsonValueW(dwNumberOfIndicators));
-    hmc_util::replace(result, L"{dwNumberOfKeysTotal}", hmc_json_util::toJsonValueW(dwNumberOfKeysTotal));
-    hmc_util::replace(result, L"{dwSubType}", hmc_json_util::toJsonValueW(dwSubType));
-    hmc_util::replace(result, L"{dwType}", hmc_json_util::toJsonValueW(dwType));
+    hmc_util::replace(result, L"{name}", hmc_json_util::escapeJsonString(name, true));
+    hmc_util::replace(result, L"{type}", hmc_json_util::escapeJsonString(type, true));
+    hmc_util::replace(result, L"{index}", std::to_wstring(index));
+    hmc_util::replace(result, L"{dwKeyboardMode}", std::to_wstring(dwKeyboardMode));
+    hmc_util::replace(result, L"{dwNumberOfFunctionKeys}", std::to_wstring(dwNumberOfFunctionKeys));
+    hmc_util::replace(result, L"{dwNumberOfIndicators}", std::to_wstring(dwNumberOfIndicators));
+    hmc_util::replace(result, L"{dwNumberOfKeysTotal}", std::to_wstring(dwNumberOfKeysTotal));
+    hmc_util::replace(result, L"{dwSubType}", std::to_wstring(dwSubType));
+    hmc_util::replace(result, L"{dwType}", std::to_wstring(dwType));
 
     return result;
 }
@@ -765,13 +762,13 @@ std::wstring hmc_usb_util::chHidMouseInfo::to_json()
 
     result.reserve(result.size() + 1024 + name.size() + type.size());
 
-    hmc_util::replace(result, L"{name}", hmc_json_util::toJsonValueW(name, true));
-    hmc_util::replace(result, L"{type}", hmc_json_util::toJsonValueW(type, true));
-    hmc_util::replace(result, L"{index}", hmc_json_util::toJsonValueW(index));
-    hmc_util::replace(result, L"{dwId}", hmc_json_util::toJsonValueW(dwId));
-    hmc_util::replace(result, L"{dwNumberOfButtons}", hmc_json_util::toJsonValueW(dwNumberOfButtons));
-    hmc_util::replace(result, L"{dwSampleRate}", hmc_json_util::toJsonValueW(dwSampleRate));
-    hmc_util::replace(result, L"{fHasHorizontalWheel}", hmc_json_util::toJsonValueW(fHasHorizontalWheel ? L"true" : L"false"));
+    hmc_util::replace(result, L"{name}", hmc_json_util::escapeJsonString(name, true));
+    hmc_util::replace(result, L"{type}", hmc_json_util::escapeJsonString(type, true));
+    hmc_util::replace(result, L"{index}", std::to_wstring(index));
+    hmc_util::replace(result, L"{dwId}", std::to_wstring(dwId));
+    hmc_util::replace(result, L"{dwNumberOfButtons}", std::to_wstring(dwNumberOfButtons));
+    hmc_util::replace(result, L"{dwSampleRate}", std::to_wstring(dwSampleRate));
+    hmc_util::replace(result, L"{fHasHorizontalWheel}", hmc_json_util::escapeJsonString(fHasHorizontalWheel ? L"true" : L"false"));
 
     return result;
 }

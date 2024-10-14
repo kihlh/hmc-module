@@ -1702,6 +1702,10 @@ namespace HMC_PromiseUtilV2
 		bool exists(size_t index)
 		{
 			bool result = (this->arguments->size() > index);
+			if (result && !std::holds_alternative<T>(this->arguments->at(index)))
+			{
+				result = false;
+			}
 			return result;
 		}
 
@@ -1735,15 +1739,16 @@ namespace HMC_PromiseUtilV2
 			{
 				result = std::get<T>(this->arguments->at(index));
 			}
-			else {
-				(*result) = orValue;
+			else
+			{
+				result = orValue;
 			}
 
 			return result;
 		}
 
 		template <typename T>
-		bool get_if(size_t index,T *varPtr)
+		bool get_if(size_t index, T *varPtr)
 		{
 			bool result = false;
 			if (this->exists<T>(index))
@@ -1756,7 +1761,7 @@ namespace HMC_PromiseUtilV2
 		}
 
 		template <typename T>
-		bool get_if(size_t index, T* varPtr, T orValue)
+		bool get_if(size_t index, T *varPtr, T orValue)
 		{
 			bool result = false;
 			if (this->exists<T>(index))
@@ -1764,7 +1769,8 @@ namespace HMC_PromiseUtilV2
 				(*varPtr) = std::get<T>(this->arguments->at(index));
 				result = true;
 			}
-			else {
+			else
+			{
 				(*varPtr) = orValue;
 				result = true;
 			}
@@ -1813,111 +1819,6 @@ namespace HMC_PromiseUtilV2
 		}
 
 		return true;
-	}
-
-	template <typename GET_SHELL_ENV_INFO_ID, typename EnvNextWorkData>
-	napi_value ExecuteSyncTemplate(napi_env env, napi_callback_info info, const std::map<GET_SHELL_ENV_INFO_ID, std::vector<std::tuple<size_t, js_valuetype>>> &GET_SHELL_EQ_TYPE_LIST, std::function<void(EnvNextWorkData *work)> main)
-	{
-		napi_value result = as_Null();
-
-		try
-		{
-			auto input = hmc_NodeArgsValue(env, info);
-			auto *workData = EnvNextWorkData::make();
-
-			HMC_FreeAnyAuto(EnvNextWorkData::gc(workData););
-
-			bool is_eq_args = HMC_PromiseUtilV2::get_arguments<GET_SHELL_ENV_INFO_ID, EnvNextWorkData>(env, input, workData, GET_SHELL_EQ_TYPE_LIST);
-			if (workData == NULL || !is_eq_args)
-			{
-				return result;
-			}
-
-			main(workData);
-
-			result = hmc_napi_create_value::Variant(env, *workData->Result);
-			return result;
-		}
-		HMC_CATCH_ALL;
-		return hmc_napi_create_value::Error(env, "A fatal error occurred unexpectedly.", __FUNCSIG__, "HMC_SHELL_API_CATCH");
-	}
-
-	template <typename EnvNextWorkData>
-	void ExecuteAsyncWorkTemplate(napi_env env, void *data, std::function<void(EnvNextWorkData *work)> main)
-	{
-		EnvNextWorkData *workData = (EnvNextWorkData *)data;
-		try
-		{
-			main(workData);
-		}
-		HMC_CATCH_ALL;
-	}
-
-	// 异步任务完成后的回调函数
-
-	template <typename EnvNextWorkData>
-	void ResolveWorkTemplate(napi_env env, napi_status status, void *data)
-	{
-		EnvNextWorkData *workData = (EnvNextWorkData *)data;
-		HMC_FreeAnyAuto(EnvNextWorkData::gc(workData););
-
-		napi_value result;
-		napi_get_null(env, &result);
-
-		if (workData == NULL || workData->Result == NULL || workData->Result->index() == 0)
-		{
-			if (workData != NULL)
-			{
-				napi_resolve_deferred(env, workData->deferred, result);
-				napi_delete_async_work(env, workData->work);
-			}
-			return;
-		}
-
-		result = hmc_napi_create_value::Variant(env, *workData->Result);
-
-		if (result == NULL)
-		{
-			napi_get_null(env, &result);
-		}
-
-		napi_resolve_deferred(env, workData->deferred, result);
-		napi_delete_async_work(env, workData->work);
-	}
-
-	// 启动异步任务的函数
-
-	template <typename GET_SHELL_ENV_INFO_ID, typename EnvNextWorkData>
-	napi_value StartAsyncTaskTemplate(
-		napi_env env,
-		napi_callback_info info,
-		const std::map<GET_SHELL_ENV_INFO_ID, std::vector<std::tuple<size_t, js_valuetype>>> &GET_SHELL_EQ_TYPE_LIST,
-		napi_async_execute_callback execute,
-		napi_async_complete_callback complete)
-	{
-		napi_value promise;
-		try
-		{
-			napi_value resourceName;
-			napi_create_string_utf8(env, __FUNCSIG__, NAPI_AUTO_LENGTH, &resourceName);
-
-			auto *workData = EnvNextWorkData::make();
-
-			auto input = hmc_NodeArgsValue(env, info);
-			bool is_eq_args = HMC_PromiseUtilV2::get_arguments<GET_SHELL_ENV_INFO_ID, EnvNextWorkData>(env, input, workData, GET_SHELL_EQ_TYPE_LIST);
-			if (workData == NULL || !is_eq_args)
-			{
-				EnvNextWorkData::gc(workData);
-				return as_Null();
-			}
-
-			napi_create_promise(env, &workData->deferred, &promise);
-			napi_create_async_work(env, nullptr, resourceName, execute, complete, workData, &workData->work);
-			napi_queue_async_work(env, workData->work);
-			return promise;
-		}
-		HMC_CATCH_ALL;
-		return hmc_napi_create_value::Error(env, "A fatal error occurred unexpectedly.", __FUNCSIG__, "HMC_SHELL_API_CATCH");
 	}
 
 }

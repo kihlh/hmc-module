@@ -1,4 +1,5 @@
 ﻿#include "hmc_screen_util.h"
+#include "hmc_util.h"
 
 std::vector<RECT> hmc_screen_util::GetDeviceCapsAll()
 {
@@ -75,7 +76,17 @@ bool hmc_screen_util::captureBmpToFile(std::variant<std::string, std::wstring> o
 
         DWORD dwBmpSize = ((bitmap.bmWidth * bitmap.bmBitsPixel + 31) / 32) * 4 * bitmap.bmHeight;
         HANDLE hDIB = ::GlobalAlloc(GHND, dwBmpSize + sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER));
-        char *lpbitmap = (char *)::GlobalLock(hDIB);
+        char *lpbitmap = nullptr;
+        
+        if (hDIB != NULL) {
+
+            lpbitmap = (char*)::GlobalLock(hDIB);
+            
+            HMC_FreeAnyAuto({
+               ::GlobalUnlock(hDIB);
+               ::GlobalFree(hDIB);
+            });
+        }
 
         // 设置文件头
         fileHeader.bfType = 0x4D42; // 'BM'
@@ -96,6 +107,10 @@ bool hmc_screen_util::captureBmpToFile(std::variant<std::string, std::wstring> o
         infoHeader.biYPelsPerMeter = 0;
         infoHeader.biClrUsed = 0;
         infoHeader.biClrImportant = 0;
+        
+        if (!lpbitmap) {
+            return false;
+        }
 
         // 拷贝位图数据
         ::memcpy(lpbitmap, &fileHeader, sizeof(BITMAPFILEHEADER));
@@ -119,8 +134,7 @@ bool hmc_screen_util::captureBmpToFile(std::variant<std::string, std::wstring> o
         }
 
         // 清理
-        ::GlobalUnlock(hDIB);
-        ::GlobalFree(hDIB);
+  
         ::SelectObject(hMemoryDC, hOldBitmap);
         ::DeleteObject(hBitmap);
         ::DeleteDC(hMemoryDC);
@@ -181,7 +195,17 @@ bool hmc_screen_util::captureBmpToBuffer(std::vector<std::uint8_t> &output, int 
 
         DWORD dwBmpSize = ((bitmap.bmWidth * bitmap.bmBitsPixel + 31) / 32) * 4 * bitmap.bmHeight;
         HANDLE hDIB = ::GlobalAlloc(GHND, dwBmpSize + sizeof(BITMAPINFOHEADER) + sizeof(BITMAPFILEHEADER));
-        char *lpbitmap = (char *)::GlobalLock(hDIB);
+        char* lpbitmap = nullptr;
+
+        if (hDIB != NULL) {
+
+            lpbitmap = (char*)::GlobalLock(hDIB);
+
+            HMC_FreeAnyAuto({
+               ::GlobalUnlock(hDIB);
+               ::GlobalFree(hDIB);
+                });
+        }
 
         // 设置文件头
         fileHeader.bfType = 0x4D42; // 'BM'
@@ -203,6 +227,10 @@ bool hmc_screen_util::captureBmpToBuffer(std::vector<std::uint8_t> &output, int 
         infoHeader.biClrUsed = 0;
         infoHeader.biClrImportant = 0;
 
+        if (!lpbitmap) {
+            return false;
+        }
+
         // 拷贝位图数据
         ::memcpy(lpbitmap, &fileHeader, sizeof(BITMAPFILEHEADER));
         ::memcpy(lpbitmap + sizeof(BITMAPFILEHEADER), &infoHeader, sizeof(BITMAPINFOHEADER));
@@ -217,8 +245,8 @@ bool hmc_screen_util::captureBmpToBuffer(std::vector<std::uint8_t> &output, int 
         }
 
         // 清理
-        ::GlobalUnlock(hDIB);
-        ::GlobalFree(hDIB);
+        //::GlobalUnlock(hDIB);
+        //::GlobalFree(hDIB);
         ::SelectObject(hMemoryDC, hOldBitmap);
         ::DeleteObject(hBitmap);
         ::DeleteDC(hMemoryDC);

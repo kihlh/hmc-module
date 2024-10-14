@@ -1,5 +1,6 @@
 ﻿#include "hmc_napi_value_util.h"
 #include "hmc_util.h"
+#include "hmc_json_util.h"
 
 // ?hmc_napi_util::type
 // 负责类型判断的逻辑
@@ -4703,7 +4704,7 @@ std::wstring formatVariantJSONStr_utf16(js_variant_value js_variant)
     if (std::holds_alternative<std::wstring>(js_variant))
     {
         auto temp = std::get<std::wstring>(js_variant);
-        auto escapeJson = hmc_string_util::escapeJsonString(temp, true);
+        auto escapeJson = hmc_json_util::escapeJsonString(temp, true);
         result = escapeJson;
         return result;
     }
@@ -4712,7 +4713,7 @@ std::wstring formatVariantJSONStr_utf16(js_variant_value js_variant)
     {
         auto temp = std::get<std::string>(js_variant);
 
-        auto escapeJson = hmc_string_util::escapeJsonString(temp, true);
+        auto escapeJson = hmc_json_util::escapeJsonString(temp, true);
         if (hmc_string_util::is_utf8(escapeJson))
         {
             result = hmc_string_util::utf8_to_utf16(escapeJson);
@@ -4735,7 +4736,7 @@ std::wstring formatVariantJSONStr_utf16(js_variant_value js_variant)
             for (size_t i = 0; i < temp.size(); i++)
             {
                 auto at = temp.at(i);
-                auto escapeJson = hmc_string_util::escapeJsonString(at, true);
+                auto escapeJson = hmc_json_util::escapeJsonString(at, true);
                 result.append(escapeJson);
                 if (i + 1 < temp.size())
                 {
@@ -4760,7 +4761,7 @@ std::wstring formatVariantJSONStr_utf16(js_variant_value js_variant)
             for (size_t i = 0; i < temp.size(); i++)
             {
                 auto at = temp.at(i);
-                auto escapeJson = hmc_string_util::escapeJsonString(at, true);
+                auto escapeJson = hmc_json_util::escapeJsonString(at, true);
                 if (hmc_string_util::is_utf8(escapeJson))
                 {
                     result.append(hmc_string_util::utf8_to_utf16(escapeJson));
@@ -5043,7 +5044,7 @@ std::string formatVariantJSONStr_utf8(js_variant_value js_variant)
     if (std::holds_alternative<std::wstring>(js_variant))
     {
         auto temp = std::get<std::wstring>(js_variant);
-        auto escapeJson = hmc_string_util::escapeJsonString(temp, true);
+        auto escapeJson = hmc_json_util::escapeJsonString(temp, true);
         result = hmc_string_util::utf16_to_utf8(escapeJson);
         return result;
     }
@@ -5052,7 +5053,7 @@ std::string formatVariantJSONStr_utf8(js_variant_value js_variant)
     {
         auto temp = std::get<std::string>(js_variant);
 
-        auto escapeJson = hmc_string_util::escapeJsonString(temp, true);
+        auto escapeJson = hmc_json_util::escapeJsonString(temp, true);
         if (hmc_string_util::is_utf8(escapeJson))
         {
             result = escapeJson;
@@ -5075,7 +5076,7 @@ std::string formatVariantJSONStr_utf8(js_variant_value js_variant)
             for (size_t i = 0; i < temp.size(); i++)
             {
                 auto at = temp.at(i);
-                auto escapeJson = hmc_string_util::escapeJsonString(at, true);
+                auto escapeJson = hmc_json_util::escapeJsonString(at, true);
                 result.append(hmc_string_util::utf16_to_utf8(escapeJson));
                 if (i + 1 < temp.size())
                 {
@@ -5100,7 +5101,7 @@ std::string formatVariantJSONStr_utf8(js_variant_value js_variant)
             for (size_t i = 0; i < temp.size(); i++)
             {
                 auto at = temp.at(i);
-                auto escapeJson = hmc_string_util::escapeJsonString(at, true);
+                auto escapeJson = hmc_json_util::escapeJsonString(at, true);
                 if (hmc_string_util::is_utf8(escapeJson))
                 {
                     result.append(escapeJson);

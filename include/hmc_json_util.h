@@ -12,53 +12,79 @@ namespace hmc_json_util
 {
 
     /**
-     * @brief 转义到jsonValue
+     * @brief 反特殊字符序列化
      *
-     * @param value 如果为true 则加上 "
-     * @return std::string
+     * @param sourcePtr
      */
-    extern std::string toJsonValueA(const std::string &input, bool is_to_value = false);
+    extern std::string unEscapeJsonString(const std::string &source);
+    /**
+     * @brief 反特殊字符序列化
+     *
+     * @param sourcePtr
+     */
+    extern std::wstring unEscapeJsonString(const std::wstring &source);
 
     /**
-     * @brief 转义到jsonValue
-     *
-     * @param value 如果为true 则加上 "
-     * @return std::string
-     */
-    extern std::wstring toJsonValueW(const std::wstring &input, bool is_to_value = false);
-
-    /**
-     * @brief 缩进 json 文本
+     * @brief 格式化json字符串缩进
      *
      * @param json
+     * @param indent 缩进符号
+     * @param indentSize 缩进数量
      * @return std::wstring
      */
-    std::wstring formatJson(const std::wstring &json);
-
+    extern std::wstring formatJson(std::wstring json, wchar_t indent = ' ', size_t indentSize = 4);
     /**
-     * @brief  缩进 json 文本
+     * @brief 格式化json字符串缩进
      *
      * @param json
-     * @return std::string
+     * @param indent 缩进符号
+     * @param indentSize 缩进数量
+     * @return std::wstring
      */
-    std::string formatJson(const std::string &json);
+    extern std::string formatJson(std::string json, char indent = ' ', size_t indentSize = 4);
+
+    /**
+     * @brief 转义json文本
+     *
+     * @param input 文本
+     * @param is_to_value 添加 "
+     * @return std::wstring
+     */
+    extern std::wstring escapeJsonString(const std::wstring &input, bool is_to_value = false);
+    /**
+     * @brief 转义json文本
+     *
+     * @param input 文本
+     * @param is_to_value 添加 "
+     * @return std::wstring
+     */
+    extern std::string escapeJsonString(const std::string &input, bool is_to_value = false);
+
 }
 
 #if _HAS_CXX17
 #include <variant>
 namespace hmc_json_util
 {
-    typedef std::variant<
-        // std
-        std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t,
-        // >= 32bit
-        char, wchar_t, char16_t, char32_t, int, int64_t, int32_t,
-        // >= 64bit
-        long long, size_t, long int, long, long long int,
-        // unsigned
-        unsigned char, unsigned long, unsigned long long int,
-        // short
-        short, long double, double, float>
+    typedef std::variant<char,
+                         wchar_t,
+                         char16_t,
+                         char32_t,
+                         int,
+                         long long,
+                         long int,
+                         long,
+                         long long int,
+                         unsigned short,
+                         unsigned char,
+                         unsigned int,
+                         unsigned long,
+                         unsigned long long,
+                         unsigned long long int,
+                         short,
+                         long double,
+                         double,
+                         float>
         NumberType;
 
     /**

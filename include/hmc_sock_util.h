@@ -34,6 +34,7 @@ namespace hmc_sock_util
         // ip
         std::wstring ipaddress;
         std::wstring to_json();
+        static std::wstring to_json(std::vector<hmc_sock_util::chLocalVddrItemV4> input);
     };
 
     struct chNetDnsServers
@@ -80,6 +81,7 @@ namespace hmc_sock_util
         DWORD pid;           // 占用此端口的进程
         bool existsProcess;    // 判断此进程是否存在
         std::wstring to_json();
+        chConnectNet() :existsProcess(false), port(0), pid(0), type(0), ipAddr(0) {}
     };
 
     struct chNetAdapterAddrList
@@ -91,6 +93,7 @@ namespace hmc_sock_util
         // ip类型 2(AF_INET) 23(AF_INET6)
         DWORD type ;
         std::wstring to_json();
+        chNetAdapterAddrList() : type(0) {}
     };
 
     struct chConnectNetTCP : public chConnectNet
@@ -100,6 +103,7 @@ namespace hmc_sock_util
         std::wstring remoteIP; // 解析出来的实际远程ip
         std::wstring state;    // 状态码 "CLOSED"|"LISTEN"|"SYN-SENT"|"SYN-RECEIVED"|"ESTABLISHED"|"FIN-WAIT-1"|"FIN-WAIT-2"|"CLOSE-WAIT"|"CLOSING"|"LAST-ACK"|"TIME-WAIT"|"DELETE-TCB"|"UNKNOWN"
         std::wstring to_json();
+        chConnectNetTCP() : remotePort(0), remoteIPAddr(0){}
     };
 
     // 获取本机局域网的所有ip ( 并按照适配器名称区分 ,v4,v6 )
@@ -110,7 +114,10 @@ namespace hmc_sock_util
         // ip 列表
         std::vector<chNetAdapterAddrList> addr_item;
         std::wstring to_json();
+        static std::wstring to_json(const std::vector<chNetAdapterAddrItem> input);
     };
+    
+    extern std::vector<chLocalVddrItemV4> getIpaddressList();
 
     // 格式化ip
     extern std::wstring formatIP(UCHAR ucLocalAddr[16]);

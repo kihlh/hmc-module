@@ -4,6 +4,8 @@
 #include "hmc_string_util.h"
 #include "hmc_util.h"
 #include "hmc_path_util.h"
+#include "hmc_json_util.h"
+
 #include <memory>
 #include <map>
 #include <set>
@@ -92,7 +94,7 @@ std::wstring hmc_process_util::ch_PROCESSENTRY32W::to_json()
 
     result.reserve(result.size() + MAX_PATH + szExeFile.size());
 
-    hmc_util::replace(result, L"{szExeFile}", hmc_util::escapeJsonString(szExeFile));
+    hmc_util::replace(result, L"{szExeFile}", hmc_json_util::escapeJsonString(szExeFile));
 
     hmc_util::replace(result, L"{th32ProcessID}", std::to_wstring(th32ProcessID));
     hmc_util::replace(result, L"{th32ParentProcessID}", std::to_wstring(th32ParentProcessID));
@@ -408,7 +410,7 @@ std::wstring hmc_process_util::EnumProcessUserName::to_json()
         }
         else
         {
-            obj.replace(obj.find(L"{ProcessName}"), sizeof("{ProcessName}") - 1, hmc_util::escapeJsonString(data.ProcessName));
+            obj.replace(obj.find(L"{ProcessName}"), sizeof("{ProcessName}") - 1, hmc_json_util::escapeJsonString(data.ProcessName));
         }
 
         //.userName
@@ -418,7 +420,7 @@ std::wstring hmc_process_util::EnumProcessUserName::to_json()
         }
         else
         {
-            obj.replace(obj.find(L"{UserName}"), sizeof("{UserName}") - 1, hmc_util::escapeJsonString(data.UserName));
+            obj.replace(obj.find(L"{UserName}"), sizeof("{UserName}") - 1, hmc_json_util::escapeJsonString(data.UserName));
         }
 
         //.domainName
@@ -428,7 +430,7 @@ std::wstring hmc_process_util::EnumProcessUserName::to_json()
         }
         else
         {
-            obj.replace(obj.find(L"{DomainName}"), sizeof("{DomainName}") - 1, hmc_util::escapeJsonString(data.DomainName));
+            obj.replace(obj.find(L"{DomainName}"), sizeof("{DomainName}") - 1, hmc_json_util::escapeJsonString(data.DomainName));
         }
 
         result.append(obj);
@@ -665,7 +667,7 @@ std::wstring hmc_process_util::ch_PSYSTEM_PROCESS_INFORMATION::to_json()
     std::wstring result = LR"({"ImageName":"{ImageName}","UniqueProcessId":{UniqueProcessId},"BasePriority":{BasePriority},"NextEntryOffset":{NextEntryOffset},"NumberOfThreads":{NumberOfThreads},"PeakPagefileUsage":{PeakPagefileUsage},"PagefileUsage":{PagefileUsage},"PeakVirtualSize":{PeakVirtualSize},"PeakWorkingSetSize":{PeakWorkingSetSize},"QuotaNonPagedPoolUsage":{QuotaNonPagedPoolUsage}})";
     result.reserve(result.size() + MAX_PATH + ImageName.size());
 
-    hmc_util::replace(result, L"{ImageName}", hmc_util::escapeJsonString(ImageName));
+    hmc_util::replace(result, L"{ImageName}", hmc_json_util::escapeJsonString(ImageName));
     hmc_util::replace(result, L"{UniqueProcessId}", std::to_wstring(UniqueProcessId));
     hmc_util::replace(result, L"{BasePriority}", std::to_wstring(BasePriority));
     hmc_util::replace(result, L"{NextEntryOffset}", std::to_wstring(NextEntryOffset));
@@ -765,8 +767,9 @@ bool hmc_process_util::isProcessWow64(DWORD processID)
     {
         return false;
     }
-
-    auto fnIsWow64Process = (hmc_define_util::LPFN_ISWOW64PROCESS)::GetProcAddress(::GetModuleHandleW(L"kernel32"), "IsWow64Process");
+    auto kernel32 = ::GetModuleHandleW(L"kernel32");
+    if (!kernel32) { return false; }
+    auto fnIsWow64Process = (hmc_define_util::LPFN_ISWOW64PROCESS)::GetProcAddress(kernel32, "IsWow64Process");
 
     if (NULL != fnIsWow64Process)
     {
@@ -783,7 +786,10 @@ bool hmc_process_util::isProcessWow64()
 {
     BOOL bIsWow64 = FALSE;
 
-    auto fnIsWow64Process = (hmc_define_util::LPFN_ISWOW64PROCESS)::GetProcAddress(::GetModuleHandleW(L"kernel32"), "IsWow64Process");
+    auto kernel32 = ::GetModuleHandleW(L"kernel32");
+    if (!kernel32) { return false; }
+
+    auto fnIsWow64Process = (hmc_define_util::LPFN_ISWOW64PROCESS)::GetProcAddress(kernel32, "IsWow64Process");
 
     if (NULL != fnIsWow64Process)
     {
@@ -1992,14 +1998,14 @@ std::wstring hmc_process_util::ch_ProcessEnumItem::ch_ProcessEnumItem::to_json()
     result.reserve(path.size() + name.size() + MAX_PATH);
 
     hmc_string_util::replace(result, L"${pid}", std::to_wstring(pid));
-    hmc_string_util::replace(result, L"${path}", hmc_string_util::escapeJsonString(path));
+    hmc_string_util::replace(result, L"${path}", hmc_json_util::escapeJsonString(path));
 
     if (!path.empty() && name.empty())
     {
         name = hmc_path_util::baseName(path);
     }
 
-    hmc_string_util::replace(result, L"${name}", hmc_string_util::escapeJsonString(name));
+    hmc_string_util::replace(result, L"${name}", hmc_json_util::escapeJsonString(name));
 
     return result;
 }

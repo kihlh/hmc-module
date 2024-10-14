@@ -1,6 +1,7 @@
 ﻿#include "hmc_registr_util.h"
 #include "hmc_string_util.h"
 #include "hmc_util.h"
+#include "hmc_json_util.h"
 
 #include <set>
 #include <map>
@@ -2169,7 +2170,7 @@ std::wstring hmc_registr_util::chQueryFolderInfoW::to_json(hmc_registr_util::chQ
 		auto &at = QueryFolderInfo.valueKeyList.at(i);
 
 		result.append(L"{\"name\":");
-		result.append(hmc_string_util::escapeJsonString(at.name, true));
+		result.append(hmc_json_util::escapeJsonString(at.name, true));
 		result.push_back(',');
 		result.append(L"\"type\":");
 		result.append(std::to_wstring(at.type));
@@ -2193,7 +2194,7 @@ std::wstring hmc_registr_util::chQueryFolderInfoW::to_json(hmc_registr_util::chQ
 		auto &at = QueryFolderInfo.folderKeyList.at(i);
 
 		result.append(L"{\"name\":");
-		result.append(hmc_string_util::escapeJsonString(at.name, true));
+		result.append(hmc_json_util::escapeJsonString(at.name, true));
 		result.push_back(',');
 		result.append(L"\"time\":");
 		result.append(std::to_wstring(at.time));
@@ -2277,7 +2278,7 @@ std::string hmc_registr_util::chQueryFolderInfoA::to_json(hmc_registr_util::chQu
 		auto &at = QueryFolderInfo.valueKeyList.at(i);
 
 		result.append("{\"name\":");
-		result.append(hmc_string_util::escapeJsonString(at.name, true));
+		result.append(hmc_json_util::escapeJsonString(at.name, true));
 		result.push_back(',');
 		result.append("\"type\":");
 		result.append(std::to_string(at.type));
@@ -2301,7 +2302,7 @@ std::string hmc_registr_util::chQueryFolderInfoA::to_json(hmc_registr_util::chQu
 		auto &at = QueryFolderInfo.folderKeyList.at(i);
 
 		result.append("{\"name\":");
-		result.append(hmc_string_util::escapeJsonString(at.name, true));
+		result.append(hmc_json_util::escapeJsonString(at.name, true));
 		result.push_back(',');
 		result.append("\"time\":");
 		result.append(std::to_string(at.time));
@@ -2713,7 +2714,7 @@ hmc_registr_util::chValueData hmc_registr_util::getRegistrBuffer(HKEY hKey, std:
 		return result;
 	}
 
-	result.value.resize(pDataSize + 1024);
+	result.value.resize(static_cast<long long>(pDataSize) + 1024);
 
 	if ((status = ::RegQueryValueExA(open_hkey, KeyName.c_str(), 0, &valueType, reinterpret_cast<BYTE *>(result.value.data()), &pDataSize)) == ERROR_SUCCESS)
 	{
@@ -2755,7 +2756,7 @@ hmc_registr_util::chValueData hmc_registr_util::getRegistrBuffer(HKEY hKey, std:
 		return result;
 	}
 
-	result.value.resize(pDataSize + 1024);
+	result.value.resize(static_cast<long long>(pDataSize) + 1024);
 
 	if ((status = ::RegQueryValueExW(open_hkey, KeyName.c_str(), 0, &valueType, reinterpret_cast<BYTE *>(result.value.data()), &pDataSize)) == ERROR_SUCCESS)
 	{

@@ -19,6 +19,8 @@
 #include <hmc_usb_util.h>
 #include <hmc_windows_util.h>
 #include <hmc_path_util.h>
+#include <hmc_json_util.h>
+#include <hmc_console_util.h>
 
 #ifdef _DEBUG  
 #ifdef _WIN64 

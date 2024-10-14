@@ -1,33 +1,67 @@
-﻿#include <iostream>
-#include <any>
-#include <functional>
-#include <hmc-module.h>
+﻿#include <fstream>
+#include <string>
+#include <windows.h>
+#include <nlohmann/json.hpp>
+
+#include <iostream>
+#include <io.h>
+#include <fcntl.h>
 
 
-int main()
-{
-	using String = std::wstring;
-	
-	String ddd = String(LR"(F:\\Chatbox.lnk)");
-	while (true)
-	{
-		std::wstring lnkPath = ddd;
-		std::wstring path; 
-		int64_t showCmd = 0;
-		std::wstring args ; 
-		std::wstring desc ; 
-		std::wstring icon ; 
-		int64_t iconIndex = 0; 
-		std::wstring cwd ;
-		int64_t hotkey = 0;
+using json = nlohmann::json;
 
-		bool isv = hmc_shell_util::getShortcutLink(lnkPath, &path, &showCmd, &args, &desc, &icon, &iconIndex, &cwd, &hotkey);
+namespace hmc_string_util {
 
-		if (isv) {
+    inline std::string utf16_to_utf8(const std::wstring input)
+    {
+        std::string result;
 
-		}
-		//std::cout << hmc_string_util::utf16_to_ansi(lnkPath) << " -> " << hmc_string_util::utf16_to_ansi(path) << std::endl;
+        if (input.empty())
+        {
+            return result;
+        }
 
-	}
-	return 0;
+        int inputSize = static_cast<UINT32>(input.size());
+
+        int iSizeInBytes = ::WideCharToMultiByte(CP_UTF8, 0, input.c_str(), inputSize, NULL, 0, NULL, NULL);
+
+        if (iSizeInBytes > 0)
+        {
+            size_t char_size = static_cast<size_t>(iSizeInBytes);
+
+            std::vector<char> TempResult = std::vector<char>(char_size, '\0');
+
+            ::WideCharToMultiByte(CP_UTF8, 0, input.c_str(), inputSize, &TempResult[0], static_cast<int>(char_size), NULL, NULL);
+
+            result.reserve(char_size + 5);
+            result.append(TempResult.begin(), TempResult.end());
+            result.push_back('\0');
+        }
+
+        return result;
+    }
+
+}
+int main() {
+    const std::wstring _UTF16_TEXT = L"utf16宽字符車B1234 こんにちは";
+    const std::string _GB2312_TEXT = "utf16宽字符車B1234 こんにちは";
+    const std::vector<std::uint8_t> _UTF8_TEXT_T = {117,116,102,49,54,229,174,189,229,173,151,231,172,166,232,187,138,66,49,50,51,52,32,227,129,147,227,130,147,227,129,171,227,129,161,227,129,175 };
+    const std::string _UTF8_TEXT = std::string(_UTF8_TEXT_T.begin(), _UTF8_TEXT_T.end());
+
+
+    std::string utf16_to_utf8 = hmc_string_util::utf16_to_utf8(_UTF16_TEXT);
+   
+    json j;
+
+    j["utf8"] = _UTF8_TEXT;
+
+    j["utf16_to_utf8"] = utf16_to_utf8;
+
+
+    //set  CONSOLE utf8 log
+    int original_mode = _setmode(_fileno(stdin), _O_U8TEXT);
+
+    std::cout<<"  ->["<< original_mode <<"]" << j;
+
+    return 0;
 }

@@ -1,9 +1,12 @@
-﻿#include "hmc_shell_util.h"
+﻿# pragma warning (disable:28159)
+
+#include "hmc_shell_util.h"
 #include "hmc_windows_util.h"
 #include "hmc_string_util.h"
 #include "hmc_util.h"
 #include "hmc_registr_util.h"
 #include "hmc_string_util.h"
+#include "hmc_json_util.h"
 
 #include <windows.h>
 #include <string>
@@ -156,8 +159,8 @@ std::wstring hmc_shell_util::GetTaryIconList::getTrayListJsonW()
         std::wstring obj = LR"({ "info":"{info}","path":"{path}","handle":{handle} })";
         obj.reserve(54 + MAX_PATH * 2);
 
-        obj.replace(obj.find(L"{info}"), sizeof("{info}") - 1, hmc_string_util::escapeJsonString(data.title));
-        obj.replace(obj.find(L"{path}"), sizeof("{path}") - 1, hmc_string_util::escapeJsonString(data.path));
+        obj.replace(obj.find(L"{info}"), sizeof("{info}") - 1, hmc_json_util::escapeJsonString(data.title));
+        obj.replace(obj.find(L"{path}"), sizeof("{path}") - 1, hmc_json_util::escapeJsonString(data.path));
         obj.replace(obj.find(L"{handle}"), sizeof("{handle}") - 1, std::to_wstring((long long)data.hwnd));
 
         if (i + 1 < result.size())
@@ -536,29 +539,27 @@ std::wstring hmc_shell_util::chShortcutLinkItem::to_json()
     result.reserve(size_len);
     result.push_back('{');
 
-    const wchar_t* format = 
-    LR"( "path"      : {path}      ,)"
-    LR"( "showCmd"   : {showCmd}   ,)"
-    LR"( "args"      : {args}      ,)"
-    LR"( "desc"      : {desc}      ,)"
-    LR"( "icon"      : {icon}      ,)"
-    LR"( "iconIndex" : {iconIndex} ,)"
-    LR"( "cwd"       : {cwd}       ,)"
-    LR"( "hotkey"    : {hotkey}     )"
-    ;
+    const wchar_t *format =
+        LR"( "path"      : {path}      ,)"
+        LR"( "showCmd"   : {showCmd}   ,)"
+        LR"( "args"      : {args}      ,)"
+        LR"( "desc"      : {desc}      ,)"
+        LR"( "icon"      : {icon}      ,)"
+        LR"( "iconIndex" : {iconIndex} ,)"
+        LR"( "cwd"       : {cwd}       ,)"
+        LR"( "hotkey"    : {hotkey}     )";
 
     result.append(format);
 
-    hmc_string_util::replace(result, L"{path}", hmc_string_util::escapeJsonString(path,true));
+    hmc_string_util::replace(result, L"{path}", hmc_json_util::escapeJsonString(path, true));
 
-    hmc_string_util::replace(result, L"{args}", hmc_string_util::escapeJsonString(args,true));
-    hmc_string_util::replace(result, L"{desc}", hmc_string_util::escapeJsonString(desc,true));
-    hmc_string_util::replace(result, L"{icon}", hmc_string_util::escapeJsonString(icon,true));
-    hmc_string_util::replace(result, L"{cwd}", hmc_string_util::escapeJsonString(cwd,true));
+    hmc_string_util::replace(result, L"{args}", hmc_json_util::escapeJsonString(args, true));
+    hmc_string_util::replace(result, L"{desc}", hmc_json_util::escapeJsonString(desc, true));
+    hmc_string_util::replace(result, L"{icon}", hmc_json_util::escapeJsonString(icon, true));
+    hmc_string_util::replace(result, L"{cwd}", hmc_json_util::escapeJsonString(cwd, true));
     hmc_string_util::replace(result, L"{showCmd}", std::to_wstring(showCmd));
     hmc_string_util::replace(result, L"{iconIndex}", std::to_wstring(iconIndex));
     hmc_string_util::replace(result, L"{hotkey}", std::to_wstring(hotkey));
-
 
     result.push_back('}');
     return result;
@@ -612,7 +613,7 @@ bool hmc_shell_util::getShortcutLink(std::wstring _lnkPath, std::wstring *path, 
                     auto indexOf = hmc_string_util::indexOf(*path, '\0');
                     if (indexOf >= 0)
                     {
-                        path->resize(indexOf);
+                        path->resize(static_cast<size_t>(indexOf));
                     }
 
                     result = true;
@@ -634,7 +635,7 @@ bool hmc_shell_util::getShortcutLink(std::wstring _lnkPath, std::wstring *path, 
                     auto indexOf = hmc_string_util::indexOf(*cwd, '\0');
                     if (indexOf >= 0)
                     {
-                        cwd->resize(indexOf);
+                        cwd->resize(static_cast<size_t>(indexOf));
                     }
 
                     result = true;
@@ -647,7 +648,7 @@ bool hmc_shell_util::getShortcutLink(std::wstring _lnkPath, std::wstring *path, 
                     auto indexOf = hmc_string_util::indexOf(*args, '\0');
                     if (indexOf >= 0)
                     {
-                        args->resize(indexOf);
+                        args->resize(static_cast<size_t>(indexOf));
                     }
 
                     result = true;
@@ -660,7 +661,7 @@ bool hmc_shell_util::getShortcutLink(std::wstring _lnkPath, std::wstring *path, 
                     auto indexOf = hmc_string_util::indexOf(*desc, '\0');
                     if (indexOf >= 0)
                     {
-                        desc->resize(indexOf);
+                        desc->resize(static_cast<size_t>(indexOf));
                     }
 
                     result = true;
@@ -676,7 +677,7 @@ bool hmc_shell_util::getShortcutLink(std::wstring _lnkPath, std::wstring *path, 
                     auto indexOf = hmc_string_util::indexOf(*icon, '\0');
                     if (indexOf >= 0)
                     {
-                        icon->resize(indexOf);
+                        icon->resize(static_cast<size_t>(indexOf));
                     }
 
                     result = true;
@@ -836,7 +837,7 @@ bool hmc_shell_util::showContextMenu(HWND hwnd, const std::vector<std::wstring> 
         CMINVOKECOMMANDINFOEX info = {0};
         info.cbSize = sizeof(info);
         info.hwnd = static_cast<HWND>(hwnd);
-        info.lpVerb = MAKEINTRESOURCEA(command - 1);
+        info.lpVerb = MAKEINTRESOURCEA(static_cast<long long>(command) - 1);
         info.nShow = SW_NORMAL;
         imenu->InvokeCommand((LPCMINVOKECOMMANDINFO)&info);
     }
@@ -900,7 +901,7 @@ bool hmc_shell_util::showContextMenu(HWND hwnd, std::wstring file_Path, int x, i
         CMINVOKECOMMANDINFOEX info = {0};
         info.cbSize = sizeof(info);
         info.hwnd = static_cast<HWND>(hwnd);
-        info.lpVerb = MAKEINTRESOURCEA(command - 1);
+        info.lpVerb = MAKEINTRESOURCEA(static_cast<long long>(command) - 1);
         info.nShow = SW_NORMAL;
         pContextMenu->InvokeCommand((LPCMINVOKECOMMANDINFO)&info);
     }
@@ -1055,7 +1056,23 @@ bool hmc_shell_util::copyFile(const std::wstring &filePath, const std::wstring &
     fileOP.pFrom = filePath.c_str();
     fileOP.pTo = cloneFilePath.c_str();
 
-    fileOP.fFlags = (isShowConfirm ? 0 : (isShowProgress ? 0 : FOF_SILENT)) | FOF_NOCONFIRMATION | (isShow ? 0 : FOF_NO_UI);
+    fileOP.fFlags = 0; // 初始化标志
+
+    if (!isShowConfirm)
+    {
+        fileOP.fFlags |= FOF_NOCONFIRMATION; // 不显示确认对话框
+    }
+
+    if (!isShow)
+    {
+        fileOP.fFlags |= FOF_NO_UI; // 不显示任何UI（无UI模式）
+    }
+
+    if (!isShowProgress)
+    {
+        fileOP.fFlags |= FOF_SILENT; // 不显示进度窗口
+    }
+
     int fileOperation = ::SHFileOperationW(&fileOP);
 
     return fileOperation == 0;
@@ -1068,7 +1085,23 @@ bool hmc_shell_util::moveFile(const std::wstring &filePath, const std::wstring &
     fileOP.wFunc = FO_MOVE;
     fileOP.pFrom = filePath.c_str();
     fileOP.pTo = cloneFilePath.c_str();
-    fileOP.fFlags = (isShowConfirm ? 0 : (isShowProgress ? 0 : FOF_SILENT)) | FOF_NOCONFIRMATION | (isShow ? 0 : FOF_NO_UI);
+    fileOP.fFlags = 0; // 初始化标志
+
+    if (!isShowConfirm)
+    {
+        fileOP.fFlags |= FOF_NOCONFIRMATION; // 不显示确认对话框
+    }
+
+    if (!isShow)
+    {
+        fileOP.fFlags |= FOF_NO_UI; // 不显示任何UI（无UI模式）
+    }
+
+    if (!isShowProgress)
+    {
+        fileOP.fFlags |= FOF_SILENT; // 不显示进度窗口
+    }
+
     int fileOperation = ::SHFileOperationW(&fileOP);
     return fileOperation == 0;
 }
@@ -1367,7 +1400,7 @@ bool hmc_shell_util::Symlink::createDirSymlink(const std::wstring &targetPath, c
     return ::CreateSymbolicLinkW(targetPath.c_str(), sourcePath.c_str(), 0x1);
 }
 
-hmc_shell_util::Symlink::LINK_TYPE hmc_shell_util::Symlink::getLinkType(const std::wstring &path)
+hmc_shell_util::Symlink::LINK_TYPE hmc_shell_util::Symlink::getLinkType(const std::wstring& path)
 {
     DWORD attributes = ::GetFileAttributesW(path.c_str());
 
@@ -1379,7 +1412,6 @@ hmc_shell_util::Symlink::LINK_TYPE hmc_shell_util::Symlink::getLinkType(const st
     // 检查是否是符号链接或目录连接点
     if (attributes & FILE_ATTRIBUTE_REPARSE_POINT)
     {
-
         HANDLE fileHandle = ::CreateFileW(
             path.c_str(),
             GENERIC_READ,
@@ -1389,22 +1421,23 @@ hmc_shell_util::Symlink::LINK_TYPE hmc_shell_util::Symlink::getLinkType(const st
             FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
             NULL);
 
-        std::shared_ptr<void> _shared_close_Handle_(nullptr, [&](void *)
-                                                    {
-            if (fileHandle != INVALID_HANDLE_VALUE) {
-                ::CloseHandle(fileHandle);
-            } });
+        std::shared_ptr<void> _shared_close_Handle_(nullptr, [&](void*)
+            {
+                if (fileHandle != INVALID_HANDLE_VALUE) {
+                    ::CloseHandle(fileHandle);
+                }
+            });
 
         if (fileHandle != INVALID_HANDLE_VALUE)
         {
-            // IOCTL重解析
-            BYTE reparseBuffer[MAXIMUM_REPARSE_DATA_BUFFER_SIZE];
+
+            std::unique_ptr<BYTE[]> reparseBuffer(new BYTE[MAXIMUM_REPARSE_DATA_BUFFER_SIZE]);
             DWORD bytesReturned;
 
             if (::DeviceIoControl(fileHandle, FSCTL_GET_REPARSE_POINT, NULL, 0,
-                                  reparseBuffer, MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &bytesReturned, NULL))
+                reparseBuffer.get(), MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &bytesReturned, NULL))
             {
-                ch_copy_REPARSE_DATA_BUFFER *reparseData = (ch_copy_REPARSE_DATA_BUFFER *)reparseBuffer;
+                ch_copy_REPARSE_DATA_BUFFER* reparseData = (ch_copy_REPARSE_DATA_BUFFER*)reparseBuffer.get();
 
                 if (reparseData->ReparseTag == IO_REPARSE_TAG_SYMLINK)
                 {
@@ -1430,11 +1463,12 @@ hmc_shell_util::Symlink::LINK_TYPE hmc_shell_util::Symlink::getLinkType(const st
         FILE_FLAG_BACKUP_SEMANTICS,
         NULL);
 
-    std::shared_ptr<void> _shared_close_Handle_(nullptr, [&](void *)
-                                                {
-        if (fileHandle != INVALID_HANDLE_VALUE) {
-            ::CloseHandle(fileHandle);
-        } });
+    std::shared_ptr<void> _shared_close_Handle_(nullptr, [&](void*)
+        {
+            if (fileHandle != INVALID_HANDLE_VALUE) {
+                ::CloseHandle(fileHandle);
+            }
+        });
 
     if (fileHandle != INVALID_HANDLE_VALUE)
     {
