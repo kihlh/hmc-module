@@ -69,6 +69,60 @@ namespace hmc_string_util
 	extern size_t removeMatchChar(std::string *StrInput, std::function<bool(char at)> filter);
 
 	/**
+	 * @brief 查找匹配条件的字符
+	 * @example %key%  "key" ‘key’
+	 *
+	 * @param text
+	 * @param find
+	 * @return std::vector<std::string>
+	 */
+	extern std::vector<std::string> findKeyList(const std::string &text, char find);
+	/**
+	 * @brief 查找匹配条件的字符
+	 * @example %key%  "key" ‘key’
+	 *
+	 * @param text
+	 * @param find
+	 * @return std::vector<std::string>
+	 */
+	extern std::vector<std::wstring> findKeyList(const std::wstring &text, wchar_t find);
+	/**
+	 * @brief 拼接类似于 键值对的字符串
+	 * @example %key%  "key" ‘key’
+	 *
+	 * @param text
+	 * @param find
+	 * @return std::wstring
+	 */
+	extern std::wstring joinKey(const std::wstring &text, wchar_t sep);
+	/**
+	 * @brief 拼接类似于 键值对的字符串
+	 * @example %key%  "key" ‘key’
+	 *
+	 * @param text
+	 * @param find
+	 * @return std::string
+	 */
+	extern std::string joinKey(const std::string &text, char sep);
+	/**
+	 * @brief 拼接类似于 键值对的字符串
+	 * @example %key%  "key" ‘key’
+	 *
+	 * @param text
+	 * @param find
+	 * @return std::wstring
+	 */
+	extern void joinKey(std::wstring *text, wchar_t sep);
+	/**
+	 * @brief 拼接类似于 键值对的字符串
+	 * @example %key%  "key" ‘key’
+	 *
+	 * @param text
+	 * @param find
+	 * @return std::string
+	 */
+	extern void joinKey(std::string *text, char sep);
+	/**
 	 * @brief 提取开头的所有ASCII字符串 并忽略空白字符 直到超过 127
 	 *
 	 * @param path
@@ -298,6 +352,36 @@ namespace hmc_string_util
 	extern std::string join(const std::vector<std::string> input, char separator);
 
 	/**
+	 * @brief 去重
+	 *
+	 * @param sourcePtr
+	 * @return std::vector<std::wstring>
+	 */
+	extern std::vector<std::wstring> removeDuplicates(const std::vector<std::wstring> &sourcePtr);
+	/**
+	 * @brief 去重
+	 *
+	 * @param sourcePtr
+	 * @return std::vector<std::string>
+	 */
+	extern std::vector<std::string> removeDuplicates(const std::vector<std::string> &sourcePtr);
+
+	/**
+	 * @brief 去重
+	 *
+	 * @param sourcePtr
+	 * @return std::vector<std::wstring>
+	 */
+	extern size_t removeDuplicates(std::vector<std::wstring> *sourcePtr);
+	/**
+	 * @brief 去重
+	 *
+	 * @param sourcePtr
+	 * @return std::vector<std::string>
+	 */
+	extern size_t removeDuplicates(std::vector<std::string> *sourcePtr);
+
+	/**
 	 * @brief 分割文本
 	 *
 	 * @param sourcePtr 输入文本
@@ -428,31 +512,49 @@ namespace hmc_string_util
 	extern void replaceAll(std::string &sourcePtr, std::vector<std::tuple<std::string, std::string>> list);
 	extern void replaceAll(std::wstring &sourcePtr, std::vector<std::tuple<std::wstring, std::wstring>> list);
 
-	// 移除尾部 为xx 的指定文本
-	extern std::string trimLast(const std::string &input, const std::string &match);
-	// 移除开头和尾部 为xx 的指定文本
-	extern std::string trim(const std::string &input, const std::string &match);
-	// 移除开头为xx 的指定文本
-	extern std::string trimFirst(const std::string &input, const std::string &match);
-	// 移除尾部 为xx 的指定文本
-	extern std::wstring trim(const std::wstring &input, const std::wstring &match);
-	// 移除开头和尾部 为xx 的指定文本
-	extern std::wstring trimLast(const std::wstring &input, const std::wstring &match);
-	// 移除开头为xx 的指定文本
-	extern std::wstring trimFirst(const std::wstring &input, const std::wstring &match);
-
-	// 移除尾部 为xx 的指定文本
-	extern std::string trimLastAll(const std::string &input, const std::string &match);
-	// 移除开头和尾部 为xx 的指定文本
-	extern std::string trimAll(const std::string &input, const std::string &match);
-	// 移除开头为xx 的指定文本
-	extern std::string trimFirstAll(const std::string &input, const std::string &match);
-	// 移除尾部 为xx 的指定文本
-	extern std::wstring trimAll(const std::wstring &input, const std::wstring &match);
-	// 移除开头和尾部 为xx 的指定文本
-	extern std::wstring trimLastAll(const std::wstring &input, const std::wstring &match);
-	// 移除开头为xx 的指定文本
-	extern std::wstring trimFirstAll(const std::wstring &input, const std::wstring &match);
+	/**
+	 * @brief 剪裁开头和结尾的指定字符
+	 * 
+	 * @param text 文本指针
+	 * @param sep 匹配项
+	 * @param front 处理开头
+	 * @param back 处理结尾
+	 * @return size_t 
+	 */
+	extern inline size_t trim(std::wstring *text, std::wstring sep, const bool front = true, const bool back = true);
+	
+	/**
+	 * @brief 剪裁开头和结尾的指定字符
+	 * 
+	 * @param text 文本指针
+	 * @param sep 匹配项
+	 * @param front 处理开头
+	 * @param back 处理结尾
+	 * @return size_t 
+	 */
+	extern inline size_t trim(std::string *text, std::string sep, const bool front = true, const bool back = true);
+	
+	/**
+	 * @brief 剪裁开头和结尾的指定字符
+	 * 
+	 * @param text 文本指针
+	 * @param sep 匹配项
+	 * @param front 处理开头
+	 * @param back 处理结尾
+	 * @return size_t 
+	 */
+	extern inline size_t trim(std::wstring *text, wchar_t sep, const bool front = true, const bool back = true);
+	
+	/**
+	 * @brief 剪裁开头和结尾的指定字符
+	 * 
+	 * @param text 文本指针
+	 * @param sep 匹配项
+	 * @param front 处理开头
+	 * @param back 处理结尾
+	 * @return size_t 
+	 */
+	extern inline size_t trim(std::string *text, char sep, const bool front = true, const bool back = true);
 
 	// c数组转json
 
@@ -940,47 +1042,47 @@ namespace hmc_string_util
 
 	/**
 	 * @brief 删除所有的\0 并返回一个带有\0结尾的文本指针
-	 * 
-	 * @param input 
-	 * @return const char* 
+	 *
+	 * @param input
+	 * @return const char*
 	 */
 	extern const char *formatCStr(std::string *input);
 	/**
 	 * @brief 合并数组的文本并以\0分隔 并以 \0\0 结束 的文本指针
-	 * 
-	 * @param input 
-	 * @param temp_ptr 
-	 * @return const char* 
+	 *
+	 * @param input
+	 * @param temp_ptr
+	 * @return const char*
 	 */
 	extern const char *formatCStr(const std::vector<std::string> input, std::string *temp_ptr);
 	/**
 	 * @brief 删除所有的\0 并返回一个带有\0结尾的文本指针
-	 * 
-	 * @param input 
-	 * @return const wchar_t* 
+	 *
+	 * @param input
+	 * @return const wchar_t*
 	 */
 	extern const wchar_t *formatCStr(std::wstring *input);
 	/**
 	 * @brief 删除所有的\0 并将其\0结尾
-	 * 
-	 * @param input 
-	 * @return const wchar_t* 
+	 *
+	 * @param input
+	 * @return const wchar_t*
 	 */
 	extern void formatCStr(std::wstring &input);
 	/**
 	 * @brief 删除所有的\0 并将其\0结尾
-	 * 
-	 * @param input 
-	 * @return const wchar_t* 
+	 *
+	 * @param input
+	 * @return const wchar_t*
 	 */
 	extern void formatCStr(std::string &input);
-	
+
 	/**
 	 * @brief 合并数组的文本并以\0分隔 并以 \0\0 结束 的文本指针
-	 * 
-	 * @param input 
-	 * @param temp_ptr 
-	 * @return const wchar_t* 
+	 *
+	 * @param input
+	 * @param temp_ptr
+	 * @return const wchar_t*
 	 */
 	extern const wchar_t *formatCStr(const std::vector<std::wstring> input, std::wstring *temp_ptr);
 

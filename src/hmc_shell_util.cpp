@@ -1,4 +1,4 @@
-﻿# pragma warning (disable:28159)
+﻿#pragma warning(disable : 28159)
 
 #include "hmc_shell_util.h"
 #include "hmc_windows_util.h"
@@ -324,21 +324,22 @@ bool hmc_shell_util::isSystemFor64bit()
 int hmc_shell_util::trashFile(std::wstring FromPath, bool bRecycle, bool isShow)
 {
     SHFILEOPSTRUCTW FileOp = {0};
+    FileOp.fFlags = 0;
+
     if (bRecycle)
     {
-        if (isShow)
-        {
-            FileOp.fFlags |= FOF_ALLOWUNDO;
-        }
-        else
-        {
-            FileOp.fFlags |= FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT;
-        }
+        FileOp.fFlags |= FOF_ALLOWUNDO; // 启用回收站
     }
+
+    if (!isShow)
+    {
+        FileOp.fFlags |= FOF_NOCONFIRMATION | FOF_SILENT;
+    }
+
     FileOp.pFrom = FromPath.c_str();
-    FileOp.pTo = NULL;        // 一定要是NULL
-    FileOp.wFunc = FO_DELETE; // 删除操作
-    return ::SHFileOperationW(&FileOp);
+    FileOp.pTo = NULL;
+    FileOp.wFunc = FO_DELETE;
+    return  S_OK == ::SHFileOperationW(&FileOp);
 }
 
 namespace hmc_shell_util
@@ -1400,7 +1401,7 @@ bool hmc_shell_util::Symlink::createDirSymlink(const std::wstring &targetPath, c
     return ::CreateSymbolicLinkW(targetPath.c_str(), sourcePath.c_str(), 0x1);
 }
 
-hmc_shell_util::Symlink::LINK_TYPE hmc_shell_util::Symlink::getLinkType(const std::wstring& path)
+hmc_shell_util::Symlink::LINK_TYPE hmc_shell_util::Symlink::getLinkType(const std::wstring &path)
 {
     DWORD attributes = ::GetFileAttributesW(path.c_str());
 
@@ -1421,12 +1422,11 @@ hmc_shell_util::Symlink::LINK_TYPE hmc_shell_util::Symlink::getLinkType(const st
             FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
             NULL);
 
-        std::shared_ptr<void> _shared_close_Handle_(nullptr, [&](void*)
-            {
+        std::shared_ptr<void> _shared_close_Handle_(nullptr, [&](void *)
+                                                    {
                 if (fileHandle != INVALID_HANDLE_VALUE) {
                     ::CloseHandle(fileHandle);
-                }
-            });
+                } });
 
         if (fileHandle != INVALID_HANDLE_VALUE)
         {
@@ -1435,9 +1435,9 @@ hmc_shell_util::Symlink::LINK_TYPE hmc_shell_util::Symlink::getLinkType(const st
             DWORD bytesReturned;
 
             if (::DeviceIoControl(fileHandle, FSCTL_GET_REPARSE_POINT, NULL, 0,
-                reparseBuffer.get(), MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &bytesReturned, NULL))
+                                  reparseBuffer.get(), MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &bytesReturned, NULL))
             {
-                ch_copy_REPARSE_DATA_BUFFER* reparseData = (ch_copy_REPARSE_DATA_BUFFER*)reparseBuffer.get();
+                ch_copy_REPARSE_DATA_BUFFER *reparseData = (ch_copy_REPARSE_DATA_BUFFER *)reparseBuffer.get();
 
                 if (reparseData->ReparseTag == IO_REPARSE_TAG_SYMLINK)
                 {
@@ -1463,12 +1463,11 @@ hmc_shell_util::Symlink::LINK_TYPE hmc_shell_util::Symlink::getLinkType(const st
         FILE_FLAG_BACKUP_SEMANTICS,
         NULL);
 
-    std::shared_ptr<void> _shared_close_Handle_(nullptr, [&](void*)
-        {
+    std::shared_ptr<void> _shared_close_Handle_(nullptr, [&](void *)
+                                                {
             if (fileHandle != INVALID_HANDLE_VALUE) {
                 ::CloseHandle(fileHandle);
-            }
-        });
+            } });
 
     if (fileHandle != INVALID_HANDLE_VALUE)
     {

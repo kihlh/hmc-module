@@ -63,6 +63,12 @@
     <ClCompile Include="src\hmc_path_util.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\hmc_env_util.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\hmc_console_util.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\hmc_sock_util.h">
@@ -111,6 +117,12 @@
       <Filter>头文件\include</Filter>
     </ClInclude>
     <ClInclude Include="include\hmc-module.h">
+      <Filter>头文件\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\hmc_console_util.h">
+      <Filter>头文件\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\hmc_env_util.h">
       <Filter>头文件\include</Filter>
     </ClInclude>
   </ItemGroup>

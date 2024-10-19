@@ -1,4 +1,5 @@
 ﻿#include "hmc_windows_util.h"
+#pragma warning(disable : 6258)
 
 namespace hmc_windows_util
 {
@@ -283,11 +284,13 @@ namespace hmc_windows_util
         // 获取桌面句柄
         HWND hwnd = ::GetDesktopWindow();
 
-        HMC_EQ_RUN_LAST(hwnd);
+        std::uint64_t _hwnd = static_cast<std::uint64_t>((long long)hwnd);
+
+        HMC_EQ_RUN_LAST(_hwnd);
         int counter = 0;
 
         hwnd = ::GetWindow(hwnd, GW_CHILD);
-        HMC_EQ_RUN_LAST(hwnd);
+        HMC_EQ_RUN_LAST(_hwnd);
 
         while (hwnd != NULL)
         {
@@ -727,9 +730,13 @@ bool hmc_windows_util::setWindowInTaskbarVisible(HWND hwnd, bool visible)
 
     // 初始化COM
     LPVOID lp_COM = NULL;
-    ::CoInitialize(lp_COM);
+
+    HRESULT hr = ::CoInitialize(lp_COM);
+    if (!SUCCEEDED(hr)) {
+        return result;
+    }
+
     // 获取托盘
-    HRESULT hr;
     ITaskbarList *pTaskbarList;
     hr = ::CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER, IID_ITaskbarList, (void **)&pTaskbarList);
     // 开始操作

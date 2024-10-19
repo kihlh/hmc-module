@@ -84,8 +84,8 @@
 #define HMC_CONCAT_IMPL(x, y) x##y
 #define HMC_CONCAT(x, y) HMC_CONCAT_IMPL(x, y)
 
-#define HMC_FreeDelete(ptr) std::shared_ptr<void> HMC_CONCAT(_Shared_close_Library, __LINE__)(nullptr, [&](void *) {if(ptr!=nullptr){delete ptr;ptr = nullptr;}});
-#define HMC_FreeDeleteList(ptr) std::shared_ptr<void> HMC_CONCAT(_Shared_close_Library, __LINE__)(nullptr, [&](void *) {if(ptr!=nullptr){delete[] ptr;ptr = nullptr;}});
+#define HMC_FreeDelete(ptr) std::shared_ptr<void> HMC_CONCAT(_Shared_close_Library, __LINE__)(nullptr, [&](void *) {if(ptr!=nullptr){delete ptr;ptr = nullptr;} });
+#define HMC_FreeDeleteList(ptr) std::shared_ptr<void> HMC_CONCAT(_Shared_close_Library, __LINE__)(nullptr, [&](void *) {if(ptr!=nullptr){delete[] ptr;ptr = nullptr;} });
 
 #define HMC_FreeAnyAuto(code) \
     std::shared_ptr<void> HMC_CONCAT(_Shared_close_Library, __LINE__)(nullptr, [&](void *) {\
@@ -119,9 +119,10 @@
 
 namespace hmc_util
 {
-    
+
     template <typename T, typename T2>
-    extern std::vector<T> formatNumberList(std::vector<T2> input){
+    extern std::vector<T> formatNumberList(std::vector<T2> input)
+    {
         std::vector<T> result;
         for (auto &item : input)
         {
@@ -245,6 +246,119 @@ namespace hmc_util
 
 namespace hmc_util
 {
+
+    template <typename OPEN_Types, typename T>
+    extern bool get_if(T *ptr, const std::variant<OPEN_Types> &_Var)
+    {
+        bool result = false;
+
+        if (ptr == nullptr)
+            return result;
+
+        if (std::holds_alternative<OPEN_Types>(_Var))
+        {
+            (*ptr) = static_cast<T>(std::get<OPEN_Types>(_Var));
+            result = true;
+        }
+
+        return result;
+    }
+
+    template <typename T >
+    extern bool get_if(T *ptr, const std::variant<T> &_Var)
+    {
+        bool result = false;
+
+        if (ptr == nullptr)
+            return result;
+
+        if (std::holds_alternative<T>(_Var))
+        {
+            (*ptr) = std::get<T>(_Var);
+            result = true;
+        }
+
+        return result;
+    }
+
+    template <typename OPEN_Types, typename T>
+    extern bool get_if(T *ptr, const std::any &_Var)
+    {
+        bool result = false;
+
+        if (ptr == nullptr)
+            return result;
+
+        if (_Var.has_value() && typeid(OPEN_Types) == _Var.type())
+        {
+
+            (*ptr) = static_cast<T>(std::any_cast<OPEN_Types>(_Var));
+            result = true;
+        }
+
+        return result;
+    }
+
+    template <typename T>
+    extern bool get_if(T *ptr, const std::any &_Var)
+    {
+        bool result = false;
+
+        if (ptr == nullptr)
+            return result;
+
+        if (_Var.has_value() && typeid(T) == _Var.type())
+        {
+
+            (*ptr) = std::any_cast<T>(_Var);
+            result = true;
+        }
+
+        return result;
+    }
+    
+    template <typename OPEN_Types, typename T>
+    extern T get_or(const std::variant<OPEN_Types> &_Var, T orValue)
+    {
+        if (std::holds_alternative<OPEN_Types>(_Var))
+        {
+          return static_cast<T>(std::get<OPEN_Types>(_Var));
+        }
+        return orValue;
+    }
+
+    template <typename T >
+    extern bool get_or(const std::variant<T> &_Var, T orValue)
+    {
+        if (std::holds_alternative<T>(_Var))
+        {
+            return std::get<T>(_Var);
+        }
+        return orValue;
+    }
+
+    template <typename OPEN_Types, typename T>
+    extern bool get_or(const std::any &_Var, T orValue)
+    {
+        if (_Var.has_value() && typeid(OPEN_Types) == _Var.type())
+        {
+
+            return static_cast<T>(std::any_cast<OPEN_Types>(_Var));
+        }
+        return orValue;
+    }
+
+    template <typename T>
+    extern bool get_or(const std::any &_Var, T orValue)
+    {
+        if (_Var.has_value() && typeid(T) == _Var.type())
+        {
+            return std::any_cast<T>(_Var);
+
+        }
+        
+        return orValue;
+    }
 
     class anyCast
     {
@@ -501,13 +615,13 @@ public:
     }
 
     // *
-    operator T *() 
+    operator T *()
     {
         return m_data;
     }
 
     // &
-    operator T &() 
+    operator T &()
     {
         return m_data;
     }

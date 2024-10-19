@@ -30,6 +30,8 @@
     <ClCompile Include="src\hmc_automation_util.cpp" />
     <ClCompile Include="src\hmc_byte_util.cpp" />
     <ClCompile Include="src\hmc_clip_util.cpp" />
+    <ClCompile Include="src\hmc_console_util.cpp" />
+    <ClCompile Include="src\hmc_env_util.cpp" />
     <ClCompile Include="src\hmc_json_util.cpp" />
     <ClCompile Include="src\hmc_napi_value_util.cpp" />
     <ClCompile Include="src\hmc_path_util.cpp" />
@@ -48,6 +50,8 @@
     <ClInclude Include="include\hmc_automation_util.h" />
     <ClInclude Include="include\hmc_byte_util.h" />
     <ClInclude Include="include\hmc_clip_util.h" />
+    <ClInclude Include="include\hmc_console_util.h" />
+    <ClInclude Include="include\hmc_env_util.h" />
     <ClInclude Include="include\hmc_json_util.h" />
     <ClInclude Include="include\hmc_napi_value_util.h" />
     <ClInclude Include="include\hmc_path_util.h" />

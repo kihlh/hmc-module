@@ -7,6 +7,8 @@
 #include <stdexcept> // For overflow_error
 #include <winternl.h>
 #include <regex>
+#include <set>
+#include <unordered_set>
 
 namespace hmc_string_util
 {
@@ -79,6 +81,8 @@ namespace HMC_TEMPLATE_FUNC
 {
 
     using T = std::wstring;
+    using char_type = typename T::value_type;
+
     // using FILTER_T = std::function<bool(wchar_t at, size_t index, T *input)>;
 
     template <typename T, typename T2>
@@ -485,7 +489,7 @@ namespace HMC_TEMPLATE_FUNC
             for (char_type &c : data)
 
             {
-                if (std::isalpha(static_cast<int>(c)))
+                if ((c >= 0 && c < 127) && std::isalpha(static_cast<int>(c)))
                 {
                     if (is_upper)
                         Result.push_back(std::toupper(c));
@@ -505,7 +509,7 @@ namespace HMC_TEMPLATE_FUNC
         if constexpr (std::is_same_v<T, char> || std::is_same_v<T, wchar_t>)
         {
 
-            if (std::isalpha(static_cast<int>(data)))
+            if ((data >= 0 && data < 127) && std::isalpha(static_cast<int>(data)))
             {
                 if (is_upper)
                 {
@@ -542,7 +546,7 @@ namespace HMC_TEMPLATE_FUNC
             {
                 char_type &at = data->at(index);
 
-                if (std::isalpha(static_cast<int>(at)))
+                if ((at >= 0 && at < 127) && std::isalpha(static_cast<int>(at)))
                 {
                     if (is_upper)
                     {
@@ -918,9 +922,9 @@ namespace HMC_TEMPLATE_FUNC
         static_assert(std::is_same_v<T, std::wstring> || std::is_same_v<T, std::string>, "Unsupported type preset escape (不支持的类型预设转义)");
 
         static_assert(
-                std::is_same_v<From, std::wstring>||
-                std::is_same_v<From, std::string>||
-                std::is_same_v<From, std::vector<char>>||
+            std::is_same_v<From, std::wstring> ||
+                std::is_same_v<From, std::string> ||
+                std::is_same_v<From, std::vector<char>> ||
                 std::is_same_v<From, std::vector<wchar_t>>,
             "Unsupported type preset escape (不支持的类型预设转义)");
 
@@ -936,11 +940,180 @@ namespace HMC_TEMPLATE_FUNC
             {
                 result.push_back(static_cast<char_type>(item));
             }
+            else
+            {
+                result.push_back(static_cast<char_type>(item));
+            }
         }
 
         return result;
     }
 
+    template <typename T, typename From>
+    std::vector<T> findKeyList(const T &text, From find)
+    {
+        std::vector<T> variables;
+        size_t start = 0;
+
+        while ((start = text.find(find, start)) != text.npos)
+        {
+            size_t end = text.find(find, start + 1);
+
+            if (end <= text.size())
+            {
+                T variable = text.substr(start + 1, end - start - 1);
+                variables.push_back(variable);
+                start = end + 1;
+
+                if (start > text.size())
+                    break;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return variables;
+    }
+
+    template <typename T>
+    std::vector<T> removeDuplicates(const std::vector<T> &sourceVec)
+    {
+        std::unordered_set<T> seenElements;
+        std::vector<T> result;
+
+        result.reserve(sourceVec.size());
+
+        for (const auto &element : sourceVec)
+        {
+            if (seenElements.find(element) == seenElements.end())
+            {
+                seenElements.insert(element);
+                result.push_back(element);
+            }
+        }
+
+        return result;
+    }
+
+    template <typename T>
+    size_t removeDuplicates(std::vector<T> *sourceVec)
+    {
+        size_t result = 0;
+
+        if (sourceVec == nullptr)
+            return result;
+
+        result = sourceVec->size();
+
+        std::unordered_set<T> seenElements;
+
+        auto it = sourceVec->begin();
+        while (it != sourceVec->end())
+        {
+            if (seenElements.find(*it) != seenElements.end())
+            {
+                it = sourceVec->erase(it);
+            }
+            else
+            {
+                seenElements.insert(*it);
+                ++it;
+            }
+        }
+
+        return sourceVec->size();
+    }
+
+    template <typename T, typename char_type>
+    void joinKey(T *text, char_type sep)
+    {
+
+        if (text == nullptr)
+            return;
+
+        if (text->capacity() < text->size() + 2)
+        {
+            text->reserve(text->size() + 5);
+        }
+        text->insert(0, 1, sep);
+        text->push_back(sep);
+    }
+
+    template <typename T, typename char_type>
+    T joinKey(const T &text, char_type sep)
+    {
+        T result(text.size() + 2, '\0');
+        result.reserve(result.size());
+        result.clear();
+        result.push_back(sep);
+        result.append(text);
+        result.push_back(sep);
+        return result;
+    }
+
+
+    template <typename T, typename MatchType>
+    static inline size_t trim(T *text, MatchType sep, const bool front, const bool back)
+    {
+        static_assert(std::is_same_v<T, std::wstring> || std::is_same_v<T, std::string>, "Unsupported type preset escape (不支持的类型预设转义)");
+
+        size_t result = 0;
+
+        if (text == nullptr)
+        {
+            return result;
+        }
+
+        T &str = *text;
+
+        if constexpr (std::is_same_v<MatchType, std::wstring> || std::is_same_v<MatchType, std::string>)
+        {
+
+            if (front)
+            {
+                while (str.find(sep) == 0)
+                {
+                    str.erase(0, sep.length());
+                    result++;
+                }
+            }
+
+            if (back)
+            {
+                while (str.size() >= sep.size() && str.rfind(sep) == (str.size() - sep.size()))
+                {
+                    str.erase(str.size() - sep.size());
+                    result++;
+                }
+            }
+        }
+
+        if constexpr (std::is_same_v<MatchType, char> || std::is_same_v<MatchType, wchar_t>)
+        {
+
+            if (front)
+            {
+                while (!str.empty() && str.front() == sep)
+                {
+                    str.erase(str.begin());
+                    result++;
+                }
+            }
+
+            if (back)
+            {
+                while (!str.empty() && str.back() == sep)
+                {
+                    str.pop_back();
+                    result++;
+                }
+            }
+        }
+
+        return result;
+    }
+    
 }
 
 // * 模版化 转发
@@ -1055,6 +1228,22 @@ namespace hmc_string_util
     inline std::wstring hmc_string_util::asciiConvers(std::string input) { return HMC::asciiConvers<std::wstring, std::string>(input); }
     inline std::string hmc_string_util::asciiConvers(std::vector<wchar_t> input) { return HMC::asciiConvers<std::string, std::vector<wchar_t>>(input); }
     inline std::wstring hmc_string_util::asciiConvers(std::vector<char> input) { return HMC::asciiConvers<std::wstring, std::vector<char>>(input); }
+    std::vector<std::wstring> hmc_string_util::findKeyList(const std::wstring &text, wchar_t find) { return HMC::findKeyList<std::wstring, wchar_t>(text, find); }
+    std::vector<std::string> hmc_string_util::findKeyList(const std::string &text, char find) { return HMC::findKeyList<std::string, char>(text, find); }
+    std::vector<std::wstring> hmc_string_util::removeDuplicates(const std::vector<std::wstring> &sourceVec) { return HMC::removeDuplicates<std::wstring>(sourceVec); }
+    std::vector<std::string> hmc_string_util::removeDuplicates(const std::vector<std::string> &sourceVec) { return HMC::removeDuplicates<std::string>(sourceVec); }
+    size_t hmc_string_util::removeDuplicates(std::vector<std::wstring> *sourcePtr) { return HMC::removeDuplicates<std::wstring>(sourcePtr); }
+    size_t hmc_string_util::removeDuplicates(std::vector<std::string> *sourcePtr) { return HMC::removeDuplicates<std::string>(sourcePtr); }
+
+    std::wstring hmc_string_util::joinKey(const std::wstring &text, wchar_t sep) { return HMC::joinKey<std::wstring, wchar_t>(text, sep); }
+    std::string hmc_string_util::joinKey(const std::string &text, char sep) { return HMC::joinKey<std::string, char>(text, sep); }
+    void hmc_string_util::joinKey(std::wstring *text, wchar_t sep) { return HMC::joinKey<std::wstring, wchar_t>(text, sep); }
+    void hmc_string_util::joinKey(std::string *text, char sep) { return HMC::joinKey<std::string, char>(text, sep); }
+
+	inline size_t hmc_string_util::trim(std::wstring *text, std::wstring sep, const bool front, const bool back) { return HMC::trim<std::wstring, std::wstring>(text, sep,front,back); }
+	inline size_t hmc_string_util::trim(std::string *text, std::string sep, const bool front, const bool back) { return HMC::trim<std::string, std::string>(text, sep,front,back); }
+	inline size_t hmc_string_util::trim(std::wstring *text, wchar_t sep, const bool front, const bool back) { return HMC::trim<std::wstring, wchar_t>(text, sep,front,back); }
+	inline size_t hmc_string_util::trim(std::string *text, char sep, const bool front, const bool back) { return HMC::trim<std::string, char>(text, sep,front,back); }
 
 }
 
@@ -1517,179 +1706,6 @@ inline void hmc_string_util::replace(std::string &sourcePtr, std::string from, s
         }
         index++;
     }
-}
-
-std::string hmc_string_util::trim(const std::string &input, const std::string &match)
-{
-
-    std::string temp_trim_str = trimLast(input, match);
-    return trimFirst(temp_trim_str, match);
-}
-
-std::string hmc_string_util::trimFirst(const std::string &input, const std::string &match)
-{
-    auto start_pos = input.find_first_not_of(match);
-    return (start_pos == std::string::npos) ? "" : input.substr(start_pos);
-}
-
-std::string hmc_string_util::trimLast(const std::string &input, const std::string &match)
-{
-    auto end_pos = input.find_last_not_of(match);
-    return (end_pos == std::string::npos) ? "" : input.substr(0, end_pos + 1);
-}
-
-std::wstring hmc_string_util::trim(const std::wstring &input, const std::wstring &match)
-{
-    std::wstring temp_trim_str = trimLast(input, match);
-    return trimFirst(temp_trim_str, match);
-}
-
-std::wstring hmc_string_util::trimFirst(const std::wstring &input, const std::wstring &match)
-{
-    auto start_pos = input.find_first_not_of(match);
-    return (start_pos == std::string::npos) ? L"" : input.substr(start_pos);
-}
-
-std::wstring hmc_string_util::trimLast(const std::wstring &input, const std::wstring &match)
-{
-    auto end_pos = input.find_last_not_of(match);
-    return (end_pos == std::string::npos) ? L"" : input.substr(0, end_pos + 1);
-}
-
-// 移除尾部 为xx 的指定文本
-std::string hmc_string_util::trimLastAll(const std::string &input, const std::string &match)
-{
-    std::string result = std::string(input);
-    if (match.empty())
-    {
-        return result;
-    }
-    for (size_t i = 0; i < input.size(); i++)
-    {
-        std::string ResultTemp = trimLast(result, match);
-        if (result.empty() || result.size() == ResultTemp.size())
-        {
-            return ResultTemp;
-        }
-        result.clear();
-        result.append(ResultTemp);
-    }
-
-    return result;
-}
-
-// 移除开头和尾部 为xx 的指定文本
-std::string hmc_string_util::trimAll(const std::string &input, const std::string &match)
-{
-    std::string result = std::string(input);
-    if (match.empty())
-    {
-        return result;
-    }
-
-    for (size_t i = 0; i < input.size(); i++)
-    {
-        std::string ResultTemp = trim(result, match);
-        if (result.empty() || result.size() == ResultTemp.size())
-        {
-            return ResultTemp;
-        }
-        result.clear();
-        result.append(ResultTemp);
-    }
-
-    return result;
-}
-
-// 移除开头为xx 的指定文本
-std::string hmc_string_util::trimFirstAll(const std::string &input, const std::string &match)
-{
-    std::string result = std::string(input);
-    if (match.empty())
-    {
-        return result;
-    }
-
-    for (size_t i = 0; i < input.size(); i++)
-    {
-        std::string ResultTemp = trimFirst(result, match);
-        if (result.empty() || result.size() == ResultTemp.size())
-        {
-            return ResultTemp;
-        }
-        result.clear();
-        result.append(ResultTemp);
-    }
-
-    return result;
-}
-
-// 移除尾部 为xx 的指定文本
-std::wstring hmc_string_util::trimAll(const std::wstring &input, const std::wstring &match)
-{
-    std::wstring result = std::wstring(input);
-    if (match.empty())
-    {
-        return result;
-    }
-
-    for (size_t i = 0; i < input.size(); i++)
-    {
-        std::wstring ResultTemp = trim(result, match);
-        if (result.empty() || result.size() == ResultTemp.size())
-        {
-            return ResultTemp;
-        }
-        result.clear();
-        result.append(ResultTemp);
-    }
-
-    return result;
-}
-
-// 移除开头和尾部 为xx 的指定文本
-std::wstring hmc_string_util::trimLastAll(const std::wstring &input, const std::wstring &match)
-{
-    std::wstring result = std::wstring(input);
-    if (match.empty())
-    {
-        return result;
-    }
-    for (size_t i = 0; i < input.size(); i++)
-    {
-        std::wstring ResultTemp = trimLast(result, match);
-        if (result.empty() || result.size() == ResultTemp.size())
-        {
-            return ResultTemp;
-        }
-        result.clear();
-        result.append(ResultTemp);
-    }
-
-    return result;
-}
-
-// 移除开头为xx 的指定文本
-std::wstring hmc_string_util::trimFirstAll(const std::wstring &input, const std::wstring &match)
-{
-    std::wstring result = std::wstring(input);
-    if (match.empty())
-    {
-        return result;
-    }
-
-    for (size_t i = 0; i < input.size(); i++)
-    {
-        std::wstring ResultTemp = trimFirst(result, match);
-        if (result.empty() || result.size() == ResultTemp.size())
-        {
-            return ResultTemp;
-        }
-        result.clear();
-        result.append(ResultTemp);
-    }
-
-    return result;
 }
 
 std::wstring hmc_string_util::StripSpaces(const std::wstring &str)

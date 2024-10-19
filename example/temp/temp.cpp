@@ -1,67 +1,50 @@
 ﻿#include <fstream>
 #include <string>
 #include <windows.h>
-#include <nlohmann/json.hpp>
+#include <hmc_env_util.h>
+#include <hmc_string_util.h>
+#include <hmc_registr_util.h>
 
-#include <iostream>
-#include <io.h>
-#include <fcntl.h>
+#ifdef _DEBUG  
+#ifdef _WIN64 
+// 如果发现无法找到静态文件可以测试以下方法(其中一种)
+// 1. 将路径替换为绝对的路径(d:/SharedLibrary/hmc-module-static_DEBUG_X64.lib)
+// 2. 在vs属性页中配置 VC++目录 ->常规->库目录 ($(静态模块位置)/SharedLibrary)
+// 3. 在vs属性页中配置 链接器->常规->附加库目录($(静态模块位置)/SharedLibrary)
+#pragma comment(lib, "hmc-module-static_DEBUG_X64.lib")
+#else  
+#pragma comment(lib, "hmc-module-static_DEBUG_X86.lib")
+#endif
+#else 
+#ifdef _WIN64
+#pragma comment(lib, "hmc-module-static_RELEASE_X64.lib")
+#else 
+#pragma comment(lib, "hmc-module-static_RELEASE_X86.lib")
+#endif
+#endif
 
 
-using json = nlohmann::json;
-
-namespace hmc_string_util {
-
-    inline std::string utf16_to_utf8(const std::wstring input)
-    {
-        std::string result;
-
-        if (input.empty())
-        {
-            return result;
-        }
-
-        int inputSize = static_cast<UINT32>(input.size());
-
-        int iSizeInBytes = ::WideCharToMultiByte(CP_UTF8, 0, input.c_str(), inputSize, NULL, 0, NULL, NULL);
-
-        if (iSizeInBytes > 0)
-        {
-            size_t char_size = static_cast<size_t>(iSizeInBytes);
-
-            std::vector<char> TempResult = std::vector<char>(char_size, '\0');
-
-            ::WideCharToMultiByte(CP_UTF8, 0, input.c_str(), inputSize, &TempResult[0], static_cast<int>(char_size), NULL, NULL);
-
-            result.reserve(char_size + 5);
-            result.append(TempResult.begin(), TempResult.end());
-            result.push_back('\0');
-        }
-
-        return result;
-    }
-
-}
 int main() {
-    const std::wstring _UTF16_TEXT = L"utf16宽字符車B1234 こんにちは";
-    const std::string _GB2312_TEXT = "utf16宽字符車B1234 こんにちは";
-    const std::vector<std::uint8_t> _UTF8_TEXT_T = {117,116,102,49,54,229,174,189,229,173,151,231,172,166,232,187,138,66,49,50,51,52,32,227,129,147,227,130,147,227,129,171,227,129,161,227,129,175 };
-    const std::string _UTF8_TEXT = std::string(_UTF8_TEXT_T.begin(), _UTF8_TEXT_T.end());
 
+    auto key_list = hmc_env_util::getEnvList();
 
-    std::string utf16_to_utf8 = hmc_string_util::utf16_to_utf8(_UTF16_TEXT);
-   
-    json j;
+    auto key_lisct = hmc_env_util::escapeEnvVariable(L"%%%ddd%%2222%,%HMP%%333%safasgsdg%5,");
+    
 
-    j["utf8"] = _UTF8_TEXT;
+    const std::wstring systmPath = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
+    HKEY systmHkey = HKEY_LOCAL_MACHINE;
 
-    j["utf16_to_utf8"] = utf16_to_utf8;
+    auto key = hmc_registr_util::OpenKeyToken(systmHkey, systmPath,L"");
 
+    auto cop = hmc_registr_util::queryRegistrFolderInfoW(key,true,true);
 
-    //set  CONSOLE utf8 log
-    int original_mode = _setmode(_fileno(stdin), _O_U8TEXT);
+    auto GlobalVariable_List = hmc_env_util::systemEnv::GetGlobalVariableAll(true, true);
 
-    std::cout<<"  ->["<< original_mode <<"]" << j;
+    auto GlobalVariable_List2 = hmc_env_util::systemEnv::getGlobalVariable(true);
+
+    std::wstring path_all = std::wstring();
+
+    hmc_env_util::systemEnv::getPath(path_all,true);
 
     return 0;
 }

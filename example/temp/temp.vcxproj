@@ -166,6 +166,7 @@
     <ClInclude Include="..\..\include\hmc_automation_util.h" />
     <ClInclude Include="..\..\include\hmc_byte_util.h" />
     <ClInclude Include="..\..\include\hmc_clip_util.h" />
+    <ClInclude Include="..\..\include\hmc_env_util.h" />
     <ClInclude Include="..\..\include\hmc_json_util.h" />
     <ClInclude Include="..\..\include\hmc_path_util.h" />
     <ClInclude Include="..\..\include\hmc_process_util.h" />

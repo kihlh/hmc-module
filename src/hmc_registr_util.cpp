@@ -15,25 +15,337 @@
 #define MAX_KEY_LENGTH 255
 #define MAX_VALUE_NAME 16383
 
-time_t fileTimeToTimeStamp(FILETIME ftLastWriteTime)
+namespace HMC_TEMPLATE_FUNC
 {
-	time_t result = 0;
-	try
-	{
-		// 处理时间戳
-		const ULONGLONG epochOffset = 116444736000000000ULL;
-		ULARGE_INTEGER uli;
-		uli.LowPart = ftLastWriteTime.dwLowDateTime;
-		uli.HighPart = ftLastWriteTime.dwHighDateTime;
-		ULONGLONG timestamp = (uli.QuadPart - epochOffset) / 10000ULL;
 
-		result = static_cast<time_t>(timestamp);
-	}
-	catch (...)
+	using T = std::wstring;
+	using chQueryFolderInfo = hmc_registr_util::chQueryFolderInfoW;
+	using chQueryFolderKeyItem = hmc_registr_util::chQueryFolderKeyItemW;
+	using chQueryValueKeyItem = hmc_registr_util::chQueryValueKeyItemW;
+
+	time_t fileTimeToTimeStamp(FILETIME ftLastWriteTime)
 	{
+		time_t result = 0;
+		try
+		{
+			// 处理时间戳
+			const ULONGLONG epochOffset = 116444736000000000ULL;
+			ULARGE_INTEGER uli;
+			uli.LowPart = ftLastWriteTime.dwLowDateTime;
+			uli.HighPart = ftLastWriteTime.dwHighDateTime;
+			ULONGLONG timestamp = (uli.QuadPart - epochOffset) / 10000ULL;
+
+			result = static_cast<time_t>(timestamp);
+		}
+		catch (...)
+		{
+		}
+
+		return result;
 	}
 
-	return result;
+	template <typename T, typename chQueryFolderInfo, typename chQueryFolderKeyItem, typename chQueryValueKeyItem>
+	bool QueryRegistrFolderInfo(chQueryFolderInfo *chQueryFolderInfoPtr, HKEY hToken, bool isQueryFolderKey = false, bool isQueryValueKey = false)
+	{
+		static_assert(std::is_same_v<T, std::wstring> || std::is_same_v<T, std::string>, "Unsupported type preset escape (不支持的类型预设转义)");
+		static_assert(std::is_same_v<chQueryFolderInfo, hmc_registr_util::chQueryFolderInfoW> || std::is_same_v<chQueryFolderInfo, hmc_registr_util::chQueryFolderInfoA>, "Unsupported type preset escape (不支持的类型预设转义)");
+
+		static_assert(std::is_same_v<chQueryFolderKeyItem, hmc_registr_util::chQueryFolderKeyItemW> || std::is_same_v<chQueryFolderKeyItem, hmc_registr_util::chQueryFolderKeyItemA>, "Unsupported type preset escape (不支持的类型预设转义)");
+		static_assert(std::is_same_v<chQueryValueKeyItem, hmc_registr_util::chQueryValueKeyItemA> || std::is_same_v<chQueryValueKeyItem, hmc_registr_util::chQueryValueKeyItemW>, "Unsupported type preset escape (不支持的类型预设转义)");
+
+		bool result = false;
+
+		if (hToken == NULL)
+		{
+			return result;
+		}
+
+		DWORD cchClassName = MAX_PATH;	// 类字符串的大小
+		DWORD cSubKeys = 0;				// 子键数
+		DWORD cbMaxSubKey = 0;			// 最长子键大小
+		DWORD cchMaxClass = 0;			// 最长类字符串
+		DWORD cValues = 0;				// 键值的个数
+		DWORD cchMaxValue = 0;			// 最长值名
+		DWORD cbMaxValueData = 0;		// 最长值数据
+		DWORD cbSecurityDescriptor = 0; // 安全描述符的大小
+		FILETIME ftLastWriteTime{};		// 最后写入时间
+
+		// wchar_t achValue[MAX_VALUE_NAME]; // key存储
+
+		DWORD cchValueLeng = MAX_VALUE_NAME; // 数据序号
+		T achValue;
+
+		DWORD retCode = ERROR_SUCCESS;
+
+		if constexpr (std::is_same_v<T, std::wstring>)
+		{
+			retCode = ::RegQueryInfoKeyW(/*key句柄*/ hToken, /*类名缓冲区*/ nullptr, /*类字符串的大小*/ nullptr, /*无*/ nullptr, /*子键数*/ &cSubKeys, /*最长子键大小*/ &cbMaxSubKey, /*最长类字符串*/ &cchMaxClass, /*键值的个数*/ &cValues, /*最长值名*/ &cchMaxValue, /*最长值数据*/ &cbMaxValueData, /*安全描述符的大小*/ &cbSecurityDescriptor, /**最后写入时*/ &ftLastWriteTime);
+		}
+
+		if constexpr (std::is_same_v<T, std::string>)
+		{
+			retCode = ::RegQueryInfoKeyA(/*key句柄*/ hToken, /*类名缓冲区*/ nullptr, /*类字符串的大小*/ nullptr, /*无*/ nullptr, /*子键数*/ &cSubKeys, /*最长子键大小*/ &cbMaxSubKey, /*最长类字符串*/ &cchMaxClass, /*键值的个数*/ &cValues, /*最长值名*/ &cchMaxValue, /*最长值数据*/ &cbMaxValueData, /*安全描述符的大小*/ &cbSecurityDescriptor, /**最后写入时*/ &ftLastWriteTime);
+		}
+
+		if (ERROR_SUCCESS == retCode)
+		{
+			result = true;
+			chQueryFolderInfoPtr->size = cSubKeys + cValues;
+			chQueryFolderInfoPtr->exists = true;
+			chQueryFolderInfoPtr->folderSize = cSubKeys;
+			chQueryFolderInfoPtr->keySize = cValues;
+			chQueryFolderInfoPtr->time = HMC_TEMPLATE_FUNC::fileTimeToTimeStamp(ftLastWriteTime);
+			chQueryFolderInfoPtr->maxValueDataSize = cbMaxValueData;
+
+			if (isQueryFolderKey || isQueryValueKey)
+			{
+				achValue.reserve(cchValueLeng+5);
+				achValue.resize(cchValueLeng);
+			}
+
+			// 枚举子键
+			if (cSubKeys && isQueryFolderKey)
+			{
+
+				FILETIME ftLastWriteTime_temp{}; // 最后写入时间
+
+				for (DWORD index = 0; index < cSubKeys; index++)
+				{
+
+					if constexpr (std::is_same_v<T, std::wstring>)
+					{
+						retCode = ::RegEnumKeyExW(hToken, index, &achValue[0], &cchValueLeng, NULL, NULL, NULL, &ftLastWriteTime_temp);
+					}
+
+					if constexpr (std::is_same_v<T, std::string>)
+					{
+						retCode = ::RegEnumKeyExA(hToken, index, &achValue[0], &cchValueLeng, NULL, NULL, NULL, &ftLastWriteTime_temp);
+					}
+
+					if (retCode == ERROR_SUCCESS && cchValueLeng != 0)
+					{
+						chQueryFolderKeyItem data = {T(), HMC_TEMPLATE_FUNC::fileTimeToTimeStamp(ftLastWriteTime_temp)};
+
+						data.name.append(achValue.data());
+
+						chQueryFolderInfoPtr->folderKeyList.push_back(std::move(data));
+					}
+
+					retCode = ERROR_SUCCESS;
+					cchValueLeng = MAX_VALUE_NAME;
+					std::fill(achValue.begin(), achValue.end(), '\0');
+				}
+			}
+
+			// 枚举键值。
+			if (cValues && isQueryValueKey)
+			{
+
+				for (DWORD index = 0; index < cValues; index++)
+				{
+
+					DWORD lpType = REG_NONE;
+					DWORD lpcbDataSize = 0;
+
+					if constexpr (std::is_same_v<T, std::wstring>)
+					{
+						retCode = ::RegEnumValueW(hToken, index, &achValue[0], &cchValueLeng, NULL, &lpType, NULL, &lpcbDataSize);
+					}
+
+					if constexpr (std::is_same_v<T, std::string>)
+					{
+						retCode = ::RegEnumValueA(hToken, index, &achValue[0], &cchValueLeng, NULL, &lpType, NULL, &lpcbDataSize);
+					}
+
+					if (retCode == ERROR_SUCCESS)
+					{
+
+						chQueryValueKeyItem data = {T(), lpType, lpcbDataSize};
+						data.name.append(achValue.data());
+						chQueryFolderInfoPtr->valueKeyList.push_back(std::move(data));
+					}
+
+					retCode = ERROR_SUCCESS;
+					cchValueLeng = MAX_VALUE_NAME;
+					std::fill(achValue.begin(), achValue.end(), '\0');
+				}
+			}
+		}
+
+		return result;
+	}
+
+	template <typename T>
+	DWORD OpenKeyToken(HKEY hKey, T SubKey, DWORD ulOptions, REGSAM samDesired, bool CreateNotKey, HKEY *token)
+	{
+		static_assert(std::is_same_v<T, std::wstring> || std::is_same_v<T, std::string>, "Unsupported type preset escape (不支持的类型预设转义)");
+
+		DWORD status = 0;
+
+		if constexpr (std::is_same_v<T, std::wstring>)
+		{
+			status = ::RegOpenKeyExW(hKey, SubKey.c_str(), ulOptions, samDesired, token);
+		}
+
+		if constexpr (std::is_same_v<T, std::string>)
+		{
+			status = ::RegOpenKeyExA(hKey, SubKey.c_str(), ulOptions, samDesired, token);
+		}
+
+		if (status != ERROR_SUCCESS)
+		{
+			if (CreateNotKey)
+			{
+
+				DWORD dwOptions = REG_OPTION_NON_VOLATILE;
+				DWORD dwDisposition;
+
+				if constexpr (std::is_same_v<T, std::wstring>)
+				{
+					status = ::RegCreateKeyExW(hKey, SubKey.c_str(), 0, NULL, dwOptions, KEY_WRITE, NULL, token, &dwDisposition);
+				}
+
+				if constexpr (std::is_same_v<T, std::string>)
+				{
+					status = ::RegCreateKeyExA(hKey, SubKey.c_str(), 0, NULL, dwOptions, KEY_WRITE, NULL, token, &dwDisposition);
+				}
+
+				if (status != ERROR_SUCCESS)
+				{
+					token = nullptr;
+					return status;
+				}
+
+				if constexpr (std::is_same_v<T, std::wstring>)
+				{
+					status = ::RegOpenKeyExW(hKey, SubKey.c_str(), ulOptions, samDesired, token);
+				}
+
+				if constexpr (std::is_same_v<T, std::string>)
+				{
+					status = ::RegOpenKeyExA(hKey, SubKey.c_str(), ulOptions, samDesired, token);
+				}
+
+				if (status != ERROR_SUCCESS)
+				{
+					token = nullptr;
+					return status;
+				}
+			}
+		}
+
+		return status;
+	}
+
+	template <typename T>
+	T GetRegistrString(HKEY open_hkey, T KeyName, bool expand)
+	{
+		static_assert(std::is_same_v<T, std::wstring> || std::is_same_v<T, std::string>, "Unsupported type preset escape (不支持的类型预设转义)");
+		DWORD status = 0;
+
+		T result = T();
+
+		DWORD lpType = expand ? RRF_RT_REG_EXPAND_SZ : REG_SZ;
+		DWORD pDataSize = 0;
+
+		// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
+
+		if constexpr (std::is_same_v<T, std::wstring>)
+		{
+			status = ::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize);
+		}
+
+		if constexpr (std::is_same_v<T, std::string>)
+		{
+			status = ::RegQueryValueExA(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize);
+		}
+
+		if (status == ERROR_SUCCESS)
+		{
+
+			// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
+			if constexpr (std::is_same_v<T, std::wstring>)
+			{
+				status = ::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize);
+			}
+
+			if constexpr (std::is_same_v<T, std::string>)
+			{
+				status = ::RegQueryValueExA(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize);
+			}
+			if (status == ERROR_SUCCESS)
+			{
+
+				if (pDataSize < 1)
+				{
+					return result;
+				}
+
+				if constexpr (std::is_same_v<T, std::wstring>)
+				{
+
+
+					size_t char_len = pDataSize / sizeof(wchar_t);
+
+					std::unique_ptr<wchar_t[]> lpValue(new (std::nothrow) wchar_t[char_len]);
+
+					status = ::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, reinterpret_cast<BYTE *>(lpValue.get()), &pDataSize);
+
+					if (status == ERROR_SUCCESS)
+					{
+						char_len = pDataSize / sizeof(wchar_t);
+						result.reserve(char_len);
+
+						for (size_t i = 0; i < char_len; i++)
+						{
+							auto it = lpValue[i];
+							if (it == L'\0')
+							{
+								break;
+							}
+							result.push_back(it);
+						}
+					}
+				}
+
+				if constexpr (std::is_same_v<T, std::string>)
+				{
+
+					size_t char_len = pDataSize / sizeof(char);
+
+					std::unique_ptr<char[]> lpValue(new (std::nothrow) char[char_len]);
+
+					status = ::RegQueryValueExA(open_hkey, KeyName.c_str(), nullptr, &lpType, reinterpret_cast<BYTE *>(lpValue.get()), &pDataSize);
+
+					if (status == ERROR_SUCCESS)
+					{
+						char_len = pDataSize / sizeof(char);
+						result.reserve(char_len);
+
+						for (size_t i = 0; i < char_len; i++)
+						{
+							auto it = lpValue[i];
+							if (it == '\0')
+							{
+								break;
+							}
+							result.push_back(it);
+						}
+					}
+				}
+			}
+		}
+
+		if (expand)
+		{
+
+
+		}
+
+		result.shrink_to_fit();
+		return result;
+	}
+
 }
 
 bool hmc_registr_util::eq_target_type(DWORD theType, DWORD targetType)
@@ -543,7 +855,7 @@ std::string hmc_registr_util::getHive(HKEY hkey)
 
 hmc_registr_util::chValueStat hmc_registr_util::getValueStat(HKEY hKey, std::string subKey, std::string key)
 {
-	hmc_registr_util::chValueStat result = {0, 0, false};
+	hmc_registr_util::chValueStat result;
 
 	HKEY open_hkey = nullptr;
 	HMC_FreeRegKeyAuto(open_hkey);
@@ -561,7 +873,7 @@ hmc_registr_util::chValueStat hmc_registr_util::getValueStat(HKEY hKey, std::str
 
 hmc_registr_util::chValueStat hmc_registr_util::getValueStat(HKEY hKey, std::wstring subKey, std::wstring key)
 {
-	hmc_registr_util::chValueStat result = {0, 0, false};
+	hmc_registr_util::chValueStat result;
 
 	HKEY open_hkey = nullptr;
 	HMC_FreeRegKeyAuto(open_hkey);
@@ -579,7 +891,7 @@ hmc_registr_util::chValueStat hmc_registr_util::getValueStat(HKEY hKey, std::wst
 
 hmc_registr_util::chValueStat hmc_registr_util::getValueStat(HKEY hKey, std::wstring key)
 {
-	hmc_registr_util::chValueStat result = {0, 0, false};
+	hmc_registr_util::chValueStat result;
 
 	// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
 	if (hKey != NULL && RegQueryValueExW(hKey, key.c_str(), nullptr, &result.type, nullptr, &result.size) == ERROR_SUCCESS)
@@ -591,7 +903,7 @@ hmc_registr_util::chValueStat hmc_registr_util::getValueStat(HKEY hKey, std::wst
 
 hmc_registr_util::chValueStat hmc_registr_util::getValueStat(HKEY hKey, std::string key)
 {
-	hmc_registr_util::chValueStat result = {0, 0, false};
+	hmc_registr_util::chValueStat result;
 
 	// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
 	if (hKey != NULL && RegQueryValueExA(hKey, key.c_str(), nullptr, &result.type, nullptr, &result.size) == ERROR_SUCCESS)
@@ -603,12 +915,7 @@ hmc_registr_util::chValueStat hmc_registr_util::getValueStat(HKEY hKey, std::str
 
 hmc_registr_util::chValue hmc_registr_util::chValueItme::getValueInfo()
 {
-	auto result = hmc_registr_util::chValue{
-		0,	  // 值的大小
-		0,	  // 类型
-		{},	  // 数据
-		false // 此键是否存在
-	};
+	auto result = hmc_registr_util::chValue();
 
 	if (!isFolder)
 	{
@@ -723,7 +1030,7 @@ std::vector<hmc_registr_util::chValueItmeW> hmc_registr_util::getRegistrValueItm
 
 hmc_registr_util::chValue hmc_registr_util::GetRegistrSourceValue(HKEY hKey, std::wstring FolderPath, std::wstring KeyName)
 {
-	hmc_registr_util::chValue result = {0, 0, {}, false};
+	hmc_registr_util::chValue result;
 	HKEY open_hkey = nullptr;
 	HMC_FreeRegKeyAuto(open_hkey);
 
@@ -737,7 +1044,7 @@ hmc_registr_util::chValue hmc_registr_util::GetRegistrSourceValue(HKEY hKey, std
 
 hmc_registr_util::chValue hmc_registr_util::GetRegistrSourceValue(HKEY hKey, std::string FolderPath, std::string KeyName)
 {
-	hmc_registr_util::chValue result = {0, 0, {}, false};
+	hmc_registr_util::chValue result;
 	HKEY open_hkey = nullptr;
 	HMC_FreeRegKeyAuto(open_hkey);
 
@@ -754,7 +1061,7 @@ hmc_registr_util::chValue hmc_registr_util::GetRegistrSourceValue(HKEY open_hkey
 
 	DWORD valueType;
 	DWORD pDataSize = 0;
-	hmc_registr_util::chValue result = {0, 0, {}, false};
+	hmc_registr_util::chValue result;
 
 	// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
 	if (::RegQueryValueExA(open_hkey, KeyName.c_str(), nullptr, &valueType, nullptr, &pDataSize) == ERROR_SUCCESS)
@@ -787,7 +1094,7 @@ hmc_registr_util::chValue hmc_registr_util::GetRegistrSourceValue(HKEY open_hkey
 {
 	DWORD valueType;
 	DWORD pDataSize = 0;
-	hmc_registr_util::chValue result = {0, 0, {}, false};
+	hmc_registr_util::chValue result;
 
 	// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
 	if (RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &valueType, nullptr, &pDataSize) == ERROR_SUCCESS)
@@ -1029,54 +1336,63 @@ hmc_registr_util::OpenKeyToken::operator bool() const
 	return (token != nullptr);
 }
 
+hmc_registr_util::OpenKeyToken::OpenKeyToken(HKEY hKey)
+{
+	token = hKey;
+}
+
 hmc_registr_util::OpenKeyToken::OpenKeyToken(HKEY hKey, std::wstring FolderPath, std::wstring KeyName, bool CreateNotKey)
 {
-	if ((status = ::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &token)) != ERROR_SUCCESS)
+	auto join_temp = std::wstring();
+
+	join_temp.reserve(FolderPath.size() + KeyName.size() + 1);
+	join_temp.append(FolderPath);
+
+	if (!join_temp.empty() && join_temp.back() != '\\')
 	{
-		if (CreateNotKey)
-		{
-
-			DWORD dwOptions = REG_OPTION_NON_VOLATILE;
-			DWORD dwDisposition;
-
-			status = ::RegCreateKeyExW(hKey, FolderPath.c_str(), 0, NULL, dwOptions, KEY_WRITE, NULL, &token, &dwDisposition);
-
-			if (status != ERROR_SUCCESS)
-			{
-				return;
-			}
-
-			if ((status = ::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &token)) != ERROR_SUCCESS)
-			{
-				return;
-			}
-		}
+		join_temp.push_back('\\');
 	}
+
+	join_temp.append(KeyName);
+
+	HMC_TEMPLATE_FUNC::OpenKeyToken<std::wstring>(hKey, join_temp.c_str(), 0, KEY_ALL_ACCESS, CreateNotKey, &token);
 }
 
 hmc_registr_util::OpenKeyToken::OpenKeyToken(HKEY hKey, std::string FolderPath, std::string KeyName, bool CreateNotKey)
 {
-	if ((status = ::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &token)) != ERROR_SUCCESS)
+	auto join_temp = std::string();
+
+	join_temp.reserve(FolderPath.size() + KeyName.size() + 1);
+	join_temp.append(FolderPath);
+
+	if (!join_temp.empty() && join_temp.back() != '\\')
 	{
-		if (CreateNotKey)
-		{
-
-			DWORD dwOptions = REG_OPTION_NON_VOLATILE;
-			DWORD dwDisposition;
-
-			status = ::RegCreateKeyExA(hKey, FolderPath.c_str(), 0, NULL, dwOptions, KEY_WRITE, NULL, &token, &dwDisposition);
-
-			if (status != ERROR_SUCCESS)
-			{
-				return;
-			}
-
-			if ((status = ::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &token)) != ERROR_SUCCESS)
-			{
-				return;
-			}
-		}
+		join_temp.push_back('\\');
 	}
+
+	join_temp.append(KeyName);
+
+	HMC_TEMPLATE_FUNC::OpenKeyToken<std::string>(hKey, join_temp.c_str(), 0, KEY_ALL_ACCESS, CreateNotKey, &token);
+}
+
+hmc_registr_util::OpenKeyToken::OpenKeyToken(HKEY hKey, std::wstring SubKey, DWORD ulOptions, REGSAM samDesired, bool CreateNotKey)
+{
+	HMC_TEMPLATE_FUNC::OpenKeyToken<std::wstring>(hKey, SubKey.c_str(), ulOptions, samDesired, CreateNotKey, &token);
+}
+
+hmc_registr_util::OpenKeyToken::OpenKeyToken(HKEY hKey, std::string SubKey, DWORD ulOptions, REGSAM samDesired, bool CreateNotKey)
+{
+	HMC_TEMPLATE_FUNC::OpenKeyToken<std::string>(hKey, SubKey.c_str(), ulOptions, samDesired, CreateNotKey, &token);
+}
+
+hmc_registr_util::OpenKeyToken::OpenKeyToken(HKEY hKey, std::wstring FolderPath, bool CreateNotKey)
+{
+	HMC_TEMPLATE_FUNC::OpenKeyToken<std::wstring>(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, CreateNotKey, &token);
+}
+
+hmc_registr_util::OpenKeyToken::OpenKeyToken(HKEY hKey, std::string FolderPath, bool CreateNotKey)
+{
+	HMC_TEMPLATE_FUNC::OpenKeyToken<std::string>(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, CreateNotKey, &token);
 }
 
 hmc_registr_util::OpenKeyToken::~OpenKeyToken()
@@ -1086,6 +1402,25 @@ hmc_registr_util::OpenKeyToken::~OpenKeyToken()
 		::RegCloseKey(token);
 		token = nullptr;
 	}
+}
+
+hmc_registr_util::chValueStat hmc_registr_util::OpenKeyToken::getValueStat(std::string ValueName)
+{
+	return hmc_registr_util::getValueStat(token, ValueName);
+}
+hmc_registr_util::chValueStat hmc_registr_util::OpenKeyToken::getValueStat(std::wstring ValueName)
+{
+	return hmc_registr_util::getValueStat(token, ValueName);
+}
+
+hmc_registr_util::chQueryFolderInfoA hmc_registr_util::OpenKeyToken::queryFolderStatA(bool isQueryFolderKey, bool isQueryValueKey)
+{
+	return queryRegistrFolderInfoA(token, isQueryFolderKey, isQueryValueKey);
+}
+
+hmc_registr_util::chQueryFolderInfoW hmc_registr_util::OpenKeyToken::queryFolderStatW(bool isQueryFolderKey, bool isQueryValueKey)
+{
+	return queryRegistrFolderInfoW(token, isQueryFolderKey, isQueryValueKey);
 }
 
 bool hmc_registr_util::SetRegistrString(HKEY hKey, std::wstring FolderPath, std::wstring KeyName, const std::wstring &Input, bool expand)
@@ -1595,60 +1930,10 @@ std::wstring hmc_registr_util::GetRegistrString(HKEY hKey, std::wstring FolderPa
 {
 
 	std::wstring result = L"";
+	
+	auto open_hkey = hmc_registr_util::OpenKeyToken(hKey, FolderPath);
 
-	HKEY open_hkey = nullptr;
-	HMC_FreeRegKeyAuto(open_hkey);
-
-	if (::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) != ERROR_SUCCESS)
-	{
-		return result;
-	}
-
-	DWORD lpType = expand ? RRF_RT_REG_EXPAND_SZ : REG_SZ;
-	DWORD pDataSize = 0;
-
-	// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
-	if (::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
-	{
-
-		// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
-		if (::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
-		{
-
-			if (pDataSize < 1)
-			{
-				return result;
-			}
-
-			size_t char_len = pDataSize / sizeof(wchar_t);
-
-			std::unique_ptr<wchar_t[]> lpValue (new (std::nothrow) wchar_t[char_len]);
-
-			if (::RegQueryValueExW(open_hkey, KeyName.c_str(), nullptr, &lpType, reinterpret_cast<BYTE *>(lpValue.get()), &pDataSize) == ERROR_SUCCESS)
-			{
-				char_len = pDataSize / sizeof(wchar_t);
-				result.reserve(char_len);
-
-				for (size_t i = 0; i < char_len; i++)
-				{
-					auto it = lpValue[i];
-					if (it == L'\0')
-					{
-						break;
-					}
-					result.push_back(it);
-				}
-			}
-		}
-	}
-
-	// 内存预开劈过了 克隆新的对象
-	if (result.capacity() > 0 && result.capacity() != result.size())
-	{
-		return std::wstring(result.c_str());
-	}
-
-	return result;
+	return HMC_TEMPLATE_FUNC::GetRegistrString<std::wstring>(open_hkey, KeyName, expand);
 }
 
 std::string hmc_registr_util::GetRegistrString(HKEY hKey, std::string FolderPath, std::string KeyName, bool expand)
@@ -1656,55 +1941,19 @@ std::string hmc_registr_util::GetRegistrString(HKEY hKey, std::string FolderPath
 
 	std::string result = {};
 
-	HKEY open_hkey = nullptr;
-	HMC_FreeRegKeyAuto(open_hkey);
+	auto open_hkey = hmc_registr_util::OpenKeyToken(hKey, FolderPath);
 
-	if (::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey) != ERROR_SUCCESS)
-	{
-		return result;
-	}
+	return HMC_TEMPLATE_FUNC::GetRegistrString<std::string>(open_hkey, KeyName, expand);
+}
 
-	DWORD lpType = expand ? RRF_RT_REG_EXPAND_SZ : REG_SZ;
-	DWORD pDataSize = 0;
+std::wstring hmc_registr_util::GetRegistrString(HKEY hToken, std::wstring KeyName, bool expand)
+{
+	return HMC_TEMPLATE_FUNC::GetRegistrString<std::wstring>(hToken, KeyName, expand);
+}
 
-	// 第一次调用 RegQueryValueEx 获取值的大小，放入 dataSize 变量中
-	if (::RegQueryValueExA(open_hkey, KeyName.c_str(), nullptr, &lpType, nullptr, &pDataSize) == ERROR_SUCCESS)
-	{
-
-		if (pDataSize < 1)
-		{
-			return result;
-		}
-
-		size_t char_len = pDataSize / sizeof(char);
-
-		std::unique_ptr<char[]> lpValue (new (std::nothrow) char[char_len]);
-
-		if (::RegQueryValueExA(open_hkey, KeyName.c_str(), nullptr, &lpType, reinterpret_cast<BYTE *>(lpValue.get()), &pDataSize) == ERROR_SUCCESS)
-		{
-
-			char_len = pDataSize / sizeof(char);
-			result.reserve(char_len);
-
-			for (size_t i = 0; i < char_len; i++)
-			{
-				auto it = lpValue[i];
-				if (it == '\0')
-				{
-					break;
-				}
-				result.push_back(it);
-			}
-		}
-	}
-
-	// 内存预开劈过了 克隆新的对象
-	if (result.capacity() > 0 && result.capacity() != result.size())
-	{
-		return std::string(result.c_str());
-	}
-
-	return result;
+std::string hmc_registr_util::GetRegistrString(HKEY hToken, std::string KeyName, bool expand)
+{
+	return HMC_TEMPLATE_FUNC::GetRegistrString<std::string>(hToken, KeyName, expand);
 }
 
 std::uint32_t hmc_registr_util::GetRegistrInt32(HKEY hKey, std::wstring FolderPath, std::wstring KeyName)
@@ -2331,122 +2580,11 @@ hmc_registr_util::chQueryFolderInfoA hmc_registr_util::queryRegistrFolderInfo(HK
 	HKEY open_hkey = nullptr;
 
 	HMC_FreeRegKeyAuto(open_hkey);
-
-	DWORD cchClassName = MAX_PATH;	// 类字符串的大小
-	DWORD cSubKeys = 0;				// 子键数
-	DWORD cbMaxSubKey = 0;			// 最长子键大小
-	DWORD cchMaxClass = 0;			// 最长类字符串
-	DWORD cValues = 0;				// 键值的个数
-	DWORD cchMaxValue = 0;			// 最长值名
-	DWORD cbMaxValueData = 0;		// 最长值数据
-	DWORD cbSecurityDescriptor = 0; // 安全描述符的大小
-	FILETIME ftLastWriteTime{};		// 最后写入时间
-
-	// wchar_t achValue[MAX_VALUE_NAME]; // key存储
-
-	DWORD cchValueLeng = MAX_VALUE_NAME; // 数据序号
-	std::string achValue;
-
-	DWORD retCode = ERROR_SUCCESS;
-
 	// 获取key数量 以及预分配内存大小
 	if (ERROR_SUCCESS == ::RegOpenKeyExA(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey))
 	{
-
-		retCode = ::RegQueryInfoKeyA(
-			open_hkey,			   // key句柄
-			nullptr,			   // 类名缓冲区
-			nullptr,			   // 类字符串的大小
-			nullptr,			   // 无
-			&cSubKeys,			   // 子键数
-			&cbMaxSubKey,		   // 最长子键大小
-			&cchMaxClass,		   // 最长类字符串
-			&cValues,			   // 键值的个数
-			&cchMaxValue,		   // 最长值名
-			&cbMaxValueData,	   // 最长值数据
-			&cbSecurityDescriptor, // 安全描述符的大小
-			&ftLastWriteTime);	   // 最后写入时间
+		HMC_TEMPLATE_FUNC::QueryRegistrFolderInfo<std::string, chQueryFolderInfoA, chQueryFolderKeyItemA, chQueryValueKeyItemA>(&result, open_hkey, isQueryFolderKey, isQueryValueKey);
 	}
-
-	if (ERROR_SUCCESS == retCode)
-	{
-		result.size = cSubKeys + cValues;
-		result.exists = true;
-		result.folderSize = cSubKeys;
-		result.keySize = cValues;
-		result.time = fileTimeToTimeStamp(ftLastWriteTime);
-		result.maxValueDataSize = cbMaxValueData;
-
-		if (isQueryFolderKey || isQueryValueKey)
-		{
-			achValue.reserve(cchValueLeng);
-			achValue.resize(cchValueLeng);
-		}
-
-		// 枚举子键
-		if (cSubKeys && isQueryFolderKey)
-		{
-
-			FILETIME ftLastWriteTime_temp{}; // 最后写入时间
-
-			for (DWORD index = 0; index < cSubKeys; index++)
-			{
-
-				retCode = ::RegEnumKeyExA(open_hkey, index,
-										  achValue.data(),
-										  &cchValueLeng,
-										  NULL,
-										  NULL,
-										  NULL,
-										  &ftLastWriteTime_temp);
-
-				if (retCode == ERROR_SUCCESS && cchValueLeng != 0)
-				{
-					achValue.resize(cchValueLeng);
-
-					chQueryFolderKeyItemA data = {std::string(), fileTimeToTimeStamp(ftLastWriteTime_temp)};
-					data.name.append(achValue.begin(), achValue.end());
-
-					result.folderKeyList.push_back(std::move(data));
-				}
-
-				retCode = ERROR_SUCCESS;
-				cchValueLeng = MAX_KEY_LENGTH;
-				achValue.clear();
-				achValue.resize(MAX_KEY_LENGTH);
-			}
-		}
-
-		// 枚举键值。
-		if (cValues && isQueryValueKey)
-		{
-
-			for (DWORD index = 0; index < cValues; index++)
-			{
-
-				DWORD lpType = REG_NONE;
-				DWORD lpcbDataSize = 0;
-
-				retCode = ::RegEnumValueA(open_hkey, index, achValue.data(), &cchValueLeng, NULL, &lpType, NULL, &lpcbDataSize);
-
-				if (retCode == ERROR_SUCCESS)
-				{
-					achValue.resize(cchValueLeng);
-
-					chQueryValueKeyItemA data = {std::string(), lpType, lpcbDataSize};
-					data.name.append(achValue.begin(), achValue.end());
-
-					result.valueKeyList.push_back(std::move(data));
-				}
-
-				retCode = ERROR_SUCCESS;
-				cchValueLeng = MAX_KEY_LENGTH;
-				achValue.clear();
-				achValue.resize(MAX_KEY_LENGTH);
-			}
-		}
-	}
-
 	return result;
 }
 
@@ -2459,119 +2597,9 @@ hmc_registr_util::chQueryFolderInfoW hmc_registr_util::queryRegistrFolderInfo(HK
 
 	HMC_FreeRegKeyAuto(open_hkey);
 
-	DWORD cchClassName = MAX_PATH;	// 类字符串的大小
-	DWORD cSubKeys = 0;				// 子键数
-	DWORD cbMaxSubKey = 0;			// 最长子键大小
-	DWORD cchMaxClass = 0;			// 最长类字符串
-	DWORD cValues = 0;				// 键值的个数
-	DWORD cchMaxValue = 0;			// 最长值名
-	DWORD cbMaxValueData = 0;		// 最长值数据
-	DWORD cbSecurityDescriptor = 0; // 安全描述符的大小
-	FILETIME ftLastWriteTime{};		// 最后写入时间
-
-	// wchar_t achValue[MAX_VALUE_NAME]; // key存储
-
-	DWORD cchValueLeng = MAX_VALUE_NAME; // 数据序号
-	std::wstring achValue;
-
-	DWORD retCode = ERROR_SUCCESS;
-
-	// 获取key数量 以及预分配内存大小
 	if (ERROR_SUCCESS == ::RegOpenKeyExW(hKey, FolderPath.c_str(), 0, KEY_ALL_ACCESS, &open_hkey))
 	{
-
-		retCode = ::RegQueryInfoKeyW(
-			open_hkey,			   // key句柄
-			nullptr,			   // 类名缓冲区
-			nullptr,			   // 类字符串的大小
-			nullptr,			   // 无
-			&cSubKeys,			   // 子键数
-			&cbMaxSubKey,		   // 最长子键大小
-			&cchMaxClass,		   // 最长类字符串
-			&cValues,			   // 键值的个数
-			&cchMaxValue,		   // 最长值名
-			&cbMaxValueData,	   // 最长值数据
-			&cbSecurityDescriptor, // 安全描述符的大小
-			&ftLastWriteTime);	   // 最后写入时间
-	}
-
-	if (ERROR_SUCCESS == retCode)
-	{
-		result.size = cSubKeys + cValues;
-		result.exists = true;
-		result.folderSize = cSubKeys;
-		result.keySize = cValues;
-		result.time = fileTimeToTimeStamp(ftLastWriteTime);
-		result.maxValueDataSize = cbMaxValueData;
-
-		if (isQueryFolderKey || isQueryValueKey)
-		{
-			achValue.reserve(cchValueLeng);
-			achValue.resize(cchValueLeng);
-		}
-
-		// 枚举子键
-		if (cSubKeys && isQueryFolderKey)
-		{
-
-			FILETIME ftLastWriteTime_temp{}; // 最后写入时间
-
-			for (DWORD index = 0; index < cSubKeys; index++)
-			{
-
-				retCode = ::RegEnumKeyExW(open_hkey, index,
-										  achValue.data(),
-										  &cchValueLeng,
-										  NULL,
-										  NULL,
-										  NULL,
-										  &ftLastWriteTime_temp);
-
-				if (retCode == ERROR_SUCCESS && cchValueLeng != 0)
-				{
-					achValue.resize(cchValueLeng);
-
-					chQueryFolderKeyItemW data = {std::wstring(), fileTimeToTimeStamp(ftLastWriteTime_temp)};
-					data.name.append(achValue.begin(), achValue.end());
-
-					result.folderKeyList.push_back(std::move(data));
-				}
-
-				retCode = ERROR_SUCCESS;
-				cchValueLeng = MAX_KEY_LENGTH;
-				achValue.clear();
-				achValue.resize(MAX_KEY_LENGTH);
-			}
-		}
-
-		// 枚举键值。
-		if (cValues && isQueryValueKey)
-		{
-
-			for (DWORD index = 0; index < cValues; index++)
-			{
-
-				DWORD lpType = REG_NONE;
-				DWORD lpcbDataSize = 0;
-
-				retCode = ::RegEnumValueW(open_hkey, index, achValue.data(), &cchValueLeng, NULL, &lpType, NULL, &lpcbDataSize);
-
-				if (retCode == ERROR_SUCCESS)
-				{
-					achValue.resize(cchValueLeng);
-
-					chQueryValueKeyItemW data = {std::wstring(), lpType, lpcbDataSize};
-					data.name.append(achValue.begin(), achValue.end());
-
-					result.valueKeyList.push_back(std::move(data));
-				}
-
-				retCode = ERROR_SUCCESS;
-				cchValueLeng = MAX_KEY_LENGTH;
-				achValue.clear();
-				achValue.resize(MAX_KEY_LENGTH);
-			}
-		}
+		HMC_TEMPLATE_FUNC::QueryRegistrFolderInfo<std::wstring, chQueryFolderInfoW, chQueryFolderKeyItemW, chQueryValueKeyItemW>(&result, open_hkey, isQueryFolderKey, isQueryValueKey);
 	}
 
 	return result;
@@ -2610,7 +2638,8 @@ bool hmc_registr_util::createRegistrValueKey(HKEY hKey, const std::string Folder
 	return result;
 }
 
-std::vector<std::string> hmc_registr_util::chQueryFolderInfoA::getFolderKeys(){
+std::vector<std::string> hmc_registr_util::chQueryFolderInfoA::getFolderKeys()
+{
 	return hmc_registr_util::chQueryFolderInfoA::getFolderKeys(this->folderKeyList);
 }
 std::vector<std::string> hmc_registr_util::chQueryFolderInfoA::getValueKeys()
@@ -2684,7 +2713,7 @@ std::vector<std::wstring> hmc_registr_util::chQueryFolderInfoW::getValueKeys(hmc
 
 hmc_registr_util::chValueData hmc_registr_util::getRegistrBuffer(HKEY hKey, std::string FolderPath, std::string KeyName)
 {
-	chValueData result = {0, 0, 0, {}};
+	chValueData result;
 	HKEY open_hkey = nullptr;
 	HMC_FreeRegKeyAuto(open_hkey);
 
@@ -2726,7 +2755,7 @@ hmc_registr_util::chValueData hmc_registr_util::getRegistrBuffer(HKEY hKey, std:
 
 hmc_registr_util::chValueData hmc_registr_util::getRegistrBuffer(HKEY hKey, std::wstring FolderPath, std::wstring KeyName)
 {
-	chValueData result = {0, 0, 0, {}};
+	chValueData result;
 	HKEY open_hkey = nullptr;
 	HMC_FreeRegKeyAuto(open_hkey);
 
@@ -2766,3 +2795,18 @@ hmc_registr_util::chValueData hmc_registr_util::getRegistrBuffer(HKEY hKey, std:
 	return result;
 }
 
+hmc_registr_util::chQueryFolderInfoA hmc_registr_util::queryRegistrFolderInfoA(HKEY hToken, bool isQueryFolderKey, bool isQueryValueKey)
+{
+	chQueryFolderInfoA result = chQueryFolderInfoA();
+
+	HMC_TEMPLATE_FUNC::QueryRegistrFolderInfo<std::string, chQueryFolderInfoA, chQueryFolderKeyItemA, chQueryValueKeyItemA>(&result, hToken, isQueryFolderKey, isQueryValueKey);
+	return result;
+}
+
+hmc_registr_util::chQueryFolderInfoW hmc_registr_util::queryRegistrFolderInfoW(HKEY hToken, bool isQueryFolderKey, bool isQueryValueKey)
+{
+	chQueryFolderInfoW result = chQueryFolderInfoW();
+
+	HMC_TEMPLATE_FUNC::QueryRegistrFolderInfo<std::wstring, chQueryFolderInfoW, chQueryFolderKeyItemW, chQueryValueKeyItemW>(&result, hToken, isQueryFolderKey, isQueryValueKey);
+	return result;
+}

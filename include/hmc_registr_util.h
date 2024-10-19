@@ -6,29 +6,31 @@
 #include <string>
 #include <map>
 
-
-
 namespace hmc_registr_util
 {
 
-	struct chQueryValueKeyItemW{
+	struct chQueryValueKeyItemW
+	{
 		std::wstring name;
 		DWORD type;
 		DWORD size;
-		};
-	
-	struct chQueryValueKeyItemA{
+	};
+
+	struct chQueryValueKeyItemA
+	{
 		std::string name;
 		DWORD type;
 		DWORD size;
 	};
 
-	struct chQueryFolderKeyItemW{
+	struct chQueryFolderKeyItemW
+	{
 		std::wstring name;
 		long long time;
 	};
-	
-	struct chQueryFolderKeyItemA{
+
+	struct chQueryFolderKeyItemA
+	{
 		std::string name;
 		long long time;
 	};
@@ -37,12 +39,12 @@ namespace hmc_registr_util
 	{
 		std::vector<chQueryValueKeyItemA> valueKeyList;
 		std::vector<chQueryFolderKeyItemA> folderKeyList;
-		DWORD size;		  // 此所有键总数量
-		bool exists;	  // 此键是否存在
-		DWORD folderSize; // 此目录键总数量
-		DWORD keySize;	  // 此目录键总数量
-		long long time;	  // 时间戳
-		DWORD maxValueDataSize; //最长值数据的大小
+		DWORD size;				// 此所有键总数量
+		bool exists;			// 此键是否存在
+		DWORD folderSize;		// 此目录键总数量
+		DWORD keySize;			// 此目录键总数量
+		long long time;			// 时间戳
+		DWORD maxValueDataSize; // 最长值数据的大小
 		chQueryFolderInfoA();
 		std::string to_json();
 		static std::string to_json(chQueryFolderInfoA QueryFolderInfoA);
@@ -59,12 +61,12 @@ namespace hmc_registr_util
 	{
 		std::vector<chQueryValueKeyItemW> valueKeyList;
 		std::vector<chQueryFolderKeyItemW> folderKeyList;
-		DWORD size;		  // 此所有键总数量
-		bool exists;	  // 此键是否存在
-		DWORD folderSize; // 此目录键总数量
-		DWORD keySize;	  // 此目录键总数量
-		long long time;	  // 时间戳
-		DWORD maxValueDataSize; //最长值数据的大小
+		DWORD size;				// 此所有键总数量
+		bool exists;			// 此键是否存在
+		DWORD folderSize;		// 此目录键总数量
+		DWORD keySize;			// 此目录键总数量
+		long long time;			// 时间戳
+		DWORD maxValueDataSize; // 最长值数据的大小
 		chQueryFolderInfoW();
 		std::wstring to_json();
 		static std::wstring to_json(chQueryFolderInfoW QueryFolderInfo);
@@ -76,11 +78,9 @@ namespace hmc_registr_util
 		static std::vector<std::wstring> getValueKeys(chQueryFolderInfoW QueryFolderInfo);
 	};
 
-
-
 	/**
 	 * @brief 查询指定目录的信息  并是否返回 键/目录键
-	 * 
+	 *
 	 * @param hKey 根
 	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
 	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
@@ -91,12 +91,12 @@ namespace hmc_registr_util
 	 * @param FolderPath 目录路径
 	 * @param isQueryFolderKey 目录键查询
 	 * @param isQueryValueKey 键查询
-	 * @return chQueryFolderInfoA 
+	 * @return chQueryFolderInfoA
 	 */
-	extern chQueryFolderInfoA queryRegistrFolderInfo(HKEY hKey, std::string FolderPath,bool isQueryFolderKey = false,bool isQueryValueKey= false);
+	extern chQueryFolderInfoA queryRegistrFolderInfo(HKEY hKey, std::string FolderPath, bool isQueryFolderKey = false, bool isQueryValueKey = false);
 	/**
 	 * @brief 查询指定目录的信息  并是否返回 键/目录键
-	 * 
+	 *
 	 * @param hKey 根
 	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
 	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
@@ -107,10 +107,10 @@ namespace hmc_registr_util
 	 * @param FolderPath 目录路径
 	 * @param isQueryFolderKey 目录键查询
 	 * @param isQueryValueKey 键查询
-	 * @return chQueryFolderInfoA 
+	 * @return chQueryFolderInfoA
 	 */
-	extern chQueryFolderInfoW queryRegistrFolderInfo(HKEY hKey, std::wstring FolderPath,bool isQueryFolderKey,bool isQueryValueKey);
-	
+	extern chQueryFolderInfoW queryRegistrFolderInfo(HKEY hKey, std::wstring FolderPath, bool isQueryFolderKey, bool isQueryValueKey);
+
 	enum REG_TYPE
 	{
 		_REG_NONE = 0,		// 没有类型
@@ -145,6 +145,7 @@ namespace hmc_registr_util
 		bool isInt32();						  // 判断是否是int32 4比特  排除8比特(QWORD)  但是包含了bin 4比特
 		bool isBuffer();					  // 判断是否是二进制类型
 		bool diffType(DWORD type2);			  // 对比两个类型
+		chType() : type(0) {}
 	};
 
 	// 低级数据存储体
@@ -158,6 +159,7 @@ namespace hmc_registr_util
 		std::uint16_t getInt16(); // 取值为int 16
 		std::uint32_t getInt32(); // 取值为int
 		std::uint64_t getInt64(); // 取值为 int64
+		chValue() : size(0), exists(false) {}
 	};
 
 	// 枚举数据体 如果key是目录请勿调用type 因为他被作为目录键数量存储了
@@ -172,7 +174,8 @@ namespace hmc_registr_util
 
 		// 区分出实际的内容
 
-		chValue getValueInfo();		  // 转换成值信息数据体
+		chValue getValueInfo(); // 转换成值信息数据体
+		chValueItme() : size(0), root(0), isFolder(false), time(0), is_value(false) {};
 	};
 
 	// 遍历树结构的信息 ansi字符
@@ -196,8 +199,9 @@ namespace hmc_registr_util
 		DWORD size;
 		// 此键是否存在
 		bool exists;
+		chValueStat() :size(0), exists(false){}
 	};
-	
+
 	struct chValueData : public chValueStat
 	{
 		std::vector<std::uint8_t> value;
@@ -391,7 +395,7 @@ namespace hmc_registr_util
 	 * @return true
 	 * @return false
 	 */
-	extern bool removeRegistrFolder(HKEY hKey, std::string FolderPathbool,bool tree = false);
+	extern bool removeRegistrFolder(HKEY hKey, std::string FolderPathbool, bool tree = false);
 
 	/**
 	 * @brief 删除指定的键 [值] 键保留
@@ -427,8 +431,8 @@ namespace hmc_registr_util
 	 */
 	extern bool removeRegistrValue(HKEY hKey, std::wstring FolderPath, std::wstring key);
 
-	extern bool removeRegistrValue(HKEY hKey,const std::wstring FolderPath,const std::vector<std::wstring> keyList);
-	extern bool removeRegistrValue(HKEY hKey,const std::string FolderPath,const std::vector<std::string> keyList);
+	extern bool removeRegistrValue(HKEY hKey, const std::wstring FolderPath, const std::vector<std::wstring> keyList);
+	extern bool removeRegistrValue(HKEY hKey, const std::string FolderPath, const std::vector<std::string> keyList);
 
 	/**
 	 * @brief 删除指定的键 [键]
@@ -464,8 +468,8 @@ namespace hmc_registr_util
 	 */
 	extern bool removeRegistrKey(HKEY hKey, std::wstring FolderPath, std::wstring key);
 
-	extern bool removeRegistrKey(HKEY hKey,const std::wstring FolderPath,const std::vector<std::wstring> keyList);
-	extern bool removeRegistrKey(HKEY hKey,const std::string FolderPath,const std::vector<std::string> keyList);
+	extern bool removeRegistrKey(HKEY hKey, const std::wstring FolderPath, const std::vector<std::wstring> keyList);
+	extern bool removeRegistrKey(HKEY hKey, const std::string FolderPath, const std::vector<std::string> keyList);
 
 	/**
 	 * @brief 反HKEY解析 因为要和napi兼容
@@ -844,7 +848,7 @@ namespace hmc_registr_util
 	 * @return std::vector<chValueItmeA>
 	 */
 	extern std::vector<chValueItmeW> getRegistrValueItmeList(HKEY hKey, std::wstring subKey);
-	
+
 	extern chValueData getRegistrBuffer(HKEY hKey, std::string FolderPath, std::string KeyName);
 
 	extern chValueData getRegistrBuffer(HKEY hKey, std::wstring FolderPath, std::wstring KeyName);
@@ -1097,7 +1101,7 @@ namespace hmc_registr_util
 	 * @param expand 是否转义
 	 * @return std::wstring
 	 */
-	extern std::wstring GetRegistrString(HKEY hKey, std::wstring FolderPath, std::wstring KeyName, bool expand);
+	extern std::wstring GetRegistrString(HKEY hKey, std::wstring FolderPath, std::wstring KeyName, bool expand = false);
 	/**
 	 * @brief 获取文本
 	 *
@@ -1113,7 +1117,12 @@ namespace hmc_registr_util
 	 * @param expand 是否转义
 	 * @return std::string
 	 */
-	extern std::string GetRegistrString(HKEY hKey, std::string FolderPath, std::string KeyName, bool expand);
+	extern std::string GetRegistrString(HKEY hKey, std::string FolderPath, std::string KeyName, bool expand = false);
+
+	extern std::wstring GetRegistrString(HKEY hToken, std::wstring KeyName, bool expand = false);
+	
+	extern std::string GetRegistrString(HKEY hToken, std::string KeyName, bool expand = false);
+
 	// 获取 REG_DWORD
 	extern std::uint32_t GetRegistrInt32(HKEY hKey, std::wstring FolderPath, std::wstring KeyName);
 	// 获取 REG_DWORD
@@ -1209,8 +1218,8 @@ namespace hmc_registr_util
 
 	/**
 	 * @brief 创建注册表键 以及空值
-	 * 
- 	 * @param hKey 根
+	 *
+	 * @param hKey 根
 	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
 	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
 	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
@@ -1219,16 +1228,16 @@ namespace hmc_registr_util
 	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录路径如\SOFTWARE\HMC
 	 * @param keyList 键列表,类型
-	 * @return true 
-	 * @return false 
+	 * @return true
+	 * @return false
 	 */
 	extern bool createRegistrValueKey(HKEY hKey, const std::string FolderPath, const std::map<std::string, DWORD> ValueKeyList);
 
 	extern bool createRegistrValueKey(HKEY hKey, const std::string FolderPath, std::string ValueKey, DWORD ValueType);
 	/**
 	 * @brief 创建注册表键 以及空值
-	 * 
- 	 * @param hKey 根
+	 *
+	 * @param hKey 根
 	 * @param hKey `HKEY_CLASSES_ROOT`   是与文档类型和 OLE\COM 相关的信息的支持键。
 	 * @param hKey `HKEY_CURRENT_USER`   管理系统当前的用户信息
 	 * @param hKey `HKEY_LOCAL_MACHINE`   包含描述计算机及其配置的条目。其中包括关于处理器、系统主板、内存和已安装的软件和硬件的信息
@@ -1237,13 +1246,15 @@ namespace hmc_registr_util
 	 * @param hKey `HKEY_LOCAL_MACHINE\\SOFTWARE` 一般存储用户软件数据
 	 * @param FolderPath 目录路径如\SOFTWARE\HMC
 	 * @param keyList 键列表,类型
-	 * @return true 
-	 * @return false 
+	 * @return true
+	 * @return false
 	 */
 	extern bool createRegistrValueKey(HKEY hKey, const std::wstring FolderPath, const std::map<std::wstring, DWORD> ValueKeyList);
-	
+
 	extern bool createRegistrValueKey(HKEY hKey, const std::wstring FolderPath, std::wstring ValueKey, DWORD ValueType);
-	
+
+	extern chQueryFolderInfoA queryRegistrFolderInfoA(HKEY hToken, bool isQueryFolderKey = false, bool isQueryValueKey = false);
+	extern chQueryFolderInfoW queryRegistrFolderInfoW(HKEY hToken, bool isQueryFolderKey = false, bool isQueryValueKey = false);
 
 	class OpenKeyToken
 	{
@@ -1278,6 +1289,17 @@ namespace hmc_registr_util
 		 * @param CreateNotKey
 		 */
 		OpenKeyToken(HKEY hKey, std::string FolderPath, std::string KeyName, bool CreateNotKey = false);
+		OpenKeyToken(HKEY hKey, std::wstring FolderPath, bool CreateNotKey = false);
+		OpenKeyToken(HKEY hKey, std::string FolderPath, bool CreateNotKey = false);
+		OpenKeyToken(HKEY hToken);
+		OpenKeyToken(HKEY hKey, std::wstring SubKey, DWORD ulOptions, REGSAM samDesired, bool CreateNotKey = false);
+		OpenKeyToken(HKEY hKey, std::string SubKey, DWORD ulOptions, REGSAM samDesired, bool CreateNotKey = false);
+		chValueStat getValueStat(std::string ValueName);
+		chValueStat getValueStat(std::wstring ValueName);
+
+		chQueryFolderInfoA queryFolderStatA(bool isQueryFolderKey = false, bool isQueryValueKey = false);
+		chQueryFolderInfoW queryFolderStatW(bool isQueryFolderKey = false, bool isQueryValueKey = false);
+
 		~OpenKeyToken();
 		HKEY token = nullptr;
 		LSTATUS status = ERROR_SUCCESS;
@@ -1295,12 +1317,11 @@ namespace hmc_registr_util
 
 #endif // HMC_IMPORT_HMC_REGISTR_UTIL_H
 
-
 #ifdef HMC_IMPORT_HMC_REGISTR_UTIL_REMOVE
 
 namespace hmc_registr_util
 {
-		// 仅处理值打开
+	// 仅处理值打开
 	class RegistrValueUtil
 	{
 	protected:
@@ -1338,11 +1359,11 @@ namespace hmc_registr_util
 			bool is_wide = false;
 			bool _is_ready = false;
 			HKEY root_hKey = nullptr;*/
-	
+
 	public:
 		setRegistrValue(HKEY hKey, std::string subKey, std::string Name);
 		setRegistrValue(HKEY hKey, std::wstring subKey, std::wstring Name);
-		
+
 		// 0x00000000 REG_NONE 未定义
 		bool set(/*REG_NONE*/);
 		// 0x0000000B REG_QWORD 64 位数字

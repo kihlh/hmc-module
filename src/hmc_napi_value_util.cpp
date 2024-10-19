@@ -2759,7 +2759,7 @@ bool hmc_NodeArgsValue::eq(std::vector<js_valuetype> eq_type, bool throw_error)
             error_message.append(hmc_napi_type::typeName((js_valuetype)value));
             error_message.append(" , ");
 
-            error_message = hmc_string_util::trimAll(error_message, " , ");
+            hmc_string_util::trim(&error_message, " , ",true,true);
 
             error_message.append(" ]\n-------------------------------------------\n");
             results = false;
@@ -2845,7 +2845,7 @@ bool hmc_NodeArgsValue::eq(std::vector<std::tuple<size_t, js_valuetype>> eq_type
                 error_message.append(" , ");
             }
 
-            error_message = hmc_string_util::trimAll(error_message, " , ");
+            hmc_string_util::trim(&error_message, " , ", true, true);
 
             error_message.append(" ]\n-------------------------------------------\n");
             results = false;
@@ -2870,7 +2870,8 @@ bool hmc_NodeArgsValue::eq(std::vector<std::tuple<size_t, js_valuetype>> eq_type
                 has_second = true;
             }
         }
-        the_types = hmc_string_util::trimAll(the_types, " , ");
+
+        hmc_string_util::trim(&the_types, " , ", true, true);
 
         if (!has_second)
         {

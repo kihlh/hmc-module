@@ -68,5 +68,8 @@
     <ClInclude Include="..\..\include\hmc-module.h">
       <Filter>头文件\hmc-module-static</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\hmc_env_util.h">
+      <Filter>头文件\hmc-module-static</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
