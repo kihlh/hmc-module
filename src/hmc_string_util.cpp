@@ -1113,6 +1113,94 @@ namespace HMC_TEMPLATE_FUNC
         return result;
     }
 
+    template <typename T>
+    static inline bool compareIgnoringChars(const T& str1, const T& str2)
+    {
+        if (str1.size() != str2.size())
+        {
+            return false;
+        }
+        for (size_t i = 0; i < str1.size(); i++)
+        {
+            auto& at = str1.at(i);
+            auto& at2 = str2.at(i);
+
+            if (at != at2)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    template <typename T, typename char_type>
+    static inline bool compareIgnoringChars(const T &str1, const T &str2, const std::unordered_set<char_type> &ignoreChars)
+    {
+        auto it1 = str1.begin();
+        auto it2 = str2.begin();
+
+        while (it1 != str1.end() && it2 != str2.end())
+        {
+
+            while (it1 != str1.end() && ignoreChars.find(*it1) != ignoreChars.end())
+            {
+                ++it1;
+            }
+
+            while (it2 != str2.end() && ignoreChars.find(*it2) != ignoreChars.end())
+            {
+                ++it2;
+            }
+
+            if (it1 != str1.end() && it2 != str2.end())
+            {
+                if (*it1 != *it2)
+                {
+                    return false;
+                }
+                ++it1;
+                ++it2;
+            }
+        }
+
+        while (it1 != str1.end() && ignoreChars.find(*it1) != ignoreChars.end())
+        {
+            ++it1;
+        }
+        while (it2 != str2.end() && ignoreChars.find(*it2) != ignoreChars.end())
+        {
+            ++it2;
+        }
+
+        return it1 == str1.end() && it2 == str2.end();
+    }
+
+    template <typename T, typename char_type>
+    static inline bool compareIgnoringChars(const T &str1, const T &str2, const std::vector<char_type> &ignoreChars)
+    {
+        if (ignoreChars.empty())
+        {
+            return compareIgnoringChars<T>(str1, str2);
+        }
+
+        std::unordered_set<char_type> ignoreCharList;
+        for (size_t i = 0; i < ignoreChars.size(); i++)
+        {
+            auto &at = ignoreChars.at(i);
+            ignoreCharList.insert(at);
+        }
+        return compareIgnoringChars<T, char_type>(str1, str2, ignoreCharList);
+    }
+
+    template <typename T, typename char_type>
+    static inline bool compareIgnoringChars(const T &str1, const T &str2, const char_type &ignoreChars)
+    {
+        std::unordered_set<char_type> ignoreCharList;
+        ignoreCharList.insert(ignoreChars);
+        return compareIgnoringChars<T, char_type>(str1, str2, ignoreCharList);
+    }
+
 }
 
 // * 模版化 转发
@@ -1243,7 +1331,12 @@ namespace hmc_string_util
     inline size_t hmc_string_util::trim(std::string *text, std::string sep, const bool front, const bool back) { return HMC::trim<std::string, std::string>(text, sep, front, back); }
     inline size_t hmc_string_util::trim(std::wstring *text, wchar_t sep, const bool front, const bool back) { return HMC::trim<std::wstring, wchar_t>(text, sep, front, back); }
     inline size_t hmc_string_util::trim(std::string *text, char sep, const bool front, const bool back) { return HMC::trim<std::string, char>(text, sep, front, back); }
-
+    inline bool hmc_string_util::diff(const std::string &StrInput, const std::string &StrInput2) { return HMC::compareIgnoringChars<std::string>(StrInput, StrInput2); }
+    inline bool hmc_string_util::diff(const std::wstring &StrInput, const std::wstring &StrInput2) { return HMC::compareIgnoringChars<std::wstring>(StrInput, StrInput2); }
+    inline bool hmc_string_util::diff(const std::string &StrInput, const std::string &StrInput2, const std::vector<char> &ignoreChars) { return HMC::compareIgnoringChars<std::string, char>(StrInput, StrInput2, ignoreChars); }
+    inline bool hmc_string_util::diff(const std::wstring &StrInput, const std::wstring &StrInput2, const std::vector<wchar_t> &ignoreChars) { return HMC::compareIgnoringChars<std::wstring, wchar_t>(StrInput, StrInput2, ignoreChars); }
+    inline bool hmc_string_util::diff(const std::string &StrInput, const std::string &StrInput2, const char &ignoreChars) { return HMC::compareIgnoringChars<std::string, char>(StrInput, StrInput2, ignoreChars); }
+    inline bool hmc_string_util::diff(const std::wstring &StrInput, const std::wstring &StrInput2, const wchar_t &ignoreChars) { return HMC::compareIgnoringChars<std::wstring, wchar_t>(StrInput, StrInput2, ignoreChars); }
 }
 
 // 文本中是否有数字 并且是否是安全的 int32

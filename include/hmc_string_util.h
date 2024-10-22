@@ -69,6 +69,70 @@ namespace hmc_string_util
 	extern size_t removeMatchChar(std::string *StrInput, std::function<bool(char at)> filter);
 
 	/**
+	 * @brief 对比两个文本
+	 *
+	 * @param StrInput 文本1
+	 * @param StrInput2 文本2
+	 * @return true
+	 * @return false
+	 */
+	extern inline bool diff(const std::string &StrInput, const std::string &StrInput2);
+
+	/**
+	 * @brief 对比两个文本
+	 *
+	 * @param StrInput 文本1
+	 * @param StrInput2 文本2
+	 * @return true
+	 * @return false
+	 */
+	extern inline bool diff(const std::wstring &StrInput, const std::wstring &StrInput2);
+
+	/**
+	 * @brief 对比两个文本
+	 *
+	 * @param StrInput 文本1
+	 * @param StrInput2 文本2
+	 * @param ignoreChars 忽略的字符
+	 * @return true
+	 * @return false
+	 */
+	extern inline bool diff(const std::string &StrInput, const std::string &StrInput2, const std::vector<char> &ignoreChars);
+
+	/**
+	 * @brief 对比两个文本
+	 *
+	 * @param StrInput 文本1
+	 * @param StrInput2 文本2
+	 * @param ignoreChars 忽略的字符
+	 * @return true
+	 * @return false
+	 */
+	extern inline bool diff(const std::wstring &StrInput, const std::wstring &StrInput2, const std::vector<wchar_t> &ignoreChars);
+
+	/**
+	 * @brief 对比两个文本
+	 *
+	 * @param StrInput 文本1
+	 * @param StrInput2 文本2
+	 * @param ignoreChars 忽略的字符
+	 * @return true
+	 * @return false
+	 */
+	extern inline bool diff(const std::string &StrInput, const std::string &StrInput2, const char &ignoreChars);
+
+	/**
+	 * @brief 对比两个文本
+	 *
+	 * @param StrInput 文本1
+	 * @param StrInput2 文本2
+	 * @param ignoreChars 忽略的字符
+	 * @return true
+	 * @return false
+	 */
+	extern inline bool diff(const std::wstring &StrInput, const std::wstring &StrInput2, const wchar_t &ignoreChars);
+
+	/**
 	 * @brief 查找匹配条件的字符
 	 * @example %key%  "key" ‘key’
 	 *

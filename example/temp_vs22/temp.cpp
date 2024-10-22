@@ -28,11 +28,25 @@
 #endif
 #endif
 
+using Menu = hmc_tray_util::Menu;
+
 auto hmc_tray = hmc_tray_util();
 
 void KK() {
     auto hmc_tray2 = new hmc_tray_util();
     hmc_tray2->start();
+
+    hmc_tray2->on(L"*", [](hmc_tray_util* tray, hmc_tray_util::Event EventID, const std::wstring& envName, hmc_tray_util::Menu* menu) {
+
+        if (EventID == hmc_tray_util::Event::move) {
+            return;
+        }
+
+        tray->setTrayIconByIco(L"F:\\Root\\icon\\ICON1_1.ico");
+
+        std::wcout << "tray  [ " << tray->id() << " ]   @<  " << envName << "  >  menu->   " << (menu != nullptr ? menu->id : L"[not]") << "\n";
+
+        });
 }
 
 void Tray() {
@@ -41,27 +55,27 @@ void Tray() {
     // 启动
     hmc_tray.start();
     // 设置图标
-    hmc_tray.setTrayIcon(L"C:\\Windows\\explorer.exe");
-    
+    hmc_tray.setTrayIconByExtract(L"C:\\Windows\\explorer.exe");
+
 
     // 设置主按钮
-    hmc_tray.addMenuItem(hmc_tray_util::chMenuItem::menu(L"显示窗口", L"btn::show_window"));
-    hmc_tray.addMenuItem(hmc_tray_util::chMenuItem::check(L"自动同步", L"btn::auto_sync", true));
-    hmc_tray.addMenuItem(hmc_tray_util::chMenuItem::separator(L"btn::separator::01"));
-    hmc_tray.addMenuItem(hmc_tray_util::chMenuItem::menu(L"马上同步", L"btn::show_start"));
-    hmc_tray.addMenuItem(hmc_tray_util::chMenuItem::check(L"自动启动", L"btn::auto_start_app", true));
-    hmc_tray.addMenuItem(hmc_tray_util::chMenuItem::menu(L"退出程序", L"btn::quit_app"));
+    hmc_tray.insertMenu(L"显示窗口", L"btn::show_window");
+    hmc_tray.insertRadio(L"自动同步", L"btn::auto_sync", true);
+    hmc_tray.insertSeparator(L"btn::separator::01");
+    hmc_tray.insertMenu(L"马上同步", L"btn::show_start");
+    hmc_tray.insertCheck(L"自动启动", L"btn::auto_start_app", true);
+    hmc_tray.insertMenu(L"退出程序", L"btn::quit_app");
 
     // 子键创建方式 演示
-    hmc_tray.addMenuItem(hmc_tray_util::chMenuItem::menu(L"同步方式", L"sub::type_sync", true));
+    hmc_tray.insertMenu(L"同步方式", L"sub::type_sync", true);
 
-    hmc_tray.addMenuItem(hmc_tray_util::chMenuItem::check(L"立刻同步", L"sub::at_once_sync", true));
+    hmc_tray.insertCheck(L"立刻同步", L"sub::at_once_sync", true);
     // 分割线
-    hmc_tray.addMenuItem(hmc_tray_util::chMenuItem::separator(L"sub::separator::02"));
+    hmc_tray.insertSeparator(L"sub::separator::02");
 
-    hmc_tray.addMenuItem(hmc_tray_util::chMenuItem::check(L"停止同步", L"sub::check_stop_sync", true));
-    hmc_tray.addMenuItem(hmc_tray_util::chMenuItem::check(L"每分钟制", L"sub::check_min", true));
-    hmc_tray.addMenuItem(hmc_tray_util::chMenuItem::check(L"每小时制", L"sub::check_hourly", true));
+    hmc_tray.insertCheck(L"停止同步", L"sub::check_stop_sync", true);
+    hmc_tray.insertCheck(L"每分钟制", L"sub::check_min", true);
+    hmc_tray.insertCheck(L"每小时制", L"sub::check_hourly", true);
 
     // hmc_tray.on<id>
     /**
@@ -77,54 +91,19 @@ void Tray() {
      * - rightButtonUp
      * - rightButtonDown
      */
+    hmc_tray.on(L"@click", [](hmc_tray_util* tray, hmc_tray_util::Event EventID, const std::wstring& envName, hmc_tray_util::Menu* menu) {
 
-    hmc_tray.on(L"move", ([]()
-        { std::cout << "move->"
-        << "" << std::endl; }));
+        if (EventID == hmc_tray_util::Event::move) {
+            return;
+        }
 
+        tray->setTrayIconByIco(L"F:\\工具\\安装包\\Abobe\\@vposyAdobe_Photoshop_2020_21.2.9.67_ACR13.3_SP_20210608\\Adobe Photoshop 2020 SP\\products\\PHSP\\AdobePhotoshop21-Core_x64\\1\\Application\\Required\\UXP\\com.adobe.ccx.start\\images\\thumbs\\PPRO_prproj.ico");
 
-    hmc_tray.on(L"dblclick", []() {
-        std::cout << "dblclick->"<< std::endl;
-        });
-
-
-    hmc_tray.on(L"click", []() {
-        std::cout << "click->" << std::endl;
-        });
-
-    hmc_tray.on(L"middleClick", []() {
-        std::cout << "middleClick->" << std::endl;
-        auto the = hmc_tray_util::at(1); 
-        
-        if(the!=nullptr)the->close();
+        std::wcout << "tray  [ " << tray->id() << " ]   @<  " << envName << "  >  menu->   " << (menu != nullptr ? menu->id : L"[not]") << "\n";
 
         });
 
-    hmc_tray.on(L"leftButtonUp", []() {
-        std::cout << "leftButtonUp->" << std::endl;
-        });
 
-
-    // 按下了 停止同步 后 其他选择都取消
-    hmc_tray.on(L"sub::check_stop_sync", ([]()
-        {
-            std::cout << "click->" << "sub::check_stop_sync" << std::endl;
-            
-            hmc_tray.setMenuItmeSelect(L"sub::check_min", false);
-            hmc_tray.setMenuItmeSelect(L"sub::check_hourly", false);
-            hmc_tray.setMenuItmeSelect(L"sub::at_once_sync", false);
-
-            // 如果未选中就选中
-            if (hmc_tray.getMenuItme(L"sub::check_stop_sync").select)
-            {
-                hmc_tray.setMenuItmeSelect(L"sub::check_stop_sync", true);
-            }
-            else
-            {
-                hmc_tray.setMenuItmeSelect(L"sub::check_stop_sync", false);
-            } 
-        
-        }));
 
     const std::vector<std::wstring> keyList = {
 
@@ -137,7 +116,7 @@ void Tray() {
 
     // 将这些按钮添加到XXX按钮中
     hmc_tray.setMenuItmetoSubMenu(L"sub::type_sync", keyList);
-
+    hmc_tray.setUniqueSelect(keyList);
 
     Sleep(3000);
     hmc_tray.setTrayInfo(L"时间已经过去了三秒");
@@ -177,7 +156,7 @@ int main() {
     {
         auto& status = std::get<0>(Status);
        
-       std::cout <<"win -> [ " << long(win) << " ] " << "\n";
+       //std::cout <<"win -> [ " << ULONG(win) << " ] " << "\n";
        
        hmc_console_util::start(true,true,true);
 
@@ -195,23 +174,23 @@ int main() {
        for (size_t i = 0; i < status.sub.size(); i++)
        {
            auto &at = status.sub.at(i);
-           std::cout << long(at) << " , ";
+           //std::cout << ULONG(at) << " , ";
        }
        
        std::cout << " ] " << "\n";
 
-       std::cout << "parent -> [ " << long(status.parent) << " ] " << "\n";
-       std::cout << "root -> [ " << long(status.root) << " ] " << "\n";
-       std::cout << "next -> [ " << long(status.next) << " ] " << "\n";
-       std::cout << "prev -> [ " << long(status.prev) << " ] " << "\n";
-       std::cout << "end -> [ " << long(status.end) << " ] " << "\n";
-       std::cout << "pid -> [ " << long(status.pid) << " ] " << "\n";
-       std::cout << "threadId -> [ " << long(status.threadId) << " ] " << "\n";
-       std::cout << "owner -> [ " << long(status.owner) << " ] " << "\n";
-       std::cout << "firstChild -> [ " << long(status.firstChild) << " ] " << "\n";
-       std::cout << "firstBrother -> [ " << long(status.firstBrother) << " ] " << "\n";
-       std::cout << "lastSibling -> [ " << long(status.lastSibling) << " ] " << "\n";
-       std::cout << "exists -> [ " << std::boolalpha << status.exists << " ] " << "\n";
+       //std::cout << "parent -> [ " << ULONG(status.parent) << " ] " << "\n";
+       //std::cout << "root -> [ " << ULONG(status.root) << " ] " << "\n";
+       //std::cout << "next -> [ " << ULONG(status.next) << " ] " << "\n";
+       //std::cout << "prev -> [ " << ULONG(status.prev) << " ] " << "\n";
+       //std::cout << "end -> [ " << ULONG(status.end) << " ] " << "\n";
+       //std::cout << "pid -> [ " << ULONG(status.pid) << " ] " << "\n";
+       //std::cout << "threadId -> [ " << ULONG(status.threadId) << " ] " << "\n";
+       //std::cout << "owner -> [ " << ULONG(status.owner) << " ] " << "\n";
+       //std::cout << "firstChild -> [ " << ULONG(status.firstChild) << " ] " << "\n";
+       //std::cout << "firstBrother -> [ " << ULONG(status.firstBrother) << " ] " << "\n";
+       //std::cout << "lastSibling -> [ " << ULONG(status.lastSibling) << " ] " << "\n";
+       //std::cout << "exists -> [ " << std::boolalpha << status.exists << " ] " << "\n";
 
 
        auto is_setCenter = hmc_windows_util::setWindowCenter(status.hwnd);
