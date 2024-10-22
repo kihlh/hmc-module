@@ -39,4 +39,3 @@
 #pragma comment(lib, "hmc-module-static_RELEASE_X86.lib")
 #endif
 #endif
-

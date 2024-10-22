@@ -233,7 +233,7 @@ std::vector<DWORD> hmc_process_util::enumProcessIDList()
     }
 
     processList.clear();
-    
+
     for (auto &&it : cloneProcessIdList)
     {
         processList.push_back(it);
@@ -768,7 +768,10 @@ bool hmc_process_util::isProcessWow64(DWORD processID)
         return false;
     }
     auto kernel32 = ::GetModuleHandleW(L"kernel32");
-    if (!kernel32) { return false; }
+    if (!kernel32)
+    {
+        return false;
+    }
     auto fnIsWow64Process = (hmc_define_util::LPFN_ISWOW64PROCESS)::GetProcAddress(kernel32, "IsWow64Process");
 
     if (NULL != fnIsWow64Process)
@@ -787,7 +790,10 @@ bool hmc_process_util::isProcessWow64()
     BOOL bIsWow64 = FALSE;
 
     auto kernel32 = ::GetModuleHandleW(L"kernel32");
-    if (!kernel32) { return false; }
+    if (!kernel32)
+    {
+        return false;
+    }
 
     auto fnIsWow64Process = (hmc_define_util::LPFN_ISWOW64PROCESS)::GetProcAddress(kernel32, "IsWow64Process");
 
@@ -1134,101 +1140,102 @@ std::vector<std::wstring> hmc_process_util::getProcessModuleList(DWORD processID
     return result;
 }
 
-namespace hmc_process_util
+std::wstring hmc_process_util::getProcessFilePath(DWORD processID, bool isEnumListExists, bool isSnapshotName)
 {
-    std::wstring hmc_process_util::getProcessFilePath(DWORD processID, bool isEnumListExists = true, bool isSnapshotName = true)
+
+    std::wstring result;
+
+    if (isEnumListExists && !existProcessInEnum(processID))
     {
+        return result;
+    }
 
-        std::wstring result = L"";
+    auto hProcess = hmc_process_util::openProcessToken(processID, true);
 
-        if (isEnumListExists && !existProcessInEnum(processID))
+    if (!hProcess)
+    {
+        result.clear();
+        result.resize(0);
+
+        if (isSnapshotName)
         {
-            return result;
-        }
-
-        auto hProcess = hmc_process_util::openProcessToken(processID, true);
-
-        if (!hProcess)
-        {
-            result.clear();
-            result.resize(0);
-
-            if (isSnapshotName)
-            {
-                return GpGetProcessNameEx(processID);
-            }
-
-            return result;
-        }
-
-        result.resize(MAX_PATH);
-
-        DWORD buf_length = ::GetModuleFileNameExW(hProcess, NULL, &result[0], static_cast<DWORD>(result.size()));
-
-        if (buf_length == 0)
-        {
-            // 这里获取的不是dos路径
-            buf_length = ::GetProcessImageFileNameW(&hProcess, &result[0], static_cast<DWORD>(result.size()));
-            if (buf_length > 0)
-            {
-                result.resize(buf_length);
-                return hmc_usb_util::formatVolumePath(result);
-            }
-        }
-
-        // 可能是服务
-        if (buf_length == 0)
-        {
-            if (::QueryFullProcessImageNameW(&hProcess, 0, &result[0], &buf_length))
-            {
-                result.resize(buf_length);
-                return hmc_usb_util::formatVolumePath(result);
-            }
-        }
-
-        // 通常情况下 模块0会是此可执行文件的路径
-        if (buf_length == 0)
-        {
-            auto modes = hmc_process_util::getProcessModuleList(processID);
-
-            // is d:\\13\\hmc.exe == hmc.exe   condition->  <hmc.exe>
-            if (!modes.empty() && !modes[0].empty())
-            {
-                std::wstring mode = modes[0];
-                auto processName = GpGetProcessNameEx(processID);
-                auto processNameM = hmc_util::getBaseName(mode);
-                hmc_util::removeAllCharPtr(processName, '\0');
-                hmc_util::removeAllCharPtr(processNameM, '\0');
-
-                if (processName.size() == processNameM.size() && processName == processNameM)
-                {
-                    return mode;
-                }
-            }
-        }
-
-        hmc_util::removeAllCharPtr(result, L'\0');
-
-        // 返回单名称
-
-        if (buf_length <= 1 && (processID == 0 || processID == 4))
-        {
-            result.clear();
-            result.append(L"C:\\Windows\\System32\\ntoskrnl.exe");
-            return result;
-        }
-
-        if (buf_length <= 1 && isSnapshotName)
-        {
-            result.clear();
-            result.resize(0);
-
             return GpGetProcessNameEx(processID);
         }
 
         return result;
     }
 
+    result.resize(MAX_PATH);
+
+    DWORD buf_length = ::GetModuleFileNameExW(hProcess, NULL, &result[0], static_cast<DWORD>(result.size()));
+
+    if (buf_length == 0)
+    {
+        // 这里获取的不是dos路径
+        buf_length = ::GetProcessImageFileNameW(&hProcess, &result[0], static_cast<DWORD>(result.size()));
+        if (buf_length > 0)
+        {
+            result.resize(buf_length);
+            return hmc_usb_util::formatVolumePath(result);
+        }
+    }
+
+    // 可能是服务
+    if (buf_length == 0)
+    {
+        if (::QueryFullProcessImageNameW(&hProcess, 0, &result[0], &buf_length))
+        {
+            result.resize(buf_length);
+            return hmc_usb_util::formatVolumePath(result);
+        }
+    }
+
+    // 通常情况下 模块0会是此可执行文件的路径
+    if (buf_length == 0)
+    {
+        auto modes = hmc_process_util::getProcessModuleList(processID);
+
+        // is d:\\13\\hmc.exe == hmc.exe   condition->  <hmc.exe>
+        if (!modes.empty() && !modes[0].empty())
+        {
+            std::wstring mode = modes[0];
+            auto processName = GpGetProcessNameEx(processID);
+            auto processNameM = hmc_util::getBaseName(mode);
+            hmc_util::removeAllCharPtr(processName, '\0');
+            hmc_util::removeAllCharPtr(processNameM, '\0');
+
+            if (processName.size() == processNameM.size() && processName == processNameM)
+            {
+                return mode;
+            }
+        }
+    }
+
+    hmc_util::removeAllCharPtr(result, L'\0');
+
+    // 返回单名称
+
+    if (buf_length <= 1 && (processID == 0 || processID == 4))
+    {
+        result.clear();
+        result.append(L"C:\\Windows\\System32\\ntoskrnl.exe");
+        return result;
+    }
+
+    if (buf_length <= 1 && isSnapshotName)
+    {
+        result.clear();
+        result.resize(0);
+
+        return GpGetProcessNameEx(processID);
+    }
+
+    return result;
+}
+
+std::wstring hmc_process_util::getProcessFilePath()
+{
+    return getProcessFilePath(::GetCurrentProcessId(), false, false);
 }
 
 std::vector<std::wstring> hmc_process_util::commandLineToList(std::wstring commandLine)
@@ -1714,7 +1721,7 @@ namespace hmc_process_util
                 return res;
             }
 
-            std::unique_ptr<wchar_t[]> commandLineContents (new (std::nothrow) wchar_t[commandLine.Length]);
+            std::unique_ptr<wchar_t[]> commandLineContents(new (std::nothrow) wchar_t[commandLine.Length]);
 
             if (!::ReadProcessMemory(ProcessHandle, commandLine.Buffer,
                                      commandLineContents.get(), commandLine.Length, NULL))

@@ -1052,7 +1052,6 @@ namespace HMC_TEMPLATE_FUNC
         return result;
     }
 
-
     template <typename T, typename MatchType>
     static inline size_t trim(T *text, MatchType sep, const bool front, const bool back)
     {
@@ -1113,7 +1112,7 @@ namespace HMC_TEMPLATE_FUNC
 
         return result;
     }
-    
+
 }
 
 // * 模版化 转发
@@ -1240,10 +1239,10 @@ namespace hmc_string_util
     void hmc_string_util::joinKey(std::wstring *text, wchar_t sep) { return HMC::joinKey<std::wstring, wchar_t>(text, sep); }
     void hmc_string_util::joinKey(std::string *text, char sep) { return HMC::joinKey<std::string, char>(text, sep); }
 
-	inline size_t hmc_string_util::trim(std::wstring *text, std::wstring sep, const bool front, const bool back) { return HMC::trim<std::wstring, std::wstring>(text, sep,front,back); }
-	inline size_t hmc_string_util::trim(std::string *text, std::string sep, const bool front, const bool back) { return HMC::trim<std::string, std::string>(text, sep,front,back); }
-	inline size_t hmc_string_util::trim(std::wstring *text, wchar_t sep, const bool front, const bool back) { return HMC::trim<std::wstring, wchar_t>(text, sep,front,back); }
-	inline size_t hmc_string_util::trim(std::string *text, char sep, const bool front, const bool back) { return HMC::trim<std::string, char>(text, sep,front,back); }
+    inline size_t hmc_string_util::trim(std::wstring *text, std::wstring sep, const bool front, const bool back) { return HMC::trim<std::wstring, std::wstring>(text, sep, front, back); }
+    inline size_t hmc_string_util::trim(std::string *text, std::string sep, const bool front, const bool back) { return HMC::trim<std::string, std::string>(text, sep, front, back); }
+    inline size_t hmc_string_util::trim(std::wstring *text, wchar_t sep, const bool front, const bool back) { return HMC::trim<std::wstring, wchar_t>(text, sep, front, back); }
+    inline size_t hmc_string_util::trim(std::string *text, char sep, const bool front, const bool back) { return HMC::trim<std::string, char>(text, sep, front, back); }
 
 }
 

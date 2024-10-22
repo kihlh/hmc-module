@@ -34,8 +34,10 @@
     <ClInclude Include="..\..\include\hmc_shell_util.h" />
     <ClInclude Include="..\..\include\hmc_sock_util.h" />
     <ClInclude Include="..\..\include\hmc_string_util.h" />
+    <ClInclude Include="..\..\include\hmc_tray_util.h" />
     <ClInclude Include="..\..\include\hmc_usb_util.h" />
     <ClInclude Include="..\..\include\hmc_util.h" />
+    <ClInclude Include="..\..\include\hmc_winapi_util.h" />
     <ClInclude Include="..\..\include\hmc_windows_util.h" />
     <ClInclude Include="..\..\include\nlohmann\json.hpp" />
     <ClInclude Include="..\..\include\node\js_native_api.h" />
@@ -58,8 +60,10 @@
     <ClCompile Include="..\..\src\hmc_shell_util.cpp" />
     <ClCompile Include="..\..\src\hmc_sock_util.cpp" />
     <ClCompile Include="..\..\src\hmc_string_util.cpp" />
+    <ClCompile Include="..\..\src\hmc_tray_util.cpp" />
     <ClCompile Include="..\..\src\hmc_usb_util.cpp" />
     <ClCompile Include="..\..\src\hmc_util.cpp" />
+    <ClCompile Include="..\..\src\hmc_winapi_util.cpp" />
     <ClCompile Include="..\..\src\hmc_windows_util.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -158,6 +162,9 @@
       </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Lib>
+      <AdditionalDependencies>legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -171,6 +178,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -179,6 +187,9 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Lib>
+      <AdditionalDependencies>legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -196,6 +207,9 @@
       </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Lib>
+      <AdditionalDependencies>legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -209,6 +223,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -217,6 +232,9 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Lib>
+      <AdditionalDependencies>legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

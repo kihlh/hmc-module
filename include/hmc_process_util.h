@@ -119,7 +119,8 @@ namespace hmc_process_util
         static std::wstring to_json(std::vector<ch_PSYSTEM_PROCESS_INFORMATION> data);
     };
 
-    struct ch_ProcessEnumItem{
+    struct ch_ProcessEnumItem
+    {
         /**
          * @brief 转为json
          *
@@ -168,7 +169,9 @@ namespace hmc_process_util
      * @param isSnapshotName 如果获取不到请尽可能从内核列表中获取
      * @return std::wstring
      */
-    extern std::wstring getProcessFilePath(DWORD processID, bool isEnumListExists, bool isService);
+    extern std::wstring getProcessFilePath(const DWORD processID, const bool isEnumListExists = true, const bool isSnapshotName = true);
+
+    extern std::wstring getProcessFilePath();
 
     /**
      * @brief 获取进程名称 快照法
@@ -263,9 +266,9 @@ namespace hmc_process_util
      * @return std::vector<ch_PSYSTEM_PROCESS_INFORMATION>
      */
     extern std::vector<ch_PSYSTEM_PROCESS_INFORMATION> getAllProcessNtList();
-    
+
     /**
-     * @brief 枚舉進程列表 
+     * @brief 枚舉進程列表
      * @details wow64 下使用 EnumProcesses 正常模式下使用镜像获取
      *
      * @return std::vector<ch_PSYSTEM_PROCESS_INFORMATION>
@@ -501,7 +504,14 @@ namespace hmc_process_util
 
     struct LocalFreeDeleter
     {
-        inline void operator()(wchar_t **ptr) const { ::LocalFree(ptr); }
+        inline void operator()(wchar_t **ptr) const
+        {
+            if (ptr != NULL)
+            {
+                ::LocalFree(ptr);
+            }
+            ptr = nullptr;
+        }
     };
 
     enum emGetNameType
@@ -522,19 +532,19 @@ namespace hmc_process_util
 
     /**
      * @brief 获取进程所有可能的名称
-     * 
+     *
      * @param processID 进程id
-     * @return std::vector<std::wstring> 
+     * @return std::vector<std::wstring>
      */
     extern std::vector<std::wstring> getProcessAllName(DWORD ProcessID);
     /**
      * @brief 获取进程名称
-     * 
+     *
      * @param processID 进程id
      * @param Type 获取类别
-     * @return std::wstring 
+     * @return std::wstring
      */
-    extern std::wstring getProcessName(DWORD ProcessID, emGetNameType Type );
+    extern std::wstring getProcessName(DWORD ProcessID, emGetNameType Type);
 
 }
 

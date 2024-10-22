@@ -159,6 +159,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\hmc_tray_util.cpp" />
+    <ClCompile Include="..\..\src\hmc_windows_util.cpp" />
     <ClCompile Include="temp.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -175,8 +177,10 @@
     <ClInclude Include="..\..\include\hmc_shell_util.h" />
     <ClInclude Include="..\..\include\hmc_sock_util.h" />
     <ClInclude Include="..\..\include\hmc_string_util.h" />
+    <ClInclude Include="..\..\include\hmc_tray_util.h" />
     <ClInclude Include="..\..\include\hmc_usb_util.h" />
     <ClInclude Include="..\..\include\hmc_util.h" />
+    <ClInclude Include="..\..\include\hmc_winapi_util.h" />
     <ClInclude Include="..\..\include\hmc_windows_util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

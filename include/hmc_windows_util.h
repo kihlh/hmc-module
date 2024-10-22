@@ -19,6 +19,9 @@ namespace hmc_windows_util
 
     extern std::vector<HWND> _$_getSubWindows_temp;
     extern std::shared_mutex _$_getSubWindows_shared_mutex;
+
+    extern const std::map<std::string, int64_t> _$_CLASS_LONG_NAME_LIST_EX;
+    extern const std::map<std::string, int64_t> _$_CLASS_LONG_NAME_LIST;
     /**
      * @brief 判断是否是XX的 子窗口
      *
@@ -66,19 +69,36 @@ namespace hmc_windows_util
      * @return false
      */
     extern bool setWindowEnabled(HWND hwnd, bool isEnabled);
-    
+
     /**
      * @brief 关闭指定窗口
-     * 
+     *
      * @param hwnd 句柄
      * @param grade  1 温柔的关闭 (正常关闭)
      * @param grade  2 关闭 / 系统级(半强制)
      * @param grade  3 关闭线程 (强制)
      * @param grade  5 尝试所有方法直到关闭
-     * @return true 
-     * @return false 
+     * @param grade  6 尝试强制关闭(窗口api)
+     * @return true
+     * @return false
      */
-    extern bool closeWindow(HWND hwnd,int grade);
+    extern bool closeWindow(const HWND hwnd, int grade);
+
+    extern bool diffWindow(const HWND key1, const HWND key2);
+    extern bool diffWindow(const long long key1, const HWND key2);
+    extern bool diffWindow(const HWND key1, const long long key2);
+    extern bool diffWindow(const long long key1, const long long key2);
+
+    extern std::int64_t number(const HWND hwnd);
+
+    /**
+     * @brief 闪烁窗口
+     *
+     * @param hwnd
+     * @return true
+     * @return false
+     */
+    extern void setFlashWindow(const HWND hwnd, const size_t count = 5, const size_t ms = 5, DWORD dwFlags = FLASHW_ALL);
 
     /**
      * @brief 窗口聚焦
@@ -119,7 +139,7 @@ namespace hmc_windows_util
      * @param shakeDistance 移动像素
      * @param shakeDuration 每次延迟
      */
-    extern void setWindowShake(HWND hWnd, int shakeCount, int shakeDistance, int shakeDuration);
+    extern void setWindowShake(HWND hWnd, int shakeCount = 6, int shakeDistance = 6, int shakeDuration = 60);
     /**
      * @brief 判断窗口是否被禁用
      *
@@ -164,14 +184,6 @@ namespace hmc_windows_util
      */
     extern bool closedHandle(HWND hwnd);
     /**
-     * @brief 关闭指定窗口
-     *
-     * @param hwnd
-     * @return true
-     * @return false
-     */
-    extern bool closeWindow(HWND hwnd, bool destroy = false);
-    /**
      * @brief 判断此窗口是否是桌面
      *
      * @param hwnd
@@ -211,6 +223,7 @@ namespace hmc_windows_util
      * @return false
      */
     extern bool isFullScreen(HWND hwnd);
+
     /**
      * @brief  窗口是否处于正常状态（未最大化、未最小化、未处于全屏模式）
      *
@@ -391,25 +404,11 @@ namespace hmc_windows_util
         // 判断窗口是否是窗口而不是组件
         bool exists;
         // 默认构造函数
-        chWindowHwndStatus()
+        chWindowHwndStatus() : parent(nullptr), hwnd(nullptr), root(nullptr), next(nullptr), prev(nullptr), end(nullptr), owner(nullptr), firstChild(nullptr), firstBrother(nullptr), lastSibling(nullptr), pid(0), exists(false), threadId(0)
         {
-            parent = nullptr;
-            hwnd = nullptr;
-            root = nullptr;
-            next = nullptr;
-            prev = nullptr;
-            end = nullptr;
-            owner = nullptr;
-            firstChild = nullptr;
-            firstBrother = nullptr;
-            lastSibling = nullptr;
-            pid = 0;
-            exists = false;
-            sub = {};
         }
     };
 
-    // ! 逻辑复杂 暂时未写
     /**
      *
      * @brief 获取窗口基础信息并且深挖他所属的进程的所有句柄
@@ -418,6 +417,21 @@ namespace hmc_windows_util
      * @return chWindowStatus
      */
     extern std::variant<chWindowHwndStatus, DWORD> getWindowHwndStatus(HWND hwnd);
+    /**
+     * @brief 判断窗口可见性
+     *
+     * @param hwnd
+     * @return std::variant<bool, DWORD>
+     */
+    extern bool isWindowVisible(const HWND hwnd);
+
+    /**
+     * @brief 判断窗口可见 并且视野范围内没有被遮挡
+     *
+     * @param hwnd
+     * @return std::variant<bool, DWORD>
+     */
+    extern bool isWindowVisibleUnobstructed(const HWND hwnd);
 
     /**
      * @brief 获取附属的根级窗口
@@ -457,7 +471,7 @@ namespace hmc_windows_util
      * - 2 Taskbar icon:  32x32
      * - 0/nullopt all icon
      */
-    extern void setWindowIconByIco(HWND hWnd, std::optional<std::wstring> IcoFilePath = std::nullopt, std::optional<int> index = std::nullopt, std::optional<int> set_type = std::nullopt);
+    extern void setWindowIconByIco(HWND hWnd, std::optional<std::wstring> IcoFilePath = std::nullopt, std::optional<int> set_type = std::nullopt);
     /**
      * @brief 移动窗口位置
      *
@@ -661,7 +675,7 @@ namespace hmc_windows_util
      * @return true
      * @return false
      */
-    extern bool isWindow(HWND hwnd);
+    extern bool isWindow(const HWND hwnd, const bool isVisible = false);
     /**
      * @brief 获取窗口的类名
      *
@@ -693,12 +707,37 @@ namespace hmc_windows_util
      *
      * @return RECT
      */
-    extern std::variant<RECT, DWORD> getWinwowPointDeviceCaps(HWND hwnd);    /**
+    extern std::variant<RECT, DWORD> getWinwowPointDeviceCaps(HWND hwnd);
+    /**
      * @brief 获取窗口所在坐标
      *
      * @return std::variant<RECT, DWORD>
      */
     extern std::variant<RECT, DWORD> getWindowRect(HWND hwnd);
+
+    // 注入窗口线程
+    class AttachThread
+    {
+    private:
+        HWND hwnd = nullptr;
+        DWORD currentThreadId = 0;
+        DWORD targetThreadId = 0;
+        bool isAttach = false;
+
+    public:
+        // 注入窗口线程
+        AttachThread(const HWND _hwnd);
+        // 创建一个令牌但是不打开
+        AttachThread();
+        const bool open(const HWND _hwnd);
+        ~AttachThread();
+
+        // if
+        operator bool() const;
+        // !
+        bool operator!() const;
+    };
+
 }
 #endif // _HAS_CXX17
 

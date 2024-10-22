@@ -514,45 +514,45 @@ namespace hmc_string_util
 
 	/**
 	 * @brief 剪裁开头和结尾的指定字符
-	 * 
+	 *
 	 * @param text 文本指针
 	 * @param sep 匹配项
 	 * @param front 处理开头
 	 * @param back 处理结尾
-	 * @return size_t 
+	 * @return size_t
 	 */
 	extern inline size_t trim(std::wstring *text, std::wstring sep, const bool front = true, const bool back = true);
-	
+
 	/**
 	 * @brief 剪裁开头和结尾的指定字符
-	 * 
+	 *
 	 * @param text 文本指针
 	 * @param sep 匹配项
 	 * @param front 处理开头
 	 * @param back 处理结尾
-	 * @return size_t 
+	 * @return size_t
 	 */
 	extern inline size_t trim(std::string *text, std::string sep, const bool front = true, const bool back = true);
-	
+
 	/**
 	 * @brief 剪裁开头和结尾的指定字符
-	 * 
+	 *
 	 * @param text 文本指针
 	 * @param sep 匹配项
 	 * @param front 处理开头
 	 * @param back 处理结尾
-	 * @return size_t 
+	 * @return size_t
 	 */
 	extern inline size_t trim(std::wstring *text, wchar_t sep, const bool front = true, const bool back = true);
-	
+
 	/**
 	 * @brief 剪裁开头和结尾的指定字符
-	 * 
+	 *
 	 * @param text 文本指针
 	 * @param sep 匹配项
 	 * @param front 处理开头
 	 * @param back 处理结尾
-	 * @return size_t 
+	 * @return size_t
 	 */
 	extern inline size_t trim(std::string *text, char sep, const bool front = true, const bool back = true);
 
@@ -1100,7 +1100,6 @@ namespace hmc_string_util
 	 * @return size_t
 	 */
 	extern size_t size(const std::vector<std::wstring> input);
-
 };
 
 #if _HAS_CXX17

@@ -21,6 +21,12 @@
     <ClCompile Include="temp.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\hmc_windows_util.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\hmc_tray_util.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\hmc_windows_util.h">
@@ -69,6 +75,12 @@
       <Filter>头文件\hmc-module-static</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\hmc_env_util.h">
+      <Filter>头文件\hmc-module-static</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\hmc_winapi_util.h">
+      <Filter>头文件\hmc-module-static</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\hmc_tray_util.h">
       <Filter>头文件\hmc-module-static</Filter>
     </ClInclude>
   </ItemGroup>
