@@ -108,6 +108,7 @@ namespace hmc_process_util
         DWORD PrivatePageCount;
 
         ch_PSYSTEM_PROCESS_INFORMATION(void *processInfo);
+        ch_PSYSTEM_PROCESS_INFORMATION(): NextEntryOffset(0), NumberOfThreads(0), BasePriority(0), UniqueProcessId(0), HandleCount(0), SessionId(0), PeakVirtualSize(0), VirtualSize(0), PeakWorkingSetSize(0), WorkingSetSize(0), QuotaPagedPoolUsage(0), QuotaNonPagedPoolUsage(0), PagefileUsage(0), PeakPagefileUsage(0), PrivatePageCount(0) {};
 
         /**
          * @brief 转为json

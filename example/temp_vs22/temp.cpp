@@ -32,7 +32,7 @@ using Menu = hmc_tray_util::Menu;
 
 auto hmc_tray = hmc_tray_util();
 
-void KK() {
+static void KK() {
     auto hmc_tray2 = new hmc_tray_util();
     hmc_tray2->start();
 
@@ -49,7 +49,7 @@ void KK() {
         });
 }
 
-void Tray() {
+static void Tray() {
     KK();
 
     // 启动
@@ -91,13 +91,27 @@ void Tray() {
      * - rightButtonUp
      * - rightButtonDown
      */
-    hmc_tray.on(L"@click", [](hmc_tray_util* tray, hmc_tray_util::Event EventID, const std::wstring& envName, hmc_tray_util::Menu* menu) {
+    hmc_tray.on(L"*", [](hmc_tray_util* tray, hmc_tray_util::Event EventID, const std::wstring& envName, hmc_tray_util::Menu* menu) {
 
-        if (EventID == hmc_tray_util::Event::move) {
+        if (EventID == hmc_tray_util::Event::clickBtn) {
+
+            std::wcout << "tray  [ " << tray->id() << " ]   @<  " << envName << "  >  menu->   " << (menu != nullptr ? menu->id : L"[not]") << "\n";
+
+            
+            if (menu->theIcon != nullptr) {
+                menu->removeIcon();
+            }
+            else {
+                menu->setIconByIcon(L"F:\\Root\\icon\\ps_cc_folder.ico");
+            }
+
+
             return;
         }
 
-        tray->setTrayIconByIco(L"F:\\工具\\安装包\\Abobe\\@vposyAdobe_Photoshop_2020_21.2.9.67_ACR13.3_SP_20210608\\Adobe Photoshop 2020 SP\\products\\PHSP\\AdobePhotoshop21-Core_x64\\1\\Application\\Required\\UXP\\com.adobe.ccx.start\\images\\thumbs\\PPRO_prproj.ico");
+        //while (true) {
+            tray->setTrayIconByIco(L"F:\\工具\\安装包\\Abobe\\@vposyAdobe_Photoshop_2020_21.2.9.67_ACR13.3_SP_20210608\\Adobe Photoshop 2020 SP\\products\\PHSP\\AdobePhotoshop21-Core_x64\\1\\Application\\Required\\UXP\\com.adobe.ccx.start\\images\\thumbs\\PPRO_prproj.ico");
+        //}
 
         std::wcout << "tray  [ " << tray->id() << " ]   @<  " << envName << "  >  menu->   " << (menu != nullptr ? menu->id : L"[not]") << "\n";
 

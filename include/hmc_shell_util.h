@@ -7,6 +7,35 @@
 
 namespace hmc_shell_util
 {
+    /**
+     * @brief 获取当前软件自带图标的句柄(无需释放)
+     * 
+     * @param index 
+     * @return HICON 
+     */
+    extern HICON getIcon();
+    /**
+     * @brief 获取当前软件自带图标的句柄(exe文件中读取)
+     * 
+     * @param index 
+     * @return HICON 
+     */
+    extern HICON getIcon(int index);
+    /**
+     * @brief 获取一个图标的句柄
+     * @param IconPath 
+     * @return HICON 
+     */
+    extern HICON getIconByIcon(std::wstring IconPath , int size = 16);
+    /**
+     * @brief 获取一个图标的句柄
+     * 
+     * @param Icons 
+     * @param index 
+     * @return HICON 
+     */
+    extern HICON getIconByExtract(std::wstring Icons, int index);
+
     // 快捷方式的信息
     struct chShortcutLinkItem
     {

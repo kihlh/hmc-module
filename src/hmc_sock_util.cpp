@@ -553,7 +553,7 @@ DWORD hmc_sock_util::getPortProcessTCP(DWORD port)
     if (::GetTcpTable2(pTcpTable, &ulSize, TRUE) == NO_ERROR)
     {
 
-        if (&pTcpTable == nullptr)
+        if (!pTcpTable)
             return result;
 
         for (DWORD index = 0; index < pTcpTable->dwNumEntries; index++)
@@ -599,7 +599,7 @@ DWORD hmc_sock_util::getPortProcessUDP(DWORD port)
     // 第二次获取数据
     if ((dwRetVal = ::GetExtendedUdpTable(pUdpTable, &ulSize, TRUE, AF_INET, UDP_TABLE_CLASS::UDP_TABLE_OWNER_PID, 0)) == NO_ERROR)
     {
-        if (&pUdpTable == nullptr)
+        if (!pUdpTable)
             return result;
 
         for (size_t i = 0; i < pUdpTable->dwNumEntries; i++)
@@ -642,7 +642,7 @@ std::vector<DWORD> hmc_sock_util::getPortProcessUDP6(DWORD port)
     // 第二次获取数据
     if ((dwRetVal = ::GetExtendedUdpTable(pUdpTable, &ulSize, TRUE, AF_INET6, UDP_TABLE_CLASS::UDP_TABLE_OWNER_PID, 0)) == NO_ERROR)
     {
-        if (&pUdpTable == NULL)
+        if (!pUdpTable)
         {
             return result;
         }

@@ -7,6 +7,7 @@
 #include "hmc_registr_util.h"
 #include "hmc_string_util.h"
 #include "hmc_json_util.h"
+#include "hmc_process_util.h"
 
 #include <windows.h>
 #include <string>
@@ -339,7 +340,7 @@ int hmc_shell_util::trashFile(std::wstring FromPath, bool bRecycle, bool isShow)
     FileOp.pFrom = FromPath.c_str();
     FileOp.pTo = NULL;
     FileOp.wFunc = FO_DELETE;
-    return  S_OK == ::SHFileOperationW(&FileOp);
+    return S_OK == ::SHFileOperationW(&FileOp);
 }
 
 namespace hmc_shell_util
@@ -2593,4 +2594,29 @@ bool hmc_shell_util::SetAppURLProtocol(const std::wstring &protocolName, const s
     result = hmc_registr_util::hasRegistrValue(HKEY_CURRENT_USER, protocolPath, L"URL Protocol");
     result = result && hmc_registr_util::hasRegistrValue(HKEY_CURRENT_USER, commandKey, L"");
     return result;
+}
+
+HICON hmc_shell_util::getIcon()
+{
+    return ::LoadIconW(NULL, IDI_APPLICATION);
+}
+
+HICON hmc_shell_util::getIcon(int index)
+{
+    std::wstring the_path = hmc_process_util::getProcessFilePath();
+
+    HICON hNewIcon = ::ExtractIconW(NULL, the_path.c_str(), index);
+    return hNewIcon;
+}
+
+HICON hmc_shell_util::getIconByIcon(std::wstring IconPath, int size)
+{
+    HICON hWindowIcon = (HICON)::LoadImageW(GetModuleHandle(NULL), IconPath.c_str(), IMAGE_ICON, size, size, LR_LOADFROMFILE);
+    return hWindowIcon;
+}
+
+HICON hmc_shell_util::getIconByExtract(std::wstring Icons, int index)
+{
+    HICON hNewIcon = ::ExtractIconW(NULL, Icons.c_str(), index);
+    return hNewIcon;
 }

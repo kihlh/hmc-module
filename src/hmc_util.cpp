@@ -262,10 +262,11 @@ std::string hmc_util::getBaseName(const std::string path)
 
     for (int i = length - 1; i >= 0; i--)
     {
-        if(i>=length||length<0){
+        if (i >= length || length < 0)
+        {
             break;
         }
-        
+
         auto it = path.at(i);
 
         if (it == '\\' || it == '/')
@@ -287,8 +288,9 @@ std::wstring hmc_util::getBaseName(const std::wstring path)
 
     for (int i = length - 1; i >= 0; i--)
     {
-                
-        if(i>=length||length<0){
+
+        if (i >= length || length < 0)
+        {
             break;
         }
 
@@ -664,19 +666,17 @@ bool hmc_util::anyCastList::is_integral(size_t index)
         const std::type_info &ti = it->type();
 
         if (
-            typeid(int) == ti ||
-            //typeid(int64_t) == ti ||
+            // typeid(int) == ti ||
+            // typeid(int64_t) == ti ||
             typeid(long long) == ti ||
-            typeid(int32_t) == ti ||
-            typeid(size_t) == ti ||
+            // typeid(int32_t) == ti ||
+            // typeid(size_t) == ti ||
             typeid(unsigned long) == ti ||
             typeid(unsigned long long) == ti ||
             typeid(long) == ti ||
-            typeid(long int) == ti ||
             typeid(unsigned char) == ti ||
             typeid(char) == ti ||
-            typeid(wchar_t) == ti
-            )
+            typeid(wchar_t) == ti)
         {
             return true;
         }
@@ -742,10 +742,20 @@ bool hmc_util::anyCastList::diffType(size_t index, const std::type_info &type)
     return result;
 }
 
-bool hmc_util::writeFile(std::wstring output, std::vector<std::uint8_t> data)
+bool hmc_util::writeFile(const std::wstring &output, const std::vector<std::uint8_t> &data)
+{
+    return writeFile(output, (void *)(&data[0]), data.size());
+}
+
+bool hmc_util::writeFile(const std::string &output, const std::vector<std::uint8_t> &data)
+{
+    return writeFile(output, (void *)(&data[0]), data.size());
+}
+
+bool hmc_util::writeFile(const std::string &output, const std::string &data)
 {
     std::ofstream OutFile(output.c_str(), std::ios::out | std::ios::binary);
-    OutFile.write(reinterpret_cast<char *>(&data[0]), data.size());
+    OutFile.write((char *)(&data[0]), data.size());
 
     if (OutFile.fail())
     {
@@ -756,35 +766,7 @@ bool hmc_util::writeFile(std::wstring output, std::vector<std::uint8_t> data)
     return true;
 }
 
-bool hmc_util::writeFile(std::string output, std::vector<std::uint8_t> data)
-{
-    std::ofstream OutFile(output.c_str(), std::ios::out | std::ios::binary);
-    OutFile.write(reinterpret_cast<char *>(&data[0]), data.size());
-
-    if (OutFile.fail())
-    {
-        return false;
-    }
-
-    OutFile.close();
-    return true;
-}
-
-bool hmc_util::writeFile(std::string output, std::string data)
-{
-    std::ofstream OutFile(output.c_str(), std::ios::out | std::ios::binary);
-    OutFile.write(reinterpret_cast<char *>(&data[0]), data.size());
-
-    if (OutFile.fail())
-    {
-        return false;
-    }
-
-    OutFile.close();
-    return true;
-}
-
-bool hmc_util::writeFile(std::wstring output, std::wstring data)
+bool hmc_util::writeFile(const std::wstring &output, const std::wstring &data)
 {
     std::ofstream OutFile(output.c_str(), std::ios::out | std::ios::binary);
     OutFile.write(reinterpret_cast<const char *>(data.c_str()), data.size() * sizeof(wchar_t));
@@ -796,6 +778,84 @@ bool hmc_util::writeFile(std::wstring output, std::wstring data)
 
     OutFile.close();
     return true;
+}
+
+bool hmc_util::writeFile(const std::wstring &output, void *data, const size_t &size)
+{
+    std::ofstream OutFile(output.c_str(), std::ios::out | std::ios::binary);
+    OutFile.write(reinterpret_cast<char *>(data), size);
+
+    if (OutFile.fail())
+    {
+        return false;
+    }
+
+    OutFile.close();
+    return true;
+}
+
+bool hmc_util::writeFile(const std::string &output, void *data, const size_t &size)
+{
+    std::ofstream OutFile(output.c_str(), std::ios::out | std::ios::binary);
+    OutFile.write(reinterpret_cast<char *>(data), size);
+
+    if (OutFile.fail())
+    {
+        return false;
+    }
+
+    OutFile.close();
+    return true;
+}
+
+std::vector<std::uint8_t> hmc_util::readFile(const std::wstring &output)
+{
+
+    std::vector<std::uint8_t> result;
+
+    std::ifstream InFile(output.c_str(), std::ios::in | std::ios::binary);
+    if (!InFile.is_open())
+    {
+        return result;
+    }
+
+    InFile.seekg(0, std::ios::end);
+
+    size_t size = InFile.tellg();
+
+    InFile.seekg(0, std::ios::beg);
+
+    result.resize(size);
+
+    InFile.read(reinterpret_cast<char *>(result.data()), size);
+    InFile.close();
+
+    return result;
+}
+
+std::vector<std::uint8_t> hmc_util::readFile(const std::string &output)
+{
+
+    std::vector<std::uint8_t> result;
+
+    std::ifstream InFile(output.c_str(), std::ios::in | std::ios::binary);
+    if (!InFile.is_open())
+    {
+        return result;
+    }
+
+    InFile.seekg(0, std::ios::end);
+
+    size_t size = InFile.tellg();
+
+    InFile.seekg(0, std::ios::beg);
+
+    result.resize(size);
+
+    InFile.read(reinterpret_cast<char *>(result.data()), size);
+    InFile.close();
+
+    return result;
 }
 
 hmc_util::anyCast::anyCast(std::any *Data)
@@ -936,13 +996,13 @@ bool hmc_util::anyCast::is_int64()
         typeid(unsigned short) == ti ||
         typeid(unsigned int) == ti ||
         typeid(unsigned long long) == ti ||
-        typeid(int64_t) == ti ||
-        typeid(int32_t) == ti ||
-        typeid(size_t) == ti ||
+        // typeid(int64_t) == ti ||
+        // typeid(int32_t) == ti ||
+        // typeid(size_t) == ti ||
         typeid(unsigned long) == ti ||
         typeid(unsigned long long) == ti ||
         typeid(long) == ti ||
-        typeid(long int) == ti ||
+
         typeid(char) == ti ||
         typeid(wchar_t) == ti)
     {
@@ -1026,7 +1086,7 @@ bool hmc_util::anyCast::is_buffer()
 
     if (typeid(std::vector<byte>) == ti ||
         typeid(std::vector<char>) == ti ||
-        //typeid(std::vector<u_char>) == ti ||
+        // typeid(std::vector<u_char>) == ti ||
         typeid(std::vector<uint8_t>) == ti)
     {
         return true;

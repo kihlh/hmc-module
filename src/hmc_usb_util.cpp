@@ -18,10 +18,6 @@ namespace hmc_usb_util
 {
     DEFINE_GUID(UsbClassGuid, 0xa5dcbf10L, 0x6530, 0x11d2, 0x90, 0x1f, 0x00, 0xc0, 0x4f, 0xb9, 0x51, 0xed);
 
-    namespace hmc_define_util
-    {
-        std::wstring hmc_usb_util_escapeJsonString(const std::wstring &input, bool is_to_value);
-    }
 }
 
 std::wstring hmc_usb_util::formatVolumeName(std::wstring VolumeName)
@@ -143,7 +139,7 @@ std::vector<std::wstring> hmc_usb_util::getUsbDevsNameList()
 
     HDEVINFO hDevInfo;
     PSP_DEVICE_INTERFACE_DETAIL_DATA_W psp_device_details;
-    SP_DEVICE_INTERFACE_DATA sp_device_data;
+    SP_DEVICE_INTERFACE_DATA sp_device_data{};
     BOOL bRes = TRUE;
     int nextCount = 0;
     hDevInfo = ::SetupDiGetClassDevsW((LPGUID)&UsbClassGuid, NULL, NULL, DIGCF_PRESENT | DIGCF_INTERFACEDEVICE);
@@ -152,10 +148,17 @@ std::vector<std::wstring> hmc_usb_util::getUsbDevsNameList()
     {
         std::shared_ptr<void> _shared_free_handle(nullptr, [&](void *)
                                                   {
-        ::GlobalFree(psp_device_details);
+                if (psp_device_details != NULL) {
+                    ::GlobalFree(psp_device_details);
+                }
         ::SetupDiDestroyDeviceInfoList(hDevInfo); });
 
         psp_device_details = (PSP_DEVICE_INTERFACE_DETAIL_DATA_W)::GlobalAlloc(LMEM_ZEROINIT, 1024);
+        
+        if (!psp_device_details) {
+            return result;
+        }
+
         psp_device_details->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
 
         while (bRes)
@@ -204,36 +207,45 @@ std::vector<hmc_usb_util::chUsbDevsInfo> hmc_usb_util::getUsbDevsInfoList()
     }
 
     DWORD deviceIndex = 0;
-    SP_DEVINFO_DATA deviceInfoData;
+    SP_DEVINFO_DATA deviceInfoData{};
     deviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA); // 设备信息数据大小
+
+    std::vector<wchar_t> deviceID;
+    std::vector<wchar_t> buffer;
+    const size_t bufferSize = 4096;
 
     while (::SetupDiEnumDeviceInfo(deviceInfoSet, deviceIndex, &deviceInfoData))
     {
         deviceIndex++;
 
         DWORD dataType;
-        wchar_t buffer[4096];
-        DWORD bufferSize = 4096;
 
-        // 获取设备ID
-        wchar_t deviceID[4096];
-        if (::CM_Get_Device_IDW(deviceInfoData.DevInst, deviceID, sizeof(deviceID) / sizeof(wchar_t), 0) != CR_SUCCESS)
+        if (deviceID.empty()) {
+            deviceID.resize(bufferSize);
+            buffer.resize(bufferSize);
+        }
+
+        std::fill(deviceID.begin(), deviceID.end(), '\0');
+        std::fill(buffer.begin(), buffer.end(), '\0');
+
+        if (::CM_Get_Device_IDW(deviceInfoData.DevInst, &deviceID[0], static_cast<ULONG>(deviceID.size()) , 0) != CR_SUCCESS)
         {
             continue;
         }
 
         // 获取设备描述信息
-        if (!::SetupDiGetDeviceRegistryPropertyW(deviceInfoSet, &deviceInfoData, SPDRP_DEVICEDESC, &dataType, (PBYTE)buffer, bufferSize, NULL))
+        if (!::SetupDiGetDeviceRegistryPropertyW(deviceInfoSet, &deviceInfoData, SPDRP_DEVICEDESC, &dataType, (PBYTE)&buffer[0], static_cast<ULONG>(deviceID.size()), NULL))
         {
             continue;
         }
-        std::wstring description = buffer;
+
+        std::wstring description = buffer.data();
 
         // 获取供应商ID和产品ID
         std::wstring vidStr = L"VID_";
         std::wstring pidStr = L"PID_";
 
-        std::wstring deviceIdStr = deviceID;
+        std::wstring deviceIdStr = deviceID.data();
         std::size_t vidLocation = deviceIdStr.find(vidStr) + vidStr.size();
         std::size_t pidLocation = deviceIdStr.find(pidStr) + pidStr.size();
 
@@ -241,16 +253,20 @@ std::vector<hmc_usb_util::chUsbDevsInfo> hmc_usb_util::getUsbDevsInfoList()
         std::wstring productId = deviceIdStr.substr(pidLocation, 4);
 
         chUsbDevsInfo item;
-        item.name = deviceID;
-        item.description = description;
+        item.name = std::move(deviceIdStr);
+        item.description = std::move(description);
         item.dwVendorId = vendorId.empty() ? 0 : std::stoi(vendorId, nullptr, 16);
         item.dwProductId = productId.empty() ? 0 : std::stoi(productId, nullptr, 16);
 
         result.push_back(item);
     }
 
-    // 销毁设备信息集合
-    ::SetupDiDestroyDeviceInfoList(deviceInfoSet);
+    if (deviceInfoSet != NULL) {
+
+        // 销毁设备信息集合
+        ::SetupDiDestroyDeviceInfoList(deviceInfoSet);
+
+    }
 
     return result;
 }
@@ -298,7 +314,7 @@ std::vector<std::wstring> hmc_usb_util::getUsbHidNameList()
         // 为设备名称分配内存
 
         std::wstring deviceName = std::wstring();
-        deviceName.resize(nBufferSize + 1);
+        deviceName.resize(static_cast<size_t>(nBufferSize) + 1);
 
         // 设备名称
         nResult = ::GetRawInputDeviceInfoW(pRawInputDeviceList[index].hDevice, // 磁盘
@@ -401,7 +417,7 @@ std::vector<hmc_usb_util::thHidInfo> hmc_usb_util::getUsbHidList()
         // 鼠标
         if (rdiDeviceInfo.dwType == RIM_TYPEMOUSE)
         {
-            chHidMouseInfo item = {L"", L"mouse", index, 0, 0, 0, 0};
+            chHidMouseInfo item;
             item.name = std::wstring(deviceName.c_str());
             item.dwId = rdiDeviceInfo.mouse.dwId;
             item.dwNumberOfButtons = rdiDeviceInfo.mouse.dwNumberOfButtons;
@@ -413,7 +429,7 @@ std::vector<hmc_usb_util::thHidInfo> hmc_usb_util::getUsbHidList()
         // Keyboard
         else if (rdiDeviceInfo.dwType == RIM_TYPEKEYBOARD)
         {
-            chHidKeyboardInfo item = {L"", L"keyboard", index, 0, 0, 0, 0, 0};
+            chHidKeyboardInfo item;
             item.name = std::wstring(deviceName.c_str());
 
             item.dwKeyboardMode = rdiDeviceInfo.keyboard.dwKeyboardMode;
@@ -428,7 +444,7 @@ std::vector<hmc_usb_util::thHidInfo> hmc_usb_util::getUsbHidList()
         // Some HID
         else if (rdiDeviceInfo.dwType == RIM_TYPEHID)
         {
-            chHidSomeInfo item = {L"", L"hid", index, 0, 0, 0, 0};
+            chHidSomeInfo item;
             item.name = std::wstring(deviceName.c_str());
 
             item.dwVendorId = rdiDeviceInfo.hid.dwVendorId;

@@ -160,7 +160,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\hmc_tray_util.cpp" />
-    <ClCompile Include="..\..\src\hmc_windows_util.cpp" />
     <ClCompile Include="temp.cpp" />
   </ItemGroup>
   <ItemGroup>

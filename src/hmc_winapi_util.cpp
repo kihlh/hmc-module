@@ -91,7 +91,7 @@ HICON HMC::Shell32::ExtractIconW(_Reserved_ HINSTANCE hInst, _In_ LPCWSTR pszExe
     return pExtractIconW(hInst, pszExeFileName, nIconIndex);
 }
 
-int HMC::User32::GetWindowTextW(_In_ HWND hWnd, _Out_writes_(nMaxCount) LPWSTR lpString, _In_ int nMaxCount)
+int HMC::User32::GetWindowTextW(_In_ HWND hWnd, LPWSTR lpString, _In_ int nMaxCount) const
 {
 
     if (!m_hModule)
@@ -145,22 +145,22 @@ int HMC::User32::GetWindowTextLengthW(_In_ HWND hWnd)
     return pGetWindowTextLengthW(hWnd);
 }
 
-int HMC::User32::InternalGetWindowText(_In_ HWND hWnd, _Out_writes_to_(cchMaxCount, return +1) LPWSTR pString, _In_ int cchMaxCount)
+int HMC::User32::InternalGetWindowText(_In_ HWND hWnd, LPWSTR pString, _In_ int cchMaxCount) const
 {
 
     if (!m_hModule)
     {
-        return ::GetWindowTextLengthW(hWnd);
+        return ::InternalGetWindowText(hWnd, pString, cchMaxCount);
     }
 
-    PFN_GetWindowTextLengthW pGetWindowTextLengthW = (PFN_GetWindowTextLengthW)::GetProcAddress(m_hModule, "GetWindowTextLengthW");
+    PFN_InternalGetWindowText pInternalGetWindowText = (PFN_InternalGetWindowText)::GetProcAddress(m_hModule, "InternalGetWindowText");
 
-    if (!pGetWindowTextLengthW)
+    if (!pInternalGetWindowText)
     {
         return 0;
     }
 
-    return pGetWindowTextLengthW(hWnd);
+    return pInternalGetWindowText(hWnd, pString, cchMaxCount);
 }
 
 BOOL HMC::User32::SetWindowTextW(_In_ HWND hWnd, _In_opt_ LPCWSTR lpString)

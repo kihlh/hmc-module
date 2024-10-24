@@ -95,7 +95,16 @@ public:
         bool show;
         // 是否选定
         bool select;
-        Menu() : type(chMenuType::menu), mid(-1), disable(false), rootMenu(false), show(false), select(false) { chMenuUtil::__initStore(this); };
+
+        HICON theIcon;
+        
+        bool setIcon(int index);
+        bool setIcon();
+        bool setIcon(HICON hNewIcon);
+        bool setIconByIcon(std::wstring IconPath);
+        bool setIconByExtract(std::wstring Icons, int index);
+        void removeIcon();
+        Menu() : type(chMenuType::menu), mid(-1), disable(false), rootMenu(false), show(false), select(false) ,theIcon(nullptr) { chMenuUtil::__initStore(this); };
         // if
         operator bool() const;
         // !
@@ -577,6 +586,9 @@ private:
 
     // 点击了按钮
     void clickButtonItem(WORD IDKey);
+    
+    void initNotifyIconData();
+
     class chMenuUtil
     {
     public:

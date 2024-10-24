@@ -1525,6 +1525,7 @@ HWND hmc_windows_util::get_variant(std::variant<HWND, DWORD> input, HWND of_to)
     {
         return std::get<0>(input);
     }
+    
     return of_to;
 }
 

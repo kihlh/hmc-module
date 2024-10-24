@@ -541,7 +541,7 @@ ULONGLONG hmc_process_util::getProcessStartTime(DWORD processID)
 
     auto hProcess = hmc_process_util::openProcessToken(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processID);
 
-    if (&hProcess == NULL)
+    if (!hProcess)
     {
         return elapsedTime;
     }
@@ -1393,7 +1393,7 @@ NTSTATUS hmc_process_util::CpGetProcessCwdPath::readCwd(wchar_t **outputString, 
 
         size_t strLength = initReadString.Length + 1;
         cwdString = new (std::nothrow) WCHAR[strLength];
-        cwdString[strLength / 2] = 0;
+
         if (!NT_SUCCESS(status = nt.readVirtualMemory(
                             processHandle,
                             initReadString.Buffer,
@@ -1446,8 +1446,7 @@ NTSTATUS hmc_process_util::CpGetProcessCwdPath::readCwd(wchar_t **outputString, 
             nt.close(processHandle);
             if (outputString == NULL)
             {
-
-                *outputString = new wchar_t[1];
+               *outputString = new wchar_t[1];
             }
             *outputString[0] = '\0';
             return status;
@@ -1455,7 +1454,7 @@ NTSTATUS hmc_process_util::CpGetProcessCwdPath::readCwd(wchar_t **outputString, 
 
         size_t strLength = initReadString.Length + 1;
         cwdString = new (std::nothrow) WCHAR[strLength];
-        cwdString[strLength / 2] = 0;
+
         if (!NT_SUCCESS(status = nt.readVirtualMemory(
                             processHandle,
                             UlongToPtr(initReadString.Buffer),
@@ -1618,7 +1617,12 @@ namespace hmc_process_util
 
             NTSTATUS PhpQueryProcessVariableSize(_In_ HANDLE ProcessHandle, _In_ _PROCESSINFOCLASS ProcessInformationClass, _Out_ PVOID *Buffer)
         {
-            NTSTATUS status;
+            NTSTATUS status = -1;
+
+            if (Buffer == nullptr) {
+                return status;
+            }
+
             PVOID buffer;
             ULONG returnLength = 0;
             _RtlAllocateHeap RtlAllocateHeap = (_RtlAllocateHeap)::GetProcAddress(::GetModuleHandleA("ntdll.dll"), "RtlAllocateHeap");
@@ -1640,7 +1644,7 @@ namespace hmc_process_util
                 // STATUS_BUFFER_OVERFLOW
                 status != ((NTSTATUS)0xC0000023L) &&
                 // STATUS_BUFFER_TOO_SMALL
-                status != ((NTSTATUS)0xC0000023L) &&
+                //status != ((NTSTATUS)0xC0000023L) &&
                 // STATUS_INFO_LENGTH_MISMATCH
                 status != ((NTSTATUS)0xC0000004L))
                 return status;
@@ -1703,10 +1707,12 @@ namespace hmc_process_util
         std::wstring GetProcessCommandLineOld(_In_ HANDLE ProcessHandle, _Out_ long *status)
         {
             PVOID pebAddress = GetPebAddress(ProcessHandle);
-            PVOID rtlUserProcParamsAddress;
-            UNICODE_STRING commandLine;
+            PVOID rtlUserProcParamsAddress = nullptr;
+            UNICODE_STRING commandLine{};
             std::wstring res = L"";
-
+            if (status == nullptr) {
+                status = new long(0);
+            }
             if (!::ReadProcessMemory(ProcessHandle, (PCHAR)pebAddress + 0x10,
                                      &rtlUserProcParamsAddress, sizeof(PVOID), NULL))
             {
@@ -2232,14 +2238,14 @@ std::wstring hmc_process_util::ch_THREADENTRY32::to_json(std::vector<ch_THREADEN
     }
 
     size_t size_max = 0;
-    for (auto Process : data)
+    for (auto& Process : data)
     {
         size_max += MAX_PATH;
     }
 
     result.reserve(size_max + MAX_PATH);
 
-    for (auto Process : data)
+    for (auto& Process : data)
     {
         result.append(Process.to_json());
         result.push_back(L',');

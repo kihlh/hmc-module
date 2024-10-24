@@ -59,6 +59,7 @@ namespace hmc_usb_util
         //  供应商ID，它是由USB实现论坛 (USB-IF) 分配的一个标识符
         DWORD dwVendorId;
 
+        chUsbDevsInfo() :dwProductId(0), dwVendorId(0) {}
         std::wstring to_json();
     };
 
@@ -81,6 +82,7 @@ namespace hmc_usb_util
         //  这是设备的用途页面ID，它配合 usUsage 使用，确定设备的具体类型和用途。例如，usUsagePage = 1 表示设备是一个通用桌面控制类的设备，例如键盘或鼠标等。null
         DWORD usUsagePage;
 
+        chHidSomeInfo():index(0), type({'h','i','d'}), dwProductId(0), dwVendorId(0), dwVersionNumber(0), usUsage(0), usUsagePage(0) {}
         std::wstring to_json();
     };
 
@@ -105,6 +107,7 @@ namespace hmc_usb_util
         // 设备类型。例如 81 代表键盘设备。
         DWORD dwType;
 
+        chHidKeyboardInfo() :index(0), dwKeyboardMode(0),type(L"keyboard"), dwNumberOfFunctionKeys(0), dwNumberOfIndicators(0), dwNumberOfKeysTotal(0), dwSubType(0), dwType(0) {}
         std::wstring to_json();
     };
 
@@ -125,6 +128,7 @@ namespace hmc_usb_util
         // 表示这个鼠标是否有横向滚轮。此例中其值为false，表示鼠标没有横向滚轮。
         bool fHasHorizontalWheel;
 
+        chHidMouseInfo() :index(0), dwId(0), type({ 'm','o','u','s','e'}), dwNumberOfButtons(0), dwSampleRate(0), fHasHorizontalWheel(false) {}
         std::wstring to_json();
     };
 

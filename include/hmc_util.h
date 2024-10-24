@@ -234,10 +234,16 @@ namespace hmc_util
     extern bool diffBaseName(const std::string path1, const std::string path2);
     extern bool diffBaseName(const std::wstring path1, const std::wstring path2);
 
-    extern bool writeFile(std::string output, std::vector<std::uint8_t> data);
-    extern bool writeFile(std::wstring output, std::vector<std::uint8_t> data);
-    extern bool writeFile(std::string output, std::string data);
-    extern bool writeFile(std::wstring output, std::wstring data);
+    extern bool writeFile(const std::string &output, const std::vector<std::uint8_t> &data);
+    extern bool writeFile(const std::wstring &output, const std::vector<std::uint8_t> &data);
+    extern bool writeFile(const std::string &output, const std::string &data);
+    extern bool writeFile(const std::wstring &output, const std::wstring &data);
+    extern bool writeFile(const std::string &output,  void * data , const size_t &size);
+    extern bool writeFile(const std::wstring &output, void * data , const size_t &size);
+    
+    extern std::vector<std::uint8_t> readFile(const std::wstring &output);
+    extern std::vector<std::uint8_t> readFile(const std::string &output);
+
 }
 
 #if _HAS_CXX17

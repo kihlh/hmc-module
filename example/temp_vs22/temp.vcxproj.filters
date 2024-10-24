@@ -21,9 +21,6 @@
     <ClCompile Include="temp.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\hmc_windows_util.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\hmc_tray_util.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
